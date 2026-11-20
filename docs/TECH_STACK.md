@@ -14,6 +14,9 @@ Commands are npm scripts in a `package.json` at the repo root, with `frontend/` 
 - `npm run dev` starts the backend and the frontend together
 - `npm test` runs all the tests and fails if any test fails
 - `npm run seed` resets the database to the sample data
+- `npm run clear` empties the database, to start with real data
+
+Both `seed` and `clear` ask before wiping anything, and accept `--yes` to skip the question.
 
 `docs/STATUS.md` says how to run the app. `README.md` is the course's own guide, so leave it as it is.
 
