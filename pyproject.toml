@@ -1,0 +1,48 @@
+[project]
+name = "accountable"
+version = "0.1.0"
+description = "A local sales CRM for one salesperson (backend)."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.165",
+    "uvicorn>=0.54",
+    "sqlalchemy>=2.1.9",
+    "alembic>=1.20",
+    "pydantic>=2.14",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2",
+    "pytest-cov>=7.1",
+    "httpx>=0.28",
+    "ruff>=0.17.6",
+    "pip-audit>=2.10",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["backend"]
+testpaths = ["backend/tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+src = ["backend"]
+
+[tool.ruff.lint]
+# Errors, pyflakes, warnings, import order, upgrades, bugbear, simplify, and type hints on
+# every public function in the app (ENG-3).
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "ANN"]
+# Any is allowed at typed boundaries, such as validators that receive raw JSON (ENG-2, ENG-3).
+ignore = ["ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/tests/**" = ["ANN"]
+"backend/migrations/**" = ["ANN"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]

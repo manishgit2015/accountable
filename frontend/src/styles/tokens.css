@@ -1,0 +1,46 @@
+/* Accountable design tokens (spec 3.9). Values from docs/mockups/shared/tokens.css.
+   Components use only these tokens, so a dark mode later redefines this file alone. */
+:root {
+  /* Surfaces and ink */
+  --page: #f0f4f5;
+  --panel: #ffffff;
+  --ink: #073b4c;
+  --ink-muted: #5b7a85;
+  --on-fill: #ffffff;
+
+  /* Brand colors: fills, and their darker versions for text on white */
+  --sea-green: #06d6a0;
+  --sea-green-text: #047857;
+  --marigold: #ffc145;
+  --marigold-text: #8a5a00;
+  --coral: #f78c6b;
+  --coral-text: #b54a2a;
+  --cerulean: #118ab2;
+  --cerulean-text: #0e7194;
+  --raspberry: #ef476f;
+  --raspberry-text: #d12e57;
+  --sea-mist: #cdd8db;
+  --tint: #e6edef;
+  --hero-grid: #0f4c60;
+
+  /* Stage colors (spec 3.9) */
+  --stage-new: var(--sea-mist);
+  --stage-qualified: var(--cerulean);
+  --stage-proposal: var(--marigold);
+  --stage-negotiation: var(--coral);
+  --stage-won: var(--sea-green);
+  --stage-lost: var(--raspberry);
+
+  /* Shape */
+  --radius: 12px;
+  --radius-card: 10px;
+  --radius-control: 8px;
+  --shadow: 0 1px 2px rgba(7, 59, 76, 0.06), 0 4px 16px rgba(7, 59, 76, 0.04);
+  --shadow-lift: 0 2px 4px rgba(7, 59, 76, 0.08), 0 12px 32px rgba(7, 59, 76, 0.14);
+  --focus-ring: 0 0 0 3px rgba(17, 138, 178, 0.45);
+
+  /* Type (bundled with @fontsource, no CDN) */
+  --sans: "Instrument Sans", system-ui, sans-serif;
+  --serif: "Instrument Serif", Georgia, serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+}

@@ -1,0 +1,21 @@
+{
+  "name": "accountable",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A local sales CRM for one salesperson.",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "predev": "node scripts/ensure-installed.mjs",
+    "dev": "concurrently --kill-others --names api,web --prefix-colors cyan,green \"uv run --no-sync --directory backend python -m app.main\" \"npm run dev --workspace frontend\""
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "concurrently": "^10.0.7"
+  }
+}
