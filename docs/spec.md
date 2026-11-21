@@ -77,9 +77,9 @@ Requirement IDs (R1, R2 and so on) are used by the tests and in `docs/STATUS.md`
 
 ### Pipeline
 
-- **R60** Six columns, New to Lost, each with a header showing the stage name, the number of deals, their total value and their expected revenue.
-- **R61** Above the board: the total value and expected revenue of the open pipeline (Won and Lost excluded).
-- **R62** Cards show the deal name, organization, value, probability and close date, with a "Late" badge when late.
+- **R60** Six columns, New to Lost, each with a header showing the stage name, the number of deals, their total value and their expected revenue. Won and Lost are narrower and show compact rows (name, organization, value, close date). They list the 5 most recently closed deals, with "N more · Show all" to expand the column in place. Their count and value cover deals closed in the last 12 months.
+- **R61** Above the board: the total value and expected revenue of the open pipeline (Won and Lost excluded), and a panel with a stacked bar of open value by stage, showing each stage's deal count, value and expected revenue.
+- **R62** Open-stage cards show the organization's initials, the deal name, the organization and main contact, the value and close date, and a probability meter in the stage color with its percentage. Late deals show a Raspberry "Late" badge with the date in place of the plain date.
 - **R63** Dragging a card to another column changes its stage (R15–R18). Dragging it within a column, or into a gap between two cards in another column, puts it exactly where it was dropped. The order is saved and stays after a refresh.
 - **R64** Totals change the moment a card is dropped. If saving fails, the card goes back and an error message says so.
 - **R65** Each column has an "Add deal" button that opens the deal form with that stage chosen. The new card goes to the top of the column.
@@ -90,7 +90,7 @@ Requirement IDs (R1, R2 and so on) are used by the tests and in `docs/STATUS.md`
 - **R70** Summary figures: Open pipeline value, Expected revenue, Won this month (value and count), and Win rate over the last 12 months (won ÷ (won + lost), by count).
 - **R71 Line chart:** revenue won each month, for the last 12 months.
 - **R72 Bar chart:** deals won each month, for the last 12 months, with deals lost shown beside them.
-- **R73 Pipeline visual:** open value by stage, as one horizontal stacked bar in stage colors, with value and expected revenue for each stage.
+- **R73 Pipeline visual:** open value by stage, as a donut in stage colors with the total open value in the middle and each stage's value listed beside it.
 - **R74 Funnel:** for each stage from New to Won, the value of the deals that reached it (Concern 3), with the percentage carried over from the stage before.
 - **R75 Recent activity:** the 10 latest activities and stage changes, each linking to its record.
 - **R76 Follow-ups:** grouped into Overdue, Today and Next 7 days, each with a checkbox to mark it done, plus a count of later ones. Marking one done removes it from the list straight away.
@@ -109,8 +109,11 @@ Requirement IDs (R1, R2 and so on) are used by the tests and in `docs/STATUS.md`
 
 ### Layout
 
-- A fixed left sidebar, 232px wide, in Midnight `#073B4C`. It shows the Accountable wordmark at the top, then Dashboard, Pipeline, Deals, Contacts and Organizations, each with an icon (lucide-react). The active item is a rounded Sea Green pill with Midnight text. Other items are in Sea Mist text.
-- The main area has the page background `#F0F4F5` and a 32px gutter. Each page has a title (Instrument Sans 28px, semibold) and its main action on the right ("Add deal").
+The chosen direction is mockup B, in `docs/mockups/b-hero-topnav/`. Its screenshots are the visual reference for the dashboard and pipeline.
+
+- A floating top bar: a white rounded panel 16px below the top of the window, spanning the content width. It holds the Accountable wordmark (a Midnight square mark with a Sea Green "A"), then the tabs Dashboard, Pipeline, Deals, Contacts and Organizations, with "Add deal" on the right. The active tab is a Midnight pill with white text, and the others are in Muted ink. There is no line under the bar.
+- There is no user name or avatar anywhere, since the MVP has no accounts.
+- The content area has the page background `#F0F4F5`, a maximum width of 1440px, and a 32px gutter. Each page has a title (Instrument Sans 28px, semibold) with a short line of help or figures beside it.
 - Content sits in white panels with 12px corners, no outline and a soft shadow (`0 1px 2px rgba(7,59,76,.06), 0 4px 16px rgba(7,59,76,.04)`). No single-edge borders and no rule along the top of the page.
 - Forms open in a right-hand side panel 480px wide. Delete confirmations open in a centered dialog.
 
@@ -124,7 +127,8 @@ Requirement IDs (R1, R2 and so on) are used by the tests and in `docs/STATUS.md`
 | Labels and captions | Instrument Sans | 12px / 500, Muted ink |
 | Money, percentages, counts, dates in tables | JetBrains Mono | 13–14px / 500, tabular figures |
 | Big dashboard figures | JetBrains Mono | 32px / 600 |
-| Empty-state line or dashboard greeting | Instrument Serif | 20px italic |
+| Dashboard greeting ("Good morning") | Instrument Serif | 34px italic, white on Midnight |
+| Empty-state line | Instrument Serif | 20px italic |
 
 Fonts load from `@fontsource/instrument-sans`, `@fontsource/instrument-serif` and `@fontsource/jetbrains-mono` (R2).
 
@@ -159,18 +163,19 @@ Gradients are used at most once: a faint Sea Green fill under the revenue line. 
 - **Buttons:** primary is a Sea Green fill with Midnight text, 8px corners, 36px high. Secondary is white with Midnight text and a soft shadow. Destructive is a Raspberry fill with white bold text, used only in delete dialogs.
 - **Badges:** pill shaped, 12px/600, stage or status color fill. White text on Cerulean and Raspberry, Midnight text on the rest.
 - **Tables:** header row in 12px/500 Muted ink, rows 48px high, a light `#F0F4F5` row hover, and numbers right-aligned in JetBrains Mono.
-- **Pipeline cards:** white, 10px corners, 12px padding. The deal name is 14px/600, the organization in Muted ink below it, and the value and probability in JetBrains Mono. A small colored dot by the column title gives the stage color; cards don't get colored edges. A dragged card lifts with a larger shadow, and the drop gap shows as a dashed Sea Mist placeholder.
+- **Pipeline cards:** white, 10px corners, 12px padding. A 30px rounded square with the organization's initials sits at the top left, beside the deal name (14px/600) and "organization · contact" in Muted ink. Below them come the value in JetBrains Mono and the close date or Late badge, then a 5px probability meter in the stage color with the percentage. A small colored dot by the column title gives the stage color; cards don't get colored edges. "Add deal" sits at the top of each open column as a dashed outline button. A dragged card lifts with a larger shadow, and the drop gap shows as a dashed Sea Mist placeholder.
+- **Closed rows (Won and Lost columns):** white, 10px corners, one line each: the name (cut short with an ellipsis if needed) and organization on the left, the short value and date on the right.
 - **Timeline:** a vertical list with a round icon per entry. Note, call and email use Cerulean icons on a light tint. Stage changes use the destination stage's color.
 
 ### Dashboard layout
 
 Three rows on a 12-column grid:
 
-1. Four summary tiles (R70), 3 columns each.
-2. Revenue won line chart (R71), 8 columns, and the follow-ups panel (R76), 4 columns.
-3. Deals won and lost bar chart (R72), 4 columns; funnel (R74), 4 columns; recent activity (R75), 4 columns.
+1. **Hero panel**, full width: a Midnight panel with 16px corners. On the left (360px) are the greeting "Good morning", "Good afternoon" or "Good evening", then the date and a one-line summary ("2 follow-ups overdue, 3 deals running late"). Below them sit the four summary figures (R70) in a 2 × 2 grid, white JetBrains Mono at 28px with Sea Mist labels; Won this month is in Sea Green. On the right is the revenue won line chart (R71), with Sea Mist axis text and dark gridlines (`#0F4C60`). This is the one place a gradient is used, as the faint Sea Green fill under the line.
+2. Funnel (R74), 5 columns; deals won and lost bar chart (R72), 4 columns; open value by stage donut (R73), 3 columns.
+3. Follow-ups (R76), 6 columns; recent activity (R75), 6 columns.
 
-The pipeline-by-stage stacked bar (R73) sits as a full-width strip between rows 1 and 2. Charts use Recharts, with chart text in Instrument Sans 12px Muted ink, light Sea Mist gridlines, no chart borders, and tooltips in white panels.
+Charts use Recharts, with chart text in Instrument Sans 12px Muted ink, light Sea Mist gridlines, no chart borders, and tooltips in white panels.
 
 ### Writing
 

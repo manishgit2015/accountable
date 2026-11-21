@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accountable · Dashboard (mockup C)</title>
+<link rel="stylesheet" href="../assets/tokens.css">
+<link rel="stylesheet" href="style.css">
+<script src="../assets/data.js"></script>
+<script src="../assets/charts.js"></script>
+<script src="shell.js"></script>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+const maxStage = Math.max(...OPEN.map(k => sum(byStage(k), d => d.value)));
+const ladder = OPEN.map(k => {
+  const s = stage(k), v = sum(byStage(k), d => d.value), e = sum(byStage(k), expected);
+  return `<div class="row"><span style="display:flex;align-items:center;gap:8px;font-weight:500"><span class="dot" style="background:${s.color}"></span>${s.name}</span>
+    <span class="bar"><i style="width:${(v / maxStage) * 100}%;background:${s.color}"></i><b style="width:${(e / maxStage) * 100}%"></b></span>
+    <span style="text-align:right"><span class="num" style="font-weight:600">${money(v)}</span><span class="label" style="display:block"><span class="num">${money(e)}</span> expected</span></span></div>`;
+}).join("");
+const tile = (label, value, sub, spark, color) => `<div class="panel tile"><div class="label">${label}</div><div class="v">${value}</div><div class="foot"><span class="label" style="white-space:nowrap">${sub}</span>${spark ? sparkline(spark, { w: 72, h: 28, color }) : ""}</div></div>`;
+
+document.getElementById("app").innerHTML = rail("dashboard") + `
+<main class="main">
+  <div class="head">
+    <div><div class="eyebrow">Friday 20 November 2026</div><h1>Sales at a glance</h1></div>
+    <div style="display:flex;gap:10px"><div class="search">${icon("search")}Search</div><button class="btn btn-primary">${icon("plus")}Add deal</button></div>
+  </div>
+  <div class="split">
+    <div class="left">
+      <div class="tiles">
+        ${tile("Open pipeline", moneyShort(OPEN_VALUE), openDeals.length + " open deals", [520, 548, 560, 590, 575, 610, 598, 620, 640, 628, 650, 636], "var(--cerulean-text)")}
+        ${tile("Expected revenue", moneyShort(OPEN_EXPECTED), "Value × chance", [190, 205, 214, 221, 218, 230, 236, 241, 248, 252, 262, 258], "var(--marigold-text)")}
+        ${tile("Won this month", moneyShort(REVENUE_WON[11]), DEALS_WON[11] + " deals so far", REVENUE_WON, "var(--sea-green-text)")}
+        ${tile("Win rate, 12 months", WIN_RATE + "%", "54 won · 22 lost", [62, 66, 64, 60, 68, 67, 72, 66, 70, 73, 75, 71], "var(--ink)")}
+      </div>
+
+      <div class="panel s6">
+        <div class="panel-head"><h2>Revenue won by month</h2><div class="legend"><span><i class="dot" style="background:var(--sea-green)"></i>Won</span><span><i class="dot" style="background:var(--marigold)"></i>This month so far</span></div></div>
+        <div class="chart">${bars(REVENUE_WON, { w: 900, h: 260 })}</div>
+      </div>
+
+      <div class="panel s3">
+        <div class="panel-head"><h2>Deals won per month</h2><span class="sub">${sum(DEALS_WON, x => x)} in 12 months</span></div>
+        <div class="chart">${lineChart(DEALS_WON, { w: 440, h: 240, fmt: n => Math.round(n), fill: false, labels: MONTHS.map(m => m[0]), pad: { l: 28, r: 10, t: 12, b: 26 } })}</div>
+      </div>
+      <div class="panel s3">
+        <div class="panel-head"><h2>Sales funnel</h2><span class="sub">Value reaching each stage</span></div>
+        <div style="display:grid;grid-template-columns:1fr 96px;gap:14px;align-items:center">
+          <div class="chart">${funnelShape({ w: 300, rowH: 40 })}</div>
+          <div>${FUNNEL.map((f, i) => `<div style="height:44px;display:flex;flex-direction:column;justify-content:center"><span style="font-weight:500;font-size:13px">${stage(f.key).name}</span><span class="label">${i ? Math.round(f.value / FUNNEL[i - 1].value * 100) + "% carried" : "Start"}</span></div>`).join("")}</div>
+        </div>
+      </div>
+
+      <div class="panel s6 ladder">
+        <div class="panel-head"><h2>Open pipeline by stage</h2><span class="sub">Bar is value · dark line is expected revenue</span></div>
+        ${ladder}
+      </div>
+    </div>
+
+    <aside class="panel day">
+      <div class="panel-head"><h2>Your day</h2><span class="sub">${FOLLOW_UPS.overdue.length + FOLLOW_UPS.today.length} need you today</span></div>
+      ${followUpsHTML()}
+      <div style="height:22px"></div>
+      <div class="panel-head" style="margin-bottom:2px"><h2 style="font-size:16px">Recent activity</h2><a class="sub" href="#">View all</a></div>
+      <ul class="feed">${ACTIVITY.slice(0, 6).map(feedItem).join("")}</ul>
+    </aside>
+  </div>
+</main>`;
+</script>
+</body>
+</html>

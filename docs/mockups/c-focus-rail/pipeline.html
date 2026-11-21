@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accountable · Pipeline (mockup C)</title>
+<link rel="stylesheet" href="../assets/tokens.css">
+<link rel="stylesheet" href="style.css">
+<script src="../assets/data.js"></script>
+<script src="../assets/charts.js"></script>
+<script src="shell.js"></script>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+function card(d) {
+  const late = isLate(d);
+  return `<div class="card ${late ? "late" : ""}">
+    <div style="display:flex;gap:8px;justify-content:space-between"><div class="t">${d.name}</div>${late ? `<span class="badge badge-late" style="height:20px;font-size:11px">Late</span>` : ""}</div>
+    <div class="o">${d.org}</div>
+    <div class="r"><span class="num" style="font-weight:600;font-size:13px">${money(d.value)}</span><span class="chip">${prob(d)}%</span><span class="num ${late ? "late-text" : "muted"}" style="margin-left:auto">${dateShort(d.close).replace(/ 20(26|27)/, "")}</span></div>
+  </div>`;
+}
+function column(s) {
+  const deals = byStage(s.key), closed = !OPEN.includes(s.key);
+  const total = sum(deals, d => d.value) + (s.key === "won" ? 685000 : s.key === "lost" ? 318000 : 0);
+  const share = closed ? 0 : total / OPEN_VALUE;
+  return `<section class="col">
+    <div class="col-top">
+      <div class="name"><span class="dot" style="background:${s.color}"></span>${s.name}<span class="count">${closed ? deals.length + MORE_CLOSED[s.key] : deals.length}</span></div>
+      <div class="share">${closed ? "" : `<i style="width:${share * 100}%;background:${s.color}"></i>`}</div>
+      <div class="figs"><span>Value<span class="num">${money(total)}</span></span><span style="text-align:right">${closed ? "Period<span class='num'>12 months</span>" : `Expected<span class="num">${money(sum(deals, expected))}</span>`}</span></div>
+    </div>
+    <div class="col-body">
+      ${deals.map(card).join("")}
+      ${closed ? `<div class="more">${MORE_CLOSED[s.key]} more</div>` : `<div class="add">${icon("plus")}Add deal</div>`}
+    </div>
+  </section>`;
+}
+const late = openDeals.filter(isLate);
+document.getElementById("app").innerHTML = rail("pipeline") + `
+<main class="main">
+  <div class="head">
+    <div><div class="eyebrow">${openDeals.length} open deals · ${late.length} late</div><h1>Pipeline</h1></div>
+    <div style="display:flex;align-items:center;gap:24px">
+      <div style="display:flex;gap:6px;align-items:baseline"><span class="label">Open</span><span class="num" style="font-size:20px;font-weight:600">${money(OPEN_VALUE)}</span></div>
+      <div style="display:flex;gap:6px;align-items:baseline"><span class="label">Expected</span><span class="num" style="font-size:20px;font-weight:600;color:var(--sea-green-text)">${money(OPEN_EXPECTED)}</span></div>
+      <div class="search" style="width:220px">${icon("search")}Search deals</div>
+      <button class="btn btn-primary">${icon("plus")}Add deal</button>
+    </div>
+  </div>
+  <div class="board">${STAGES.map(column).join("")}</div>
+</main>`;
+</script>
+</body>
+</html>
