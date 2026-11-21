@@ -1,6 +1,13 @@
 # Plan: building the Accountable MVP
 
-This plan is how we'll build what `docs/intent.md` asks for, as `docs/spec.md` describes it. Requirement IDs (R1, R2 and so on) refer to the spec, and "criterion 1" to 9 refer to the intent's success criteria. The stack and commands are in `docs/TECH_STACK.md`. The visual reference is mockup B in `docs/mockups/b-hero-topnav/`.
+This plan builds what the approved intent (`docs/intent.md`) asks for, as the approved spec 2.0 (`docs/spec.md`) designs it. It uses the spec's IDs:
+
+- requirements: R, NFR, SEC, REL, OBS, DEP and ENG
+- verification cases: V
+- decisions: ADR
+- the intent's acceptance and success criteria: AC1–AC9 and SC1–SC5
+
+The stack is in `docs/TECH_STACK.md`, and the visual reference is mockup B in `docs/mockups/b-hero-topnav/`. Mockup B labels the closed columns "12 months", but the spec's R60 (this month only) wins.
 
 No code has been written yet. The repo holds only the course material and these docs.
 
@@ -12,47 +19,57 @@ Everything below is new except where marked *(changed)*. `README.md` is the cour
 
 | File | Purpose |
 |---|---|
-| `package.json` | npm workspace with `frontend/`, plus the scripts `dev`, `predev`, `test`, `seed` and `clear`. Sets `engines.node` to `>=24`. |
+| `package.json` | npm workspace with `frontend/`. Scripts: `predev`, `dev`, `test`, `lint`, `seed`, `clear`. Sets `engines.node` to `>=24`, and the version to 0.1.0 (DEP-5). |
 | `package-lock.json` | Locked npm versions |
-| `pyproject.toml`, `uv.lock` | The Python 3.12 project for `backend/`, with its dev dependencies (pytest, httpx) |
+| `pyproject.toml`, `uv.lock` | The Python 3.12 project for `backend/`: FastAPI, Uvicorn, SQLAlchemy, Alembic and Pydantic, with dev dependencies pytest, httpx, pytest-cov, ruff and pip-audit. Ruff settings live here (ENG-3). Version 0.1.0. |
 | `.python-version` | Pins 3.12 for uv |
-| `playwright.config.ts` | End-to-end setup: installed Chrome (`channel: "chrome"`), and test servers on ports 8001 and 5174 that use a test database |
-| `scripts/ensure-installed.mjs` | Run by `predev`. Runs `npm install` and `uv sync` only when they're missing, using no packages of its own (Concern 8, R1). |
-| `.gitignore` *(changed)* | Adds `backend/data/` (the `*.db` pattern already covers the file) |
+| `playwright.config.ts` | Installed Chrome (`channel: "chrome"`), and test servers on `127.0.0.1:8001` and `:5174` with a temporary database (DEP-1) |
+| `scripts/ensure-installed.mjs` | Run by `predev`. Uses Node built-ins only. Checks for Node 24+ and uv with a clear message, then runs `npm install` and `uv sync` only when needed (DEP-3). |
+| `scripts/run-tests.mjs` | Runs pytest, then Vitest, then Playwright, stops at the first failure, and makes sure the tests never use the default database (section 13.2 of the spec) |
+
+`.gitignore` needs no change: `*.db`, `*.db-wal`, `*.db-shm` and `logs/` already cover the data and log files.
 
 ### Backend (`backend/`)
 
 | File | Purpose |
 |---|---|
-| `app/main.py` | FastAPI app, the `/api` routers, and seeding when the database is new (R4) |
-| `app/config.py` | Database path from `ACCOUNTABLE_DB` (default `backend/data/accountable.db`), plus a clock the tests can set |
-| `app/db.py` | SQLAlchemy Core engine, `PRAGMA foreign_keys = ON` on every connection, and the five tables with their constraints and indexes |
-| `app/schemas.py` | Pydantic models for requests and responses, and the 422 field messages |
-| `app/rules.py` | Stage probabilities, late deals, expected revenue, won/lost close dates, contact-to-customer, and midpoint and renumbering positions (R14–R20). Pure functions. |
-| `app/routers/organizations.py`, `contacts.py`, `deals.py`, `activities.py` | CRUD, the `/move` endpoint, and the delete-impact counts (R30) |
-| `app/routers/dashboard.py` | `GET /api/dashboard` |
-| `app/services/timeline.py` | Merged, newest-first timelines for organizations, contacts and deals (R50–R54) |
-| `app/services/dashboard.py` | Summary figures, monthly series, funnel from stage history, donut, follow-up groups and recent activity (R70–R77) |
-| `app/seed.py` | Sample data with dates relative to today (R80–R84) |
-| `app/cli.py` | `seed` and `clear`: ask "Type yes to continue", accept `--yes`, and clear the tables in one transaction (Concern 7) |
-| `tests/conftest.py` | A fresh temporary database and a fixed "today" for each test |
+| `app/main.py` | Builds the app: middleware, routers, the start-up order (migrate, then seed if new, then log the start-up lines), and the start-up failures (REL-9, OBS-4) |
+| `app/config.py` | Reads `ACCOUNTABLE_DB`, `ACCOUNTABLE_API_PORT`, `ACCOUNTABLE_WEB_PORT` and `ACCOUNTABLE_LOG_LEVEL` (DEP-2). Holds the clock the tests can set. |
+| `app/db.py` | Engine. Every connection sets `foreign_keys`, WAL, `synchronous = FULL` and `busy_timeout` (spec 6.3). Table definitions in SQLAlchemy Core (ENG-4). |
+| `app/errors.py` | The error format and status codes from spec 5.2. Turns a locked database into 503 `busy` (REL-6), and anything unexpected into a generic 500. |
+| `app/security.py` | Middleware for the Host check (SEC-2), the Origin check on changing requests (SEC-3), the 1 MB body limit, and JSON-only bodies |
+| `app/logging.py` | One line per request with a request ID and path template, an `X-Request-ID` header, a rotating file (5 MB × 3), and no bodies or field values (OBS-1–OBS-3, SEC-8) |
+| `app/schemas.py` | Pydantic models with `extra = forbid` and the R21 field rules |
+| `app/rules.py` | Pure functions: probabilities, late check, expected revenue, Won/Lost effects, positions and renumbering (R14–R20, R24, spec 6.4) |
+| `app/services/records.py` | CRUD for the four records, with the R23 contact check and the R34 cleared-link rule |
+| `app/services/moves.py` | Stage changes and `/move`, applying R15–R18 and R67, `closed_at`, and 409 `stale_position` |
+| `app/services/deletes.py` | Delete-impact counts and deletes (R30–R36) |
+| `app/services/timeline.py` | Organization, contact and deal timelines (R50–R54) |
+| `app/services/dashboard.py` | Every figure in spec 5.5, including the funnel over deals created in the last 12 months and the months by `closed_at` (R70–R79) |
+| `app/routers/organizations.py`, `contacts.py`, `deals.py`, `activities.py`, `dashboard.py`, `health.py` | HTTP only (ENG-1) |
+| `app/seed.py` | Sample data relative to today, with stage history and `closed_at` (R80–R84) |
+| `app/cli.py` | `seed` and `clear`, with their question, `--yes` and exit codes (spec 5.6) |
+| `app/perfdata.py` | Generates 2 × the intent's data volume for the performance run (V-P01) |
+| `alembic.ini`, `migrations/env.py`, `migrations/versions/0001_initial.py` | Alembic migrations using SQLite batch mode, run on start-up (ADR-004, DEP-4) |
+| `tests/conftest.py` | A new temporary database and a fixed clock for each test, and a check that the default path is never used |
 | `tests/test_*.py` | See [Proof](#proof) |
 
 ### Frontend (`frontend/`)
 
 | File | Purpose |
 |---|---|
-| `package.json`, `vite.config.ts`, `tsconfig*.json`, `index.html` | Vite and React with TypeScript. Vite proxies `/api` to the backend. |
-| `vitest.config.ts`, `src/test/setup.ts` | jsdom, Testing Library, and a ResizeObserver stub for Recharts |
-| `src/main.tsx`, `src/App.tsx` | Router, query client and the `@fontsource` imports (R2) |
-| `src/styles/tokens.css`, `src/styles/global.css` | The spec's color tokens, type scale, panels and shadows |
-| `src/api/client.ts`, `src/api/queries.ts` | Fetch wrapper with error messages, and the TanStack Query hooks and mutations |
-| `src/lib/format.ts` | Money (`$12,500`, `$1.2M`) and dates ("12 Nov 2026", "Today", "Yesterday") |
-| `src/lib/deals.ts` | Stage list and colors, usual probabilities, late check, expected revenue, greeting by time of day, and organization initials |
-| `src/components/` | `TopBar`, `Panel`, `Button`, `Badge`, `DataTable` (TanStack Table with search, sort and paging), `SidePanel`, `ConfirmDialog`, `EmptyState`, `Timeline`, `ActivityForm`, `Picker` (a select with "Add …") |
-| `src/forms/` | `OrganizationForm`, `ContactForm` and `DealForm` (React Hook Form with Zod) |
-| `src/pages/organizations/`, `contacts/`, `deals/` | List and detail pages (R40–R54) |
-| `src/pages/pipeline/` | `PipelinePage`, `StageStrip`, `Board`, `Column`, `DealCard`, `ClosedRow` (dnd-kit) |
+| `package.json`, `vite.config.ts`, `tsconfig*.json`, `index.html` | Vite and React with TypeScript in strict mode. Vite listens on `127.0.0.1`, proxies `/api` to `http://127.0.0.1:8000`, and keeps its local-only allowed hosts (SEC-1, SEC-2). |
+| `eslint.config.js`, `.prettierrc` | Lint and format rules (ENG-2), including a rule against `fetch` outside `src/api/` (ENG-1) |
+| `vitest.config.ts`, `src/test/setup.ts` | jsdom, Testing Library and a ResizeObserver stub |
+| `src/main.tsx`, `src/App.tsx` | Router, query client (reads retried once, changes never retried: REL-5), the `@fontsource` imports, and an error boundary on each page (REL-12) |
+| `src/styles/tokens.css`, `global.css` | The spec 3.9 tokens, type scale, panels and shadows |
+| `src/api/client.ts` | Fetch with a 10 s timeout (REL-4). Reads the error format, the request ID and 404/409/503. Translates `snake_case` to `camelCase` (ENG-6). |
+| `src/api/queries.ts` | TanStack Query hooks and the refetches each change triggers (spec 7.2) |
+| `src/lib/format.ts`, `src/lib/deals.ts` | Money and dates. The late check, expected revenue, greeting (R79) and initials. |
+| `src/components/` | `TopBar`, `Panel`, `Button`, `Badge`, `DataTable`, `SidePanel`, `ConfirmDialog`, `EmptyState`, `Timeline`, `ActivityForm`, `Picker`, `ErrorBoundary`, `OfflineBanner` (REL-7), `NotFound` (R56) |
+| `src/forms/` | `OrganizationForm`, `ContactForm`, `DealForm`, with Zod schemas matching R21 and the server's messages shown next to fields (R48) |
+| `src/pages/organizations/`, `contacts/`, `deals/` | List and detail pages (R40–R56) |
+| `src/pages/pipeline/` | `PipelinePage`, `StageStrip`, `Board`, `Column`, `DealCard`, `ClosedRow` (dnd-kit, with the keyboard sensor) |
 | `src/pages/dashboard/` | `DashboardPage`, `HeroPanel`, `RevenueChart`, `FunnelPanel`, `WonLostChart`, `StageDonut`, `FollowUps`, `RecentActivity` |
 | `src/**/*.test.ts(x)` | See [Proof](#proof) |
 
@@ -60,182 +77,209 @@ Everything below is new except where marked *(changed)*. `README.md` is the cour
 
 | File | Purpose |
 |---|---|
-| `e2e/fixtures.ts` | Resets the test database before each test (`seed --yes` or `clear --yes`), fails a test on any console error or failed request, and blocks requests to anywhere but localhost (R2, R7) |
+| `e2e/fixtures.ts` | Resets the test database before each test (`seed --yes` or `clear --yes`). Fails on any console error or any request leaving `127.0.0.1` or `localhost` (V-E00). Fixes the clock with `page.clock`. |
 | `e2e/*.spec.ts` | See [Proof](#proof) |
+| `e2e/perf/perf.spec.ts` | The timing run against the `perfdata` set, kept out of the normal `npm test` and run in phase 8 (V-P01) |
 
 ### Docs
 
 | File | Purpose |
 |---|---|
-| `docs/STATUS.md` *(changed)* | How to run the app, and progress after each phase |
-| `docs/plan.md` | This plan |
+| `docs/STATUS.md` *(changed)* | How to install, run, seed, clear, back up and restore, plus the runbook (spec 12) and progress after each phase |
+| `docs/plan.md` *(changed)* | This plan |
 
 ## Order of work
 
-Each phase ends with `npm test` passing and `docs/STATUS.md` updated. Phases run in order, with one exception: phases 2 and 3 only touch the backend, so phase 4 can start alongside them once phase 1 is done, if two people (or sessions) are working.
+Each phase ends with `npm test` and `npm run lint` passing, and `docs/STATUS.md` updated (ENG-7, ENG-9). Phases run in order, with one exception: phases 2 and 3 only touch the backend, so phase 4 can start alongside them once phase 1 is done, if two people or sessions are working on it.
 
-### Phase 0: Skeleton and commands
+### Phase 0: Skeleton, commands and guard rails
 
-1. Root `package.json` with the workspace and the five scripts, `pyproject.toml`, and `scripts/ensure-installed.mjs`.
-2. An empty FastAPI app with `GET /api/health`, and a Vite React app that shows the top bar and an empty page.
-3. Tokens, global styles and the bundled fonts.
-4. Vitest, pytest and Playwright wired into `npm test`, with one smoke test each.
-5. `docs/STATUS.md` explains how to install Node and uv, and how to run the app.
+1. Root `package.json`, `pyproject.toml`, `scripts/ensure-installed.mjs` and `scripts/run-tests.mjs`.
+2. FastAPI with `config.py`, `errors.py`, `security.py`, `logging.py` and `GET /api/health`. Vite React with the top bar and an empty page, both on `127.0.0.1`.
+3. Alembic set up with an empty first migration, run on start-up.
+4. Tokens, global styles and the bundled fonts.
+5. ESLint, Prettier and Ruff, and a smoke test in each suite.
+6. `docs/STATUS.md`: installing Node and uv, running the app, and where the logs are.
 
-*Done when* a fresh clone runs `npm run dev` on Windows, Mac and Linux, prints `http://localhost:5173`, and shows the top bar, and `npm test` passes (R1, R2).
+*Done when:*
+- A fresh clone runs `npm run dev` on Windows, macOS and Linux and prints `http://127.0.0.1:5173` within 15 s (R1, NFR-5).
+- The page shows the top bar, and `/api/health` answers.
+- A request with a foreign Host or Origin gets 403.
+- `npm test` passes.
 
 ### Phase 1: Data model and business rules (backend)
 
-1. Tables, constraints and indexes in `db.py`, with foreign keys on.
-2. `rules.py`, with full unit tests before any endpoint uses it.
-3. CRUD for organizations, contacts, deals and activities, with validation (R10–R13, R34, Concern 5).
-4. Stage changes through `PATCH` and `/move`: probability, close date, customer status, stage-change rows and position (R15–R18, R63).
-5. Deletes and delete-impact counts (R30–R35).
-6. Timelines (R50–R54).
+1. The five tables and their indexes in `db.py` and `0001_initial.py`.
+2. `rules.py`, with full unit tests before any service uses it.
+3. Schemas with the R21 rules, and `services/records.py` with CRUD and the R23 and R34 checks.
+4. `services/moves.py`: stage changes, `/move`, `closed_at`, the top-of-column rule and 409 `stale_position`.
+5. `services/deletes.py` with the delete-impact counts.
+6. `services/timeline.py`.
+7. The routers for the four records.
 
-*Done when* every rule in R10–R35 has a passing pytest.
+*Done when* V-B01 to V-B09 and V-B14 pass.
 
 ### Phase 2: Sample data, seed and clear (backend)
 
-1. `seed.py`, generating data with dates relative to today and a stage history that fits each deal (R80–R84).
-2. Seeding a new database when the app starts.
-3. `npm run seed` and `npm run clear` with the question and `--yes`, both working while the app is running (R4).
+1. `seed.py`, with history and `closed_at` that fit each deal, and closed deals in every one of the last 12 months, the current month included.
+2. Seeding a new database at start-up, after the migrations run.
+3. `cli.py` and the `seed` and `clear` scripts.
+4. A migration test on a database holding data.
 
-*Done when* the seed tests pass and running both commands next to a running app on Windows works.
+*Done when* V-B11 to V-B13 pass, and seed and clear work next to a running app on Windows.
 
 ### Phase 3: Dashboard figures (backend)
 
-1. `services/dashboard.py`: summary figures, 12-month series, funnel from stage history, open value by stage, follow-up groups and recent activity.
-2. `GET /api/dashboard`.
+1. `services/dashboard.py` and its router, producing the spec 5.5 response.
 
-*Done when* the figures match hand-worked values on a small fixed data set (criterion 6).
+*Done when* V-B10 passes on its fixed data set, including the month boundary and an empty database (AC6).
 
 ### Phase 4: Frontend foundations
 
-1. Routing for the five sections and the record pages.
-2. API client, query hooks and the error message pattern.
-3. `format.ts` and `deals.ts` with their unit tests.
-4. Shared components: `DataTable`, `SidePanel`, `ConfirmDialog`, `Badge`, `EmptyState`, `Timeline` and `Picker`.
+1. Routing for the five sections, the record pages and `NotFound`.
+2. `client.ts` with the timeout, error format and request ID, and `queries.ts`.
+3. `format.ts` and `deals.ts`.
+4. Shared components, including `ErrorBoundary` and `OfflineBanner`.
 
-*Done when* the component and library tests pass and every route shows its page title.
+*Done when* V-F01 to V-F04 and V-F10 pass, and every route shows its title.
 
 ### Phase 5: Tables, record pages, forms and activities
 
-1. Organizations, Contacts (with the status filter) and Deals tables (R40–R46).
-2. Add and edit forms in the side panel, with inline "Add organization" and "Add contact" (R45). The deal form fills in the usual probability (R15).
-3. Delete dialogs using the delete-impact counts (R30).
-4. Organization, contact and deal pages with timelines and "Log activity" (R50–R54).
+1. The three tables with their default sorts, search, paging and the contact status filter (R40–R47).
+2. The forms in the side panel, with inline adds, the probability fill-in and server messages (R45, R48, R15).
+3. Delete dialogs with the server's counts (R30).
+4. Record pages, timelines, "Log activity", and editing, deleting and marking activities done (R50–R56).
 
-*Done when* the e2e tests for organizations, contacts, deals and activities pass.
+*Done when* V-F05, V-F06 and V-E01 to V-E05 and V-E08 pass.
 
 ### Phase 6: Pipeline
 
-1. The six-column board with stage strip and totals (R60–R62).
-2. Dragging between and within columns with optimistic totals, rollback on failure and keyboard support (R63, R64, R66).
-3. "Add deal" in a column (R65), and Won/Lost "Show all".
+1. The board, stage strip and totals. Won and Lost show this month only, with the latest 5 and "Show all" (R60–R62).
+2. Dragging across and within columns with optimistic totals and rollback. A 409 makes the board reload. The keyboard sensor works (R63, R64, R66, REL-8, REL-11).
+3. "Add deal" in a column, and stage changes made elsewhere landing at the top (R65, R67).
 
-*Done when* the pipeline e2e tests pass, including after a reload.
+*Done when* V-F07, V-F08 and V-E06 pass, including after a reload.
 
 ### Phase 7: Dashboard
 
-1. Hero panel with greeting, summary and revenue line chart.
-2. Funnel, won/lost bar chart and stage donut.
+1. Hero panel with greeting, summary line, the four figures and the revenue chart.
+2. Funnel, won and lost bars, and stage donut.
 3. Follow-ups with mark done, and recent activity.
 4. Empty states (R78).
 
-*Done when* the dashboard e2e tests pass and the page matches mockup B's screenshot by eye.
+*Done when* V-F09 and V-E07 pass, and the page matches mockup B by eye.
 
 ### Phase 8: Hardening
 
-1. A performance run with a generated 1,000 contacts, 500 deals and 5,000 activities (R6).
-2. Empty-database run of every screen after `npm run clear` (criterion 2).
-3. Checks at 1024px and 1280px (R5), and an offline check with the network blocked (R2).
-4. Fix whatever these turn up.
+1. Security: V-S01 to V-S10, and `npm audit --audit-level=high` and `pip-audit` with nothing high or critical open (SEC-11).
+2. Performance: V-P01 at 2 × volume against NFR-1 to NFR-3.
+3. Reliability: V-E09, V-E10 and the V-M03 crash test.
+4. Accessibility and layout: V-E11 and V-E12.
+5. The offline run of V-M02.
+6. Coverage of `rules.py` and `services/` is at least 90%.
+7. Fix whatever these turn up.
 
-### Phase 9: Walkthrough and sign-off
+### Phase 9: Walkthrough, sign-off and release
 
-1. The coding agent uses the app end to end in a real browser as a salesperson would. That covers every section and action, each screen checked by eye against mockup B, with the console watched for errors. It fixes what it finds (criterion 9).
-2. Someone new tries the criterion 8 questions on the sample data with no instructions.
-3. The project owner uses it and has the final say, including on looks.
-4. `docs/STATUS.md` says the MVP is done.
+1. V-M01: the coding agent's end-to-end walkthrough, fixing what it finds (AC9).
+2. V-M04: every screen against mockup B and the brand. V-M05: first-time use (SC1).
+3. `docs/STATUS.md` gets the runbook, backup and restore steps (spec 12).
+4. Check every Definition of Done item (spec 17).
+5. The product owner uses it and approves it (AC9, SC5).
+6. Tag `v0.1.0` (DEP-5).
+
+After release, the product owner checks SC2–SC4 over two weeks of use (V-M06). That isn't part of done.
 
 ## Risks
 
 | Risk | What could go wrong | How we handle it |
 |---|---|---|
-| **One command on Windows** | `predev` installing, `concurrently`, uv paths and Ctrl+C behave differently on Windows | `ensure-installed.mjs` uses only Node built-ins. Phase 0 isn't done until it's run on Windows. Each server is started through `npm`/`uv` with no shell-specific syntax. |
-| **"Today" and time zones** | Close dates, late deals, "this month" and follow-up groups depend on the local date. Tests that run near midnight, or in another time zone, give different answers. | One clock in `config.py`, which the tests set. Dates are stored as local `YYYY-MM-DD` and times as local ISO strings. Vitest uses fake timers and Playwright uses `page.clock`. |
-| **Drag and drop** | Dropping into an exact gap, saving position, and rolling back on failure are fiddly. Playwright drags can be flaky. | Position logic lives in `rules.py` with unit tests. The e2e drags use stepped mouse moves, with a keyboard-drag test as a second route. |
-| **Funnel from stage history** | Wrong history in seed data gives a funnel that doesn't add up | `seed.py` builds history by walking each deal through its stages. A test checks that every deal's history starts with its creation and ends at its current stage. |
-| **Required links vs cleared links** | R34 allows saving a record whose link was cleared by a delete, but a new record must have every link. The rule is easy to get wrong in `PATCH`. | `PATCH` only checks a link that is in the request. Tests cover a cleared organization or contact being kept, filled in, and refused when set to a mismatched contact (Concern 5). |
-| **Deleting while linked** | `SET NULL` and `CASCADE` only work with foreign keys on, which SQLite leaves off by default | The pragma runs on every connection, and a test checks it's on. Delete tests check the rows directly. |
-| **Seed or clear while the app runs** | On Windows, deleting an open database file fails | The tables are cleared inside a transaction, never by deleting the file. A test runs a clear while another connection is open. |
-| **Performance** | Loading 5,000 activities or building timelines could be slow | Indexes on every foreign key and on `occurred_at`. Lists load in full but timelines are fetched per record. The phase 8 performance run measures each page. |
-| **Offline** | A library or font fetched from a CDN breaks the app without internet | Only `@fontsource` packages and bundled icons. The e2e fixture blocks every non-localhost request and fails the test if one is made. |
-| **Brand fidelity** | Screens drift from mockup B, or small Sea Green or Marigold text fails contrast | All colors come from tokens, and text uses the `-text` variants. The phase 7 and 9 checks compare against the mockup screenshots. |
-| **Recharts in tests** | Recharts needs a measured size, so it renders nothing in jsdom | The setup stubs ResizeObserver. Chart contents are checked in e2e rather than in Vitest. |
-| **Test data leaking** | Tests changing the real database | Tests always set `ACCOUNTABLE_DB` to a temporary or `e2e`-only file, and the test servers use their own ports. A test fails if that path equals the default. |
-| **Scope creep** | Adding things not in the intent (global search, user names, filters on the board) | Anything not in the spec goes to `docs/STATUS.md` as a later idea, not into the build. |
+| **One command on Windows** | `predev` installing, `concurrently`, uv paths and Ctrl+C behave differently on Windows | `ensure-installed.mjs` uses only Node built-ins. Phase 0 isn't done until it's run on Windows. No shell-specific syntax in scripts. |
+| **`localhost` and IPv6** | `localhost` resolves to `::1` on some systems, while the servers listen on `127.0.0.1`, so the page or the proxy fails | Print `127.0.0.1` (R1). Point the proxy at `127.0.0.1:8000`. Phase 0 checks it on all three systems. |
+| **Host and Origin checks blocking our own app** | The Vite proxy rewrites `Host` or `Origin`, so the backend refuses the app's own requests | The allowed values include the proxy's. Phase 0 tests both a good request through the proxy and a refused foreign one. |
+| **Alembic with SQLite** | SQLite can't alter most columns in place, so later migrations fail | Use Alembic's batch mode from the first migration. V-B13 runs every migration on a database holding data. |
+| **"Today" and time zones** | Close dates, late deals, months and follow-up groups depend on local time, so tests near midnight or in other zones give different answers | One clock in `config.py`, which tests set. Vitest uses fake timers and Playwright `page.clock`. V-B10 includes a month boundary. |
+| **`closed_at` vs `close_date`** | Mixing the two gives month figures and Won/Lost columns that disagree | The month figures and the closed columns read only `closed_at` (spec 6.1). V-B10 and V-F07 cover both. |
+| **Drag and drop** | Exact drops, saved order, rollback and two tabs are fiddly, and Playwright drags can be flaky | Position logic lives in `rules.py` with unit tests. E2e drags use stepped mouse moves, with a keyboard drag as a second route. The 409 path is tested. |
+| **Funnel from stage history** | Wrong history in the seed gives a funnel that doesn't add up | `seed.py` walks each deal through its stages. V-B11 checks every history starts at creation and ends at the current stage. |
+| **Required links vs cleared links** | R34 allows saving a record with a cleared link, while new records need all of them, which is easy to get wrong in `PATCH` | `PATCH` checks a link only when it's in the request. V-B04 and V-B05 cover kept, filled-in and mismatched links. |
+| **Durability** | WAL with a lower `synchronous` setting can lose the last writes on a power cut | `synchronous = FULL`, checked by V-B02. V-M03 kills the process right after a save. |
+| **Seed or clear while running** | Deleting an open database file fails on Windows | Clear tables in a transaction, never delete the file. V-B12 runs with another connection open. |
+| **Backups and WAL** | A user copies only `accountable.db` and misses the `-wal` file | The runbook says to stop the app and copy the whole `backend/data/` folder. |
+| **Performance** | Loading everything into the browser, or building timelines, gets slow | Indexes from spec 6.2. V-P01 runs at 2 × volume. ADR-007 names server-side paging as the fallback. |
+| **Offline** | A library or font from a CDN breaks the app without internet | Only bundled packages. V-E00 blocks every request that isn't local. |
+| **Brand fidelity** | Screens drift from mockup B, or small Sea Green or Marigold text fails contrast | Tokens only, with the `-text` variants for text. V-M04 compares against the mockup. |
+| **Recharts in tests** | Charts render nothing in jsdom | The setup stubs ResizeObserver. Chart contents are checked in end-to-end tests. |
+| **Test data leaking** | Tests change the real database | `run-tests.mjs` and `conftest.py` refuse to run against the default path. The test servers use their own ports. |
+| **Scope creep** | Adding things outside the intent, such as global search, user names or board filters | ENG-10: anything the spec doesn't settle goes to the product owner first. |
 
 ## Proof
 
-`npm test` runs all three suites and fails if any test fails. Each test name starts with the requirement it proves, for example `R16 moving to Won sets the close date to today`.
+`npm test` runs pytest, Vitest and Playwright, and fails if any test fails. Each test's name starts with the requirement it proves, for example `R16 moving to Won sets the close date to today`. The V IDs match spec section 13.3, which says what each case covers.
 
-### Backend unit tests (pytest, `backend/tests/`)
+### Backend unit and integration tests (pytest, `backend/tests/`)
 
-| File | What it proves |
-|---|---|
-| `test_rules.py` | Usual probability for each stage (R14). Stage change resets probability, and a hand-set value survives edits that don't change stage (R15). Won and Lost set the close date to today (R16). Late is open and past due only (R19). Expected revenue and open pipeline (R20). Midpoint positions and renumbering when the gap is too small. |
-| `test_db.py` | Foreign keys are on. An activity needs exactly one of contact and deal (R13). |
-| `test_organizations.py` | Create, read, update and delete. A name is required (R10). List includes contact count, open deal count and open value (R44). |
-| `test_contacts.py` | An organization is required on create (R11). Status defaults to lead. A cleared organization can stay blank on edit (R34). |
-| `test_deals.py` | Every required field on create (R12). Value is a whole number of 0 or more, and probability is 0 to 100. The main contact must be from the deal's organization (Concern 5). A stage change through `PATCH` follows the same rules as `/move`. |
-| `test_move.py` | Moving to another column changes stage, probability and position in one go (R63). Moving within a column keeps the stage and saves the new place. Moving to Won makes the contact a customer (R17). Moving back out of Won keeps the customer status and the close date (Concern 4). Each move adds a stage change row (R18). |
-| `test_deletes.py` | Deleting an organization keeps its contacts and deals with no organization (R31). Deleting a contact keeps their deals with no contact, and removes their activities (R32). Deleting a deal removes its activities and stage changes (R33). Delete-impact counts match (R30). A won deal still counts on the dashboard after its organization and contact are gone (R35). |
-| `test_activities.py` | Create, edit, delete and mark done (R53). "When it happened" defaults to now. |
-| `test_timelines.py` | Deal timeline is its activities and stage changes, newest first. Contact timeline adds activity from deals where they're the main contact (R51, Concern 10). Organization timeline merges its contacts and deals (R50). Each entry says where it came from (R54). |
-| `test_dashboard.py` | On a fixed data set: the four summary figures (R70), 12 months of revenue and won/lost counts (R71, R72), open value by stage (R73), funnel values and carry-over percentages from stage history (R74, Concern 3), the 10 latest entries (R75), and follow-up groups with the later count (R76, Concern 9). A deal won today counts this month (R77). An empty database gives zeros, not errors (R78). |
-| `test_seed.py` | Counts and coverage (R80). Won and lost in each of the last 12 months, open deals over the next 3 months, and at least 4 late (R81). Follow-ups in every group (R82). Every deal's history fits its stage (R83). A new database is seeded on start, and an existing one isn't (R4). |
-| `test_cli.py` | `seed` and `clear` refuse without "yes" and run with `--yes`. Clear empties every table. Both work while another connection is open (Concern 7). |
+| V | File | Key checks | Phase |
+|---|---|---|---|
+| V-B01 | `test_rules.py` | Stage probabilities. A hand-set probability kept until the stage changes. Won/Lost close date. Late. Expected revenue. Midpoint positions and renumbering. | 1 |
+| V-B02 | `test_db.py` | Foreign keys, WAL and `synchronous = FULL` on every connection. The exactly-one-parent check on activities. | 1 |
+| V-B03 | `test_organizations.py` | CRUD, R21 field rules, refused `javascript:` website, list counts and open value | 1 |
+| V-B04 | `test_contacts.py` | Organization required on create, including leads. Status defaults to lead. Cleared organization kept on edit. | 1 |
+| V-B05 | `test_deals.py` | Required fields, value and probability bounds, contact must match organization, `PATCH` stage change follows the rules and goes to the top of its column | 1 |
+| V-B06 | `test_move.py` | Across and within columns. Won makes the contact a customer and sets `closed_at`. Reopening keeps status and close date. One stage change row per change. 409 `stale_position`. A repeated move. | 1 |
+| V-B07 | `test_deletes.py` | R31–R33 checked on the rows. Delete-impact counts. Won deals still counted after links go. Deleting something already gone gives 404. | 1 |
+| V-B08 | `test_activities.py` | CRUD, done and undone, future dates allowed, exactly one parent | 1 |
+| V-B09 | `test_timelines.py` | Deal, contact and organization timelines, newest first, with sources. Follows the current main contact. | 1 |
+| V-B10 | `test_dashboard.py` | Every spec 5.5 figure on a fixed data set. The funnel over deals created in the last 12 months. Months by `closed_at`. Follow-up groups. Month boundary. Empty database. Greeting counts. | 3 |
+| V-B11 | `test_seed.py` | Counts and coverage. Closed deals in all 12 months. Late deals and follow-up groups present. Every history fits its deal. Seeds only a new database. | 2 |
+| V-B12 | `test_cli.py` | Refuses without "yes". `--yes` skips the question. Exit codes 0, 1 and 2. Works with another connection open. | 2 |
+| V-B13 | `test_migrations.py` | Upgrade from empty, and from the previous version holding data. A failed migration leaves the database as it was. | 2 |
+| V-B14 | `test_errors.py` | The error format and request ID, and each status code: 400, 404, 409, 413, 415, 422, 503 and 500 | 1 |
+| V-S01–V-S06 | `test_security.py` | A foreign Host gives 403. A foreign Origin on POST, PATCH or DELETE gives 403 and changes nothing. No CORS headers. Script and SQL text stored as plain text. 2 MB body gives 413. Unknown field gives 422. A 500 shows no stack trace. Logs hold no field values. | 0 and 8 |
 
-### Frontend unit tests (Vitest, next to the files they test)
+### Frontend unit and component tests (Vitest, next to the files they test)
 
-| File | What it proves |
-|---|---|
-| `lib/format.test.ts` | `$12,500`, `$1.2M`, `$0`. Dates as "12 Nov 2026", "12 Nov 2026, 14:30", "Today" and "Yesterday". |
-| `lib/deals.test.ts` | Usual probabilities, the late check against a fixed today, expected revenue, the greeting at the three times of day, and organization initials. |
-| `components/DataTable.test.tsx` | Search matches any text column regardless of case (R40). Clicking a heading sorts and clicking again reverses (R41). 25 per page and the "Showing 1–25 of N" count (R43). The empty message (R46). |
-| `components/ConfirmDialog.test.tsx` | Shows the record name and the linked-record counts. Nothing is deleted until confirmed (R30). |
-| `components/Timeline.test.tsx` | Newest first, the right icon per type, stage changes worded as "Moved from X to Y", and the source label (R54). |
-| `forms/DealForm.test.tsx` | Required fields show messages next to them (R45). Changing stage fills in its usual probability, which can then be overwritten (R15). The contact picker lists only the chosen organization's contacts (Concern 5). |
-| `forms/ContactForm.test.tsx` | The organization is required, and "Add organization" opens inline. |
-| `pages/contacts/ContactsPage.test.tsx` | The status filter shows counts and filters the rows (R44). |
-| `pages/pipeline/Column.test.tsx` | Column totals and expected revenue. Won and Lost show 5 rows and "N more · Show all" (R60). |
-| `pages/pipeline/DealCard.test.tsx` | The Late badge replaces the date for late deals. The meter width matches the probability (R62). |
-| `pages/dashboard/FollowUps.test.tsx` | Overdue, Today and Next 7 days groups, the later count, and a ticked item leaving the list (R76). |
+| V | File | Key checks | Phase |
+|---|---|---|---|
+| V-F01 | `lib/format.test.ts` | `$12,500`, `$1.2M`, `$0`, "12 Nov 2026", "12 Nov 2026, 14:30", "Today" and "Yesterday" | 4 |
+| V-F02 | `lib/deals.test.ts` | Late check against a fixed today, expected revenue, greeting at 11:59, 12:00, 17:59 and 18:00, and initials | 4 |
+| V-F03 | `components/DataTable.test.tsx` | Search ignoring case, sort and reverse, 25 per page, "Showing 1–25 of N", default sorts, empty and no-match messages | 4 |
+| V-F04 | `components/ConfirmDialog.test.tsx` | Shows the name and the server's counts. Nothing is deleted until confirmed. | 4 |
+| V-F05 | `forms/DealForm.test.tsx` | Field messages. Probability fills in and can be overwritten. Contacts filtered by organization. Server messages shown next to fields. Save disabled while saving. | 5 |
+| V-F06 | `forms/ContactForm.test.tsx` | Organization required, and "Add organization" inline | 5 |
+| V-F07 | `pages/pipeline/Column.test.tsx` | Totals. Won and Lost show this month only, the latest 5 and "Show all". A deal closed last month is absent. | 6 |
+| V-F08 | `pages/pipeline/DealCard.test.tsx` | Late badge in place of the date, and meter width | 6 |
+| V-F09 | `pages/dashboard/FollowUps.test.tsx` | Overdue, Today and Next 7 days groups, the later count, and a ticked item leaving | 7 |
+| V-F10 | `components/ErrorBoundary.test.tsx`, `api/client.test.ts` | Fallback screen, 10 s timeout message, request ID shown, offline banner | 4 |
 
 ### End-to-end tests (Playwright with installed Chrome, `e2e/`)
 
-Every test runs through `e2e/fixtures.ts`, so each one fails on a console error (R7) or on any request leaving localhost (R2).
+Every test runs through `e2e/fixtures.ts` (V-E00), so each one fails on a console error or on any request that isn't local (R2, R7).
 
-| File | What it proves |
-|---|---|
-| `start.spec.ts` | Opening the app lands on the dashboard with sample data, and every section shows records (criterion 1, R4). |
-| `organizations.spec.ts` | Add, find by search, sort, edit and delete an organization. The delete warning gives the right counts, and afterwards its contacts and deals show "None" (criterion 2, R30, R31, R34). |
-| `contacts.spec.ts` | The same round for contacts, including the status filter and "Add organization" from inside the form (criteria 2 and 3, R45). |
-| `deals.spec.ts` | The same round for deals. Late deals stand out in the table. The deal form fills in the stage probability (criteria 2 and 4, R15, R44). |
-| `record-pages.spec.ts` | Each record page shows its links. The organization page shows the combined timeline (criterion 3, R50–R52). |
-| `activities.spec.ts` | Log a note, a call and an email with a follow-up on a contact and on a deal. They show on the timeline newest first, the deal's entries show on the main contact's timeline, and the follow-up shows on the dashboard until marked done (criterion 5, R53, R76). |
-| `pipeline.spec.ts` | Drag a card to another column, and its stage, probability and totals change at once. The deals table agrees. Drag within a column and between two cards, then reload, and the order holds. Add a deal in a column at that stage. A late card stands out. The keyboard drag works (criterion 4, R60–R66). |
-| `won-deal.spec.ts` | Moving a deal to Won updates the dashboard's won-this-month figure and revenue chart, sets the close date to today, adds the stage change to the timeline and recent activity, and makes the contact a customer (criterion 6, R16–R18, R77). |
-| `persistence.spec.ts` | Changes survive a reload, and survive a backend restart (criterion 2, R3). |
-| `commands.spec.ts` | After `clear --yes`, every screen shows its empty state and still works. After `seed --yes`, the sample data is back (criterion 2, R4, R78). |
-| `layout.spec.ts` | No horizontal scroll at 1024px and 1280px wide (R5). |
+| V | File | Key checks | Phase |
+|---|---|---|---|
+| V-E01 | `start.spec.ts` | Lands on the dashboard with sample data on every screen | 5 |
+| V-E02 | `organizations.spec.ts` | Add, search, sort, edit and delete. The delete warning's counts. Contacts and deals show "None" afterwards. | 5 |
+| V-E03 | `contacts.spec.ts` | The same round, plus the status filter and "Add organization" inside the form | 5 |
+| V-E04 | `deals.spec.ts` | The same round. Late deals stand out. The probability fills in from the stage. | 5 |
+| V-E05 | `record-pages.spec.ts` | Links on each page. The organization's combined timeline. A missing record's page. | 5 |
+| V-E06 | `pipeline.spec.ts` | Drag across and within columns, then reload. Add in a column. Late cards. Keyboard drag. Rollback when the API fails (mocked). Reload on 409. | 6 |
+| V-E07 | `won-deal.spec.ts` | Moving to Won updates won-this-month and the chart, sets today's close date, adds the timeline and recent activity entries, and makes the contact a customer | 7 |
+| V-E08 | `activities.spec.ts` | Log each type with a follow-up. It shows on the deal's and the contact's timelines, and on the dashboard until done. | 5 |
+| V-E09 | `commands.spec.ts` | After `clear --yes`, every screen is empty and works. After `seed --yes`, the data is back. | 8 |
+| V-E10 | `persistence.spec.ts` | Changes survive a reload and a backend restart | 8 |
+| V-E11 | `keyboard.spec.ts` | Add, edit, delete and drag with the keyboard only. Focus always visible. | 8 |
+| V-E12 | `layout.spec.ts` | No horizontal scroll at 1024px and 1280px | 8 |
+| V-S07–V-S10 | `security.spec.ts` | A script in a name shows as text and doesn't run. A `javascript:` website is refused in the form. The servers can't be reached on the computer's network address. A cross-site POST from another origin changes nothing. | 8 |
+| V-P01 | `perf/perf.spec.ts` | Page, API and search timings at 2 × volume against NFR-1 to NFR-3. Run in phase 8, outside the normal `npm test`. | 8 |
 
-### Checks that aren't automated
+### Checks done by hand
 
-- **Performance (phase 8):** with the large generated data set, each page shows within half a second and search keeps up with typing (R6).
-- **Fresh clone on Windows, Mac and Linux:** `npm run dev` from nothing, then a second run with the network off (criterion 1, R1, R2).
-- **Looks:** every screen compared by eye with mockup B and the brand rules (criterion 7).
-- **First-time use:** someone new answers the criterion 8 questions within a couple of clicks of the dashboard.
-- **Walkthrough and sign-off:** the full criterion 9 walkthrough by the coding agent, then the project owner's own review.
+| V | Check | Phase |
+|---|---|---|
+| V-M01 | The coding agent's full walkthrough, then the product owner's review (AC9) | 9 |
+| V-M02 | A fresh clone on Windows, macOS and Linux, then a second run with the network off (AC1, R1, R2) | 0 and 8 |
+| V-M03 | Kill the backend right after a save, restart, and find the change there (AC8, REL-1) | 8 |
+| V-M04 | Every screen against mockup B and the brand (SC5) | 7 and 9 |
+| V-M05 | Someone new answers the SC1 questions with no instructions | 9 |
+| V-M06 | Two weeks of real use, checking SC2–SC4. This is after release, not part of done. | After release |
