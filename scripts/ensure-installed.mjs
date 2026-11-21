@@ -45,7 +45,7 @@ const nodeMajor = Number(process.versions.node.split(".")[0]);
 if (nodeMajor < 24) {
   fail(
     `Accountable needs Node.js 24 or later, and this is Node ${process.versions.node}.\n` +
-      "Install the current LTS from https://nodejs.org, then run \"npm run dev\" again.",
+      'Install the current LTS from https://nodejs.org, then run "npm run dev" again.',
   );
 }
 
@@ -53,8 +53,8 @@ if (nodeMajor < 24) {
 const uv = spawnSync("uv", ["--version"], { encoding: "utf8" });
 if (uv.error || uv.status !== 0) {
   fail(
-    "Accountable needs uv to run its Python backend, and \"uv\" wasn't found.\n" +
-      "Install it from https://docs.astral.sh/uv/getting-started/installation/, open a new terminal, then run \"npm run dev\" again.",
+    'Accountable needs uv to run its Python backend, and "uv" wasn\'t found.\n' +
+      'Install it from https://docs.astral.sh/uv/getting-started/installation/, open a new terminal, then run "npm run dev" again.',
   );
 }
 

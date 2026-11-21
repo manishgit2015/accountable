@@ -1,0 +1,223 @@
+$ (cd frontend && npx vite build --outDir <scratchpad>/vite-build --emptyOutDir)   (ad hoc: no documented build command; ADR-010 runs the dev servers)
+[36mvite v8.3.8 [32mbuilding client environment for production...[36m[39m
+transforming...
+✓ 153 modules transformed.
+rendering chunks...
+computing gzip size...
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/index.html                                                     0.43 kB │ gzip:  0.27 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-greek-400-normal-C190GLew.woff2          4.22 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-greek-500-normal-JpySY46c.woff2          4.28 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-greek-600-normal-H7WoG9Et.woff2          4.30 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-cyrillic-400-normal-BEIGL1Tu.woff2       5.32 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-cyrillic-500-normal-DmUKJPL_.woff2       5.35 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-vietnamese-400-normal-CqNFfHCs.woff      5.37 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-cyrillic-600-normal-EVf6-Yzo.woff2       5.38 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-vietnamese-500-normal-DNRqzVM1.woff      5.47 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-vietnamese-600-normal-OWROknRo.woff      5.47 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-greek-400-normal-B9oWc5Lo.woff           5.66 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-greek-600-normal-mc2nkWzM.woff           5.70 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-greek-500-normal-D7SFKleX.woff           5.72 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-sans-latin-ext-700-normal-ClYbKGw-.woff2     6.78 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-sans-latin-ext-400-normal-Q_nF8v4l.woff2     6.85 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-sans-latin-ext-600-normal-BsaQcF38.woff2     6.94 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-cyrillic-400-normal-ugxPyKxw.woff        6.97 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-sans-latin-ext-500-normal-CTEe1bJa.woff2     6.98 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-cyrillic-600-normal-8K4wrrwR.woff        7.02 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-cyrillic-500-normal-DJqRU3vO.woff        7.02 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-latin-ext-400-normal-Bc8Ftmh3.woff2      7.33 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-latin-ext-600-normal-BfB_LPfz.woff2      7.51 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-latin-ext-500-normal-Cut-4mMH.woff2      7.52 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-sans-latin-ext-400-normal-r32jotim.woff      8.96 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-sans-latin-ext-700-normal-BQc-7cTM.woff      8.96 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-sans-latin-ext-500-normal-CAxz3nsc.woff      9.06 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-sans-latin-ext-600-normal-DMks36a2.woff      9.10 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-serif-latin-ext-400-normal-CFCUzsTy.woff     9.86 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-latin-ext-400-normal-fXTG6kC5.woff      10.12 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-latin-ext-600-normal-DObL3zCW.woff      10.31 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-latin-ext-500-normal-ckzbgY84.woff      10.33 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-serif-latin-ext-400-italic-D7-lnxEk.woff    10.50 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-serif-latin-ext-400-normal-C2je3j2s.woff2   11.60 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-serif-latin-ext-400-italic-C9HzH3YL.woff2   12.38 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-sans-latin-400-normal-DRC__1Mx.woff2        16.86 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-sans-latin-700-normal-CYfAanHo.woff2        17.01 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-sans-latin-500-normal-Dk9ku72i.woff2        17.23 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-sans-latin-600-normal-B7fBEWYG.woff2        17.40 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-serif-latin-400-normal-BVbkICAY.woff        18.33 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-serif-latin-400-italic-u__WvvIK.woff        19.26 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-serif-latin-400-normal-DnYpCC2O.woff2       21.03 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-latin-400-normal-V6pRDFza.woff2         21.16 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-sans-latin-400-normal-D1W7dsQl.woff         21.24 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-sans-latin-700-normal-DfAjL1vF.woff         21.28 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-sans-latin-500-normal-Z6ESRlEs.woff         21.65 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-sans-latin-600-normal-B9e8oLYv.woff         21.67 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-latin-500-normal-BWZEU5yA.woff2         21.83 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-latin-600-normal-C8RAYTDA.woff2         21.86 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/instrument-serif-latin-400-italic-DKMiL14s.woff2       22.12 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-latin-400-normal-6-qcROiO.woff          27.49 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-latin-600-normal-BfsvjouI.woff          28.18 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/jetbrains-mono-latin-500-normal-CJOVTJB7.woff          28.20 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/index-Cmt9QrnQ.css                                     42.08 kB │ gzip: 22.31 kB
+../../../Users/manis/AppData/Local/Temp/claude/e0d95ef673b83a62/83b63a4a-f8ff-4f5e-89d9-df3fbf53befa/scratchpad/vite-build/assets/index-BnW88wsW.js                                     294.62 kB │ gzip: 93.18 kB
+
+[33m[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "../node_modules/@tanstack/react-query/build/modern/useQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../node_modules/@tanstack/react-query/build/modern/useQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+[39m
+[33m[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "../node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+[39m
+[33m[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "../node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+[39m
+[33m[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "../node_modules/@tanstack/react-query/build/modern/useQueries.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../node_modules/@tanstack/react-query/build/modern/useQueries.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+[39m
+[33m[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "../node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+[39m
+[33m[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "../node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+[39m
+[33m[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "../node_modules/@tanstack/react-query/build/modern/useIsFetching.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../node_modules/@tanstack/react-query/build/modern/useIsFetching.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+[39m
+[33m[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "../node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+[39m
+[33m[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "../node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+[39m
+[33m[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "../node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+[39m
+[33m[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "../node_modules/@tanstack/react-query/build/modern/useMutationState.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../node_modules/@tanstack/react-query/build/modern/useMutationState.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+[39m
+[33m[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "../node_modules/@tanstack/react-query/build/modern/useMutation.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../node_modules/@tanstack/react-query/build/modern/useMutation.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+[39m
+[33m[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "../node_modules/@tanstack/react-query/build/modern/IsRestoringProvider.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../node_modules/@tanstack/react-query/build/modern/IsRestoringProvider.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+[39m
+[33m[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "../node_modules/react-router/dist/production/index.js" may not be preserved when bundling.
+    [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../node_modules/react-router/dist/production/index.js:11:1 [38;5;246m][0m
+    [38;5;246m│[0m
+ [38;5;246m11 │[0m "use client";
+ [38;5;240m   │[0m ──────┬──────  
+ [38;5;240m   │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m   │[0m 
+ [38;5;240m   │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m────╯[0m
+[39m
+[33m[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "../node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+[39m
+[33m[33m[MODULE_LEVEL_DIRECTIVE] [0mThe semantics of the module level directive "use client" in "../node_modules/@tanstack/react-query/build/modern/useBaseQuery.js" may not be preserved when bundling.
+   [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../node_modules/@tanstack/react-query/build/modern/useBaseQuery.js:1:1 [38;5;246m][0m
+   [38;5;246m│[0m
+ [38;5;246m1 │[0m "use client";
+ [38;5;240m  │[0m ──────┬──────  
+ [38;5;240m  │[0m       ╰──────── module level directive may not be preserved
+ [38;5;240m  │[0m 
+ [38;5;240m  │[0m [38;5;115mHelp[0m: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+[38;5;246m───╯[0m
+[39m
+[32m✓ built in 917ms[39m
+EXIT CODE: 0

@@ -1,0 +1,35 @@
+$ ACCOUNTABLE_DB=<temp> uv run pytest --cov=app --cov-report=term-missing   (ad hoc: no documented coverage command yet; T4.5)
+........................................................................ [ 30%]
+........................................................................ [ 60%]
+........................................................................ [ 90%]
+......................                                                   [100%]
+============================== warnings summary ===============================
+.venv\Lib\site-packages\coverage\core.py:108
+  C:\github\accountable\.venv\Lib\site-packages\coverage\core.py:108: CoverageWarning: Couldn't import C tracer: DLL load failed while importing tracer: An Application Control policy has blocked this file. (no-ctracer); see https://coverage.readthedocs.io/en/7.17.4/messages.html#warning-no-ctracer
+    warn(f"Couldn't import C tracer: {IMPORT_ERROR}", slug="no-ctracer", once=True)
+
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\github\accountable\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.13-final-0 _______________
+
+Name                              Stmts   Miss  Cover   Missing
+---------------------------------------------------------------
+backend\app\__init__.py               0      0   100%
+backend\app\config.py                66     17    74%   43, 46, 56, 59, 67-72, 76, 106, 111-115
+backend\app\db.py                    55      0   100%
+backend\app\errors.py                91      3    97%   87, 148-149
+backend\app\logging.py               65      0   100%
+backend\app\main.py                  69     27    61%   57-66, 84-105, 118
+backend\app\routers\__init__.py       0      0   100%
+backend\app\routers\health.py        18      4    78%   19-22
+backend\app\rules.py                 68      0   100%
+backend\app\schemas.py              381      5    99%   116, 163, 189, 194-195
+backend\app\security.py              73      5    93%   72-74, 97, 115
+---------------------------------------------------------------
+TOTAL                               886     61    93%
+238 passed, 2 warnings in 5.61s
+EXIT CODE: 0

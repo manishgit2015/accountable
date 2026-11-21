@@ -43,3 +43,289 @@ Requirements covered: ENG-10
 Open issues: none.
 
 Checkpoint C0: PASSED. Environment confirmed, E-1 to E-5 decided. Next: Phase 1 (T1.1).
+
+----------------------------------------------------------------------
+T1.1  Root workspace and launcher
+Date: 2026-11-21
+Commands run:
+  npm install -D concurrently @playwright/test            -> concurrently 10.0.7, @playwright/test 1.65.1
+  npm install -D vite typescript@~6.0.0 --workspace frontend -> vite 8.3.8, typescript 6.0.x
+    (TypeScript 7 is "latest", but typescript-eslint supports <6.1, so 6.0 is pinned.)
+  uv add fastapi uvicorn sqlalchemy alembic pydantic; uv add --dev pytest pytest-cov httpx ruff pip-audit
+    -> uv downloaded a managed CPython 3.12.13 (expected, see T0.1). Lower bounds pinned in pyproject.toml;
+       exact versions in uv.lock (fastapi 0.165.0, starlette 1.10.0, uvicorn 0.54.0, sqlalchemy 2.1.9,
+       alembic 1.20.1, pydantic 2.14.4, pytest 9.2.0, ruff 0.17.6, pip-audit 2.10.1).
+  npm run dev (run 1, no install markers yet, Git Bash, ACCOUNTABLE_DB=<scratchpad>/dev1.db)
+    -> "installing the frontend packages" (npm install), "installing the backend packages" (uv sync),
+       "ready. Open http://127.0.0.1:5173", then both servers: Vite "Local: http://127.0.0.1:5173/",
+       API "Accountable 0.1.0 starting. Open http://127.0.0.1:5173", health 200 through the proxy
+       about 6 s after the command started.
+  npm.cmd run dev (run 2, Windows PowerShell terminal, ACCOUNTABLE_DB=<scratchpad>/dev2.db), started 12:42:47.265
+    -> no install (markers current). Vite printed http://127.0.0.1:5173/ and the API logged its start-up
+       lines at 12:42:50 (about 3 s: NFR-5 <= 15 s met).
+  Ctrl+C in that terminal -> concurrently stopped both: "[web] ... exited with code 1 / Sending SIGTERM to
+    other processes.. / [api] ... exited with code 1". Get-NetTCPConnection on 8000 and 5173 afterwards:
+    no listeners. PASS.
+Results: PASS for "installs and starts", "second run makes no install", "Ctrl+C stops both", NFR-5.
+  Not run: a true fresh clone (the new files aren't committed yet). Run 1 used this checkout with no install
+  markers, so it exercised the install path but not a download from empty. Fresh clones are V-M02 (T5.1).
+Files changed: package.json, package-lock.json, pyproject.toml, uv.lock, .python-version,
+  scripts/ensure-installed.mjs, frontend/package.json (dev script; dependencies added in T1.7)
+Requirements covered: R1, R2 (no network when installed: install markers are content hashes of the lockfiles),
+  DEP-3, DEP-5 (version 0.1.0 in both manifests), NFR-5
+Open issues / notes:
+  - On this machine PowerShell's execution policy blocks npm.ps1 ("running scripts is disabled"), so
+    `npm run dev` typed in PowerShell fails before our code runs; `npm.cmd run dev` works. Worth a line in
+    the STATUS runbook (T5.3).
+  - On Windows, Ctrl+C makes cmd ask "Terminate batch job (Y/N)?" after the servers have stopped. That's
+    npm.cmd's standard behaviour, not concurrently misbehaving (no escalation needed).
+  - Killing `npm run dev` from Git Bash's `timeout` (SIGTERM, not Ctrl+C) left both server processes running;
+    they were stopped by hand. Ctrl+C, the documented way, works.
+
+----------------------------------------------------------------------
+T1.2  Backend skeleton, configuration, logging, errors and health
+Date: 2026-11-21
+Commands run:
+  uv run pytest backend/tests/test_logging.py backend/tests/test_errors.py backend/tests/test_smoke.py
+    -> 12 passed
+  Manual: python -m app.main with ACCOUNTABLE_API_PORT=8011 and a temporary database
+    curl /api/health -> 200 {"status":"ok","database":"ok","schema_version":"0001_initial","app_version":"0.1.0"}
+                        with an x-request-id header
+    second copy on the same port -> "Accountable can't start: Port 8011 is already in use. Close the other copy
+                        of Accountable, or the program using that port, and run npm run dev again." exit=1 (REL-9)
+Sample log line (backend/logs/accountable.log):
+  2026-11-21 12:42:55 INFO request id=d57a8923a1de44b1b620251b51103561 method=GET path=/api/health status=200 duration_ms=3
+Design notes:
+  - config.Settings (DEP-2 variables, plus ACCOUNTABLE_RELOAD per E-2) and one Clock (SystemClock / FixedClock).
+  - Middleware order: request ID and logging (outermost), security, unexpected errors (innermost).
+  - Errors: AppError, validation (422 with one message per field, 400 for malformed JSON), HTTP errors,
+    locked database -> 503 busy, anything else -> 500 internal with the stack trace only in the log.
+  - The engine uses hide_parameters=True so a database error never puts field values in the log (SEC-8).
+  - FastAPI's /docs, /redoc and /openapi.json are off: Swagger UI loads from a CDN (R2).
+Files changed: backend/app/__init__.py, main.py, config.py, logging.py, errors.py, routers/__init__.py,
+  routers/health.py; tests: backend/tests/test_logging.py, test_errors.py, test_smoke.py (+ conftest.py, T1.8)
+Requirements covered: DEP-2, OBS-1 to OBS-5, SEC-8, spec 5.2 (400, 404, 422, 500, 503), REL-6, REL-9 (port)
+Open issues: V-B14 is partial: 409 and the record 404s come with the Phase 2 endpoints. Starlette warns that
+  its TestClient will want `httpx2` instead of `httpx` in future (a deprecation warning only).
+
+----------------------------------------------------------------------
+T1.3  Security middleware
+Date: 2026-11-21
+Commands run:
+  uv run pytest backend/tests/test_security.py -> 41 passed
+  Manual (running server): Host: evil.example -> 403 forbidden_origin; POST with Origin https://evil.example -> 403
+  Through the Vite proxy (T1.1 run 2 and the browser in T1.7): GET /api/health via 127.0.0.1:5173 -> 200,
+    so the Host the proxy passes on (127.0.0.1:5173) is accepted (RK-3).
+Cases: local Host on 8000/5173/8001/5174 accepted; foreign, portless, wrong-port, LAN and [::1] Hosts 403 (V-S01);
+  POST/PATCH/DELETE with a foreign, API-port, "null" or missing Origin 403 and the endpoint never ran (V-S02);
+  no access-control-* header on GET, POST or a preflight OPTIONS (V-S03); 2 MB body 413, streamed 1.5 MB body 413,
+  just under 1 MB accepted, text/plain, form, multipart and missing Content-Type 415 (V-S06).
+Decision within the spec: a changing request with no Origin header is refused (SEC-3: "isn't the app's own").
+  Browsers always send Origin on POST/PATCH/DELETE, so the app is unaffected; other tools must send it.
+Files changed: backend/app/security.py, backend/app/main.py (registration), backend/tests/test_security.py
+Requirements covered: SEC-1 (servers bind 127.0.0.1), SEC-2, SEC-3, SEC-7 (size and type), ADR-002
+Open issues: a good changing request through the proxy is first exercised end to end in Phase 3, when a write
+  endpoint exists. The unknown-field 422 of V-S06 is checked on the schemas (T1.6), and through the API in
+  Phase 2. V-S10 (socket check) is T4.1.
+
+----------------------------------------------------------------------
+T1.4  Database layer and initial migration
+Date: 2026-11-21
+Commands run:
+  uv run pytest backend/tests/test_db.py backend/tests/test_migrations.py -> 19 passed
+  ACCOUNTABLE_DB=<temp>/a.db uv run --directory backend alembic upgrade head; then alembic current
+    -> "0001_initial (head)"
+Design notes:
+  - Five tables in Core with every spec 6.1 constraint as a named CHECK or FK, and the spec 6.2 indexes
+    (the stage_changes.deal_id FK is covered by ix_stage_changes_deal_id_changed_at, which leads with it).
+  - The connection hook (E-1) runs the four PRAGMAs in autocommit mode, then switches Python 3.12's sqlite3 to
+    autocommit=False, so every statement, DDL included, runs inside a transaction. That's what makes a failed
+    migration roll back completely without any other text SQL (no "BEGIN" statement).
+  - Migration 0001 is written out in full (not imported from db.py); a test checks it matches db.metadata.
+  - Start-up (main.run): port check, then upgrade_to_head, then the start-up log lines. A damaged file stops
+    start-up with one line and is left byte-for-byte unchanged.
+Tests: settings read back (foreign_keys 1, wal, synchronous 2 = FULL, busy_timeout 5000); bad status, stage, value,
+  probability and organization refused by the database; one-parent check; R31-R33 FK behaviour on the rows;
+  indexes; rollback; a source scan showing the PRAGMAs in the hook are the only text SQL (V-B02, E-1);
+  empty -> head, re-run is a no-op, migration = metadata, a failure half way leaves no tables, a damaged
+  file is unchanged (V-B13 part).
+Files changed: backend/app/db.py, backend/alembic.ini, backend/migrations/env.py, script.py.mako,
+  versions/0001_initial.py, backend/app/main.py (start-up migrate), backend/tests/test_db.py, test_migrations.py
+Requirements covered: spec 6.1-6.3, REL-1, REL-2, REL-9, ADR-004, DEP-4, E-1, ENG-4, SEC-5
+Open issues: V-B13 "from the previous version with data" needs a second migration, and is added then.
+
+----------------------------------------------------------------------
+T1.5  Business rules
+Date: 2026-11-21
+Commands run:
+  uv run pytest backend/tests/test_rules.py   (before rules.py existed) -> collection error, no app.rules (red)
+  uv run pytest backend/tests/test_rules.py --cov=app.rules --cov-report=term-missing
+    -> 59 passed; backend/app/rules.py 68 statements, 0 missed, 100%
+Covered: every spec 4.2 row (created at open and closed stages, open -> open, any -> Won, any -> Lost,
+  Won/Lost -> open for every pair, same stage, saved with no stage change), R15 hand-set probability kept until
+  the next change and a probability sent with the change kept, R19 late (open only, before today), R20 expected
+  revenue with halves rounding up, section 6.4 top position, midpoint, the 1e-6 renumber condition, renumbering.
+Files changed: backend/app/rules.py, backend/tests/test_rules.py
+Requirements covered: R14-R20, R24, spec 4.2, spec 6.4
+Open issues (sent to the engineer for confirmation): spec 4.2's "Created at a stage" row doesn't mention
+  closed_at. Implemented: a deal created directly at Won or Lost gets closed_at = its creation time (it isn't
+  open, and spec 6.1 says closed_at is null while open), with the contact unchanged as the row says.
+
+----------------------------------------------------------------------
+T1.6  API contract (schemas)
+Date: 2026-11-21
+Commands run:
+  uv run pytest backend/tests/test_organizations.py test_deals.py test_contacts.py test_activities.py -> 107 passed
+Contract: request models (extra="forbid") OrganizationCreate/Update, ContactCreate/Update, DealCreate/Update,
+  DealMove, ActivityCreate/Update; response models Organization, Contact, Deal, MoveResult, Activity, Source,
+  TimelineEntry, Organization/Contact/DealDeleteImpact, Dashboard (Summary, WonThisMonth, WinRate, MonthFigures,
+  FunnelStage, OpenStage, FollowUp, FollowUps, DashboardCounts), Health. Field names and order are checked
+  against spec 5.3 in the tests, and spec 5.5's example validates and round-trips.
+R21 validators: trimming and blank = empty, names 1-200, email shape and 254, phone characters and 40, website
+  http/https kept, bare domain prefixed, other schemes (javascript:, data:, mailto:, ftp:) refused, 2,048 after
+  the prefix, industry and job title 100, notes and description 5,000, value 0-1e9 and probability 0-100 as
+  whole numbers (no floats, strings or booleans), real YYYY-MM-DD dates, local date-times with no time zone,
+  positive IDs, exactly one activity parent, PATCH can't null a required field (R34: links left out aren't
+  checked), unknown fields 422 "This field isn't allowed.".
+Files changed: backend/app/schemas.py, backend/app/errors.py (field messages), backend/tests/test_organizations.py,
+  test_deals.py, test_contacts.py, test_activities.py
+Requirements covered: R10-R13, R21, spec 5.1-5.5 shapes, SEC-6 (scheme check), SEC-7 (unknown fields)
+Open issues (sent to the engineer for confirmation before the contract freezes at C1):
+  - spec 5.5 doesn't give item shapes for follow_ups.* and recent. Implemented: a follow-up is the Activity
+    shape plus `source` {kind, id, name}; a recent item is the TimelineEntry shape.
+  - Delete impact: one model per resource with only the keys that apply (organization: contacts_kept,
+    deals_kept; contact: deals_kept, activities_deleted; deal: activities_deleted, stage_changes_deleted), as
+    spec 5.3's rule says, rather than its four-key example.
+
+----------------------------------------------------------------------
+Engineer decisions on the Phase 1 escalations
+Date: 2026-11-21 (relayed by the planning session)
+  D-1  Frontend dev dependencies not in plan 1.4: APPROVED @types/react, @types/react-dom, @types/node,
+       typescript-eslint, eslint-plugin-react-hooks, @testing-library/jest-dom. NOT approved:
+       @testing-library/user-event (not added). Recorded in docs/plan.md section 1.4 as an approved change
+       under change control.
+  D-2  Dashboard item shapes (spec 5.5 gives none): APPROVED as proposed. A follow-up item is the Activity
+       fields plus `source` {kind, id, name} (schemas.FollowUp). A recent item is the Timeline entry shape.
+  D-3  A deal created directly at Won or Lost: APPROVED as proposed. closed_at = its creation time, and the
+       contact's status doesn't change (rules.creation_effects).
+  docs/spec.md is unchanged. The planning session raises the spec wording with the engineer separately.
+
+----------------------------------------------------------------------
+T1.7  Frontend skeleton
+Date: 2026-11-21
+Commands run:
+  npm install --workspace frontend <the runtime list in plan 1.4>  -> react 19.3, react-router 8.5, @tanstack/react-query 5.108,
+    @tanstack/react-table 9.3, react-hook-form 7.92, zod 4.6, recharts 3.11, @dnd-kit/core 6.3, @dnd-kit/sortable 10.0,
+    @radix-ui/react-dialog 1.3, @radix-ui/react-dropdown-menu 2.2, lucide-react 1.77, date-fns 4.4, @fontsource x3 5.3
+  npm install -D --workspace frontend vitest @testing-library/react jsdom eslint prettier
+  npm install -D --workspace frontend <D-1 packages>
+  npx tsc -p tsconfig.json; npx tsc -p tsconfig.node.json -> no errors (before D-1: TS7016 / TS7026 on every JSX file)
+  Browser (built-in, npm.cmd run dev, http://127.0.0.1:5173/):
+    the top bar shows the wordmark, Dashboard (active Midnight pill), Pipeline, Deals, Contacts, Organizations, "Add deal";
+    the panel shows "Connected to Accountable 0.1.0", so the client reached /api/health through the proxy (200 in the API log);
+    console: only Vite debug lines and React's DevTools info line, no errors;
+    network: every request to 127.0.0.1:5173, fonts from @fontsource via Vite (no CDN). One /api/health was
+    ERR_ABORTED: React StrictMode mounts twice in development and React Query cancels the first request.
+  Vitest: src/components/ErrorBoundary.test.tsx (3) and src/api/client.test.ts (9) -> 12 passed (in T1.8's run)
+  Playwright: e2e/smoke.spec.ts -> 1 passed (in T1.8's run)
+Screenshot: taken in the built-in browser at 800x600 during the check (not saved to the repo).
+  It matches mockup 1's top bar: a floating white rounded panel, no rule under it, and page background #F0F4F5.
+Design notes: tokens.css copies the mockup values (no Google Fonts import), adds stage tokens, and uses only tokens in
+  global.css. Badges follow ADR-017 (Qualified uses --cerulean-text, and Lost and Late use --raspberry-text, with white text).
+  The routes and the top bar both use SECTIONS in TopBar.tsx. There's an error boundary per route, keyed by path.
+  The query client retries reads once and changes never (REL-5). client.ts is the only fetch, with a 10 s
+  timeout, the spec 5.2 error format, the request ID as "Reference: xxxxxxxx", and snake_case <-> camelCase.
+  "Add deal" is shown but disabled until the deal form exists (T3.5). Section pages are placeholders until Phase 3.
+Files changed: frontend/package.json, vite.config.ts, tsconfig.json, tsconfig.node.json, index.html, src/main.tsx, src/App.tsx,
+  src/styles/tokens.css, src/styles/global.css, src/api/client.ts, src/components/TopBar.tsx, Panel.tsx, Button.tsx, Badge.tsx,
+  ErrorBoundary.tsx
+Requirements covered: spec 3.9 (top bar, tokens, fonts, badges), R2 (no CDN), SEC-1 (Vite on 127.0.0.1, proxy by address),
+  REL-4, REL-12, OBS-3 (client side), RK-2
+Open issues: V-F10 is partial; the offline banner comes in T3.1. The mockup comparison by eye is V-M04 (T5.2).
+
+----------------------------------------------------------------------
+T1.8  Test harness and lint gate
+Date: 2026-11-21
+Commands run:
+  npm test   -> "=== backend tests" 238 passed; "=== frontend tests" 2 files, 12 passed; "=== e2e tests" 1 passed;
+               "All tests passed: backend, frontend, e2e." exit 0. Each run uses a new temporary ACCOUNTABLE_DB
+               (for example %TEMP%\accountable-test-s07Rxq\test.db) and ports 8001/5174.
+               After the run, nothing was listening on 8001 or 5174.
+  Forced failure: added backend/tests/test_forced_failure.py (assert 1 == 2), then ran npm test
+    -> "1 failed, 238 passed", "The backend tests failed (exit code 1). Stopping here.", npm test exit code 1.
+    Removed the file and confirmed it's gone.
+  V-E00 guard check: added a temporary e2e/guard-check.spec.ts (one console.error, one fetch to https://example.com/)
+    -> both tests FAILED with "Console error: deliberate console error" and
+       "Request outside this computer: https://example.com/". The spec was removed, along with test-results/.
+  ESLint fetch rule check: a temporary src/components/FetchProbe.ts with fetch() and window.fetch()
+    -> 2 errors (no-restricted-globals, no-restricted-properties). The file was removed.
+  npm run lint -> Ruff check "All checks passed!", ruff format --check "25 files already formatted",
+    eslint (no findings), prettier --check "All matched files use Prettier code style!" for frontend and for
+    e2e, playwright.config.ts and scripts, tsc on both projects (no errors). Exit 0.
+Design notes:
+  - scripts/run-tests.mjs: Node built-ins, no shell. It refuses backend/data/accountable.db (exit 2), runs the
+    suites in order and stops at the first failure. A suite name filters (npm test -- backend|frontend|e2e ...).
+  - backend/tests/conftest.py stops the run if ACCOUNTABLE_DB is the default path. Every fixture uses a tmp_path
+    database, migrated, with FixedClock(2026-11-21 14:30) and a TestClient that looks like the proxied browser.
+  - playwright.config.ts: channel chrome, one worker, webServer for both servers on 8001/5174 with the test
+    database; it refuses to run without ACCOUNTABLE_DB.
+  - e2e/fixtures.ts: an automatic fixture with reset, page.clock.setFixedTime, the console and pageerror guard, and
+    the non-local request guard. The reset calls `app.cli seed --yes` once backend/app/cli.py exists (T2.7);
+    until then each run's database is new.
+  - Vitest: jsdom, jest-dom matchers, a ResizeObserver stub, Date fixed to 2026-11-21 14:30 (timers stay real
+    unless a test fakes them), cleanup after each test.
+  - ESLint: typescript-eslint strict, react-hooks recommended, no fetch or XMLHttpRequest outside src/api/
+    (ENG-1), no dangerouslySetInnerHTML (SEC-6).
+  - Ruff: E, F, W, I, UP, B, SIM, and ANN on app code (ANN401 allowed at typed boundaries), line length 120.
+  - Root scripts so far: predev, dev, test, lint, format. test:perf, seed, clear and audit are added by
+    T4.2, T2.7 and T4.1.
+Files changed: scripts/run-tests.mjs, playwright.config.ts, backend/tests/conftest.py, test_smoke.py,
+  frontend/vitest.config.ts, src/test/setup.ts, eslint.config.js, .prettierrc, e2e/fixtures.ts, e2e/smoke.spec.ts,
+  pyproject.toml (pytest and Ruff settings), package.json and frontend/package.json (scripts, D-1 packages),
+  docs/plan.md (section 1.4, D-1 recorded)
+Requirements covered: ENG-2, ENG-3, ENG-7, spec 13.2, V-E00, RK-23
+Open issues: the end-to-end servers write their request lines to backend/logs/accountable.log (the log, not the
+  database). Starlette's TestClient httpx deprecation warning, as noted in T1.2.
+
+Checkpoint C1: PASSED on Windows 11 (this machine).
+  - npm run dev starts the empty app and prints http://127.0.0.1:5173 (T1.1). macOS and Linux are T5.1.
+  - npm test passes, and npm run lint passes (T1.8).
+  - A deliberately failing test made npm test exit 1, and was then removed (T1.8).
+  - The contract (schemas.py, with D-2) and the schema (0001_initial) are frozen for Phases 2 and 3.
+  Not committed by the agent. The engineer commits "Build: phase 1".
+
+----------------------------------------------------------------------
+VERIFICATION RUN (engineer request, after checkpoint C1)
+Date: 2026-11-21
+Full outputs: docs/evidence/2026-11-21-verification/ (one .txt file per command, each ending with its exit code)
+Commands run and results:
+  01  npm test                                   PASS  exit 0. Backend 238 passed, frontend 12 passed, e2e 1 passed.
+  02  npm test with a deliberately failing test   PASS  exit 1 for each suite (backend, frontend, e2e) and for a full
+      in each suite (then deleted)                      run, which stopped at the failing frontend suite. Proves
+                                                        `npm test` fails when any test fails. Temporary tests removed.
+  03  npm run lint                               PASS  exit 0. Ruff check and format, ESLint, Prettier, tsc.
+  04  uv run pytest --cov=app (ad hoc)           PASS  exit 0. Backend coverage 93% overall; rules.py 100%,
+                                                        db.py 100%, logging.py 100%, errors.py 97%, schemas.py 99%,
+                                                        security.py 93%, config.py 74%, main.py 61%. services/ doesn't
+                                                        exist yet (Phase 2), so the 90% target (T4.5) can't be judged.
+  05  vite build to the scratchpad (ad hoc)      PASS  exit 0. Built in 917 ms. Warnings: "use client" directives in
+                                                        @tanstack/react-query are dropped when bundling. Harmless for a
+                                                        browser-only app (no server components). No build command is
+                                                        documented: the MVP runs the dev servers (ADR-010).
+  06  npm audit --audit-level=high               PASS  exit 0. found 0 vulnerabilities.
+  07  uv run pip-audit                           BLOCKED exit 2. Windows Application Control blocked pip-audit.exe
+                                                        (an OS policy on this machine, not an app defect).
+      uv run python -m pip_audit                 PASS  exit 0. No known vulnerabilities found.
+  08  npm test (final, after the AGENTS.md change) PASS exit 0. Same counts as 01.
+Not available:
+  - Frontend coverage: no Vitest coverage provider is installed, and installing one needs approval (ENG-5).
+  - Most end-to-end and integration coverage: only the Phase 1 smoke test exists. The rest come in Phases 2 to 4.
+Warnings (not failures):
+  - Starlette: using httpx with its TestClient is deprecated in favour of httpx2.
+  - coverage.py: its C tracer DLL was blocked by Windows Application Control, so it fell back to the slower Python
+    tracer (results unaffected).
+Defects found: none. Nothing needed fixing.
+Recommendation for T4.1: the `npm run audit` script should call `uv run python -m pip_audit`, which works under this
+  machine's Application Control policy, rather than the pip-audit.exe launcher.
+Change control: AGENTS.md (new "Checking your work" section) and docs/evidence/ (saved command outputs) are outside
+  plan section 1. Both were added at the engineer's request. No application behaviour changed.

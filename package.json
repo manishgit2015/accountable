@@ -12,7 +12,10 @@
   ],
   "scripts": {
     "predev": "node scripts/ensure-installed.mjs",
-    "dev": "concurrently --kill-others --names api,web --prefix-colors cyan,green \"uv run --no-sync --directory backend python -m app.main\" \"npm run dev --workspace frontend\""
+    "dev": "concurrently --kill-others --names api,web --prefix-colors cyan,green \"uv run --no-sync --directory backend python -m app.main\" \"npm run dev --workspace frontend\"",
+    "test": "node scripts/run-tests.mjs",
+    "lint": "uv run ruff check backend && uv run ruff format --check backend && npm run lint --workspace frontend && prettier --config frontend/.prettierrc --check e2e playwright.config.ts scripts",
+    "format": "uv run ruff format backend && npm run format --workspace frontend && prettier --config frontend/.prettierrc --write e2e playwright.config.ts scripts"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.1",

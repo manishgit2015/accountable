@@ -1,0 +1,10 @@
+Verification run, 2026-11-21 (after checkpoint C1). Each file holds a command's full output and ends with its exit code.
+01-npm-test.txt                    npm test: PASS (backend 238, frontend 12, e2e 1)
+02-npm-test-fails-on-failure.txt   a deliberately failing test in each suite gives exit 1: PASS
+03-npm-run-lint.txt                npm run lint: PASS
+04-backend-coverage.txt            pytest --cov=app: PASS, 93% overall, rules.py 100%
+05-frontend-build.txt              vite build (ad hoc): PASS, with harmless "use client" warnings
+06-npm-audit.txt                   npm audit --audit-level=high: PASS, 0 vulnerabilities
+07-pip-audit.txt                   pip-audit.exe BLOCKED by Windows Application Control; python -m pip_audit: PASS
+08-npm-test-final.txt              npm test after the AGENTS.md change: PASS
+Details and notes: docs/build_logs.log ("VERIFICATION RUN").

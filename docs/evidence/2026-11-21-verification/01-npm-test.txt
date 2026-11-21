@@ -1,0 +1,50 @@
+$ npm test
+
+> accountable@0.1.0 test
+> node scripts/run-tests.mjs
+
+
+=== backend tests (database C:\Users\manis\AppData\Local\Temp\accountable-test-83TwPs\test.db) ===
+
+........................................................................ [ 30%]
+........................................................................ [ 60%]
+........................................................................ [ 90%]
+......................                                                   [100%]
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\github\accountable\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+238 passed, 1 warning in 1.67s
+
+=== frontend tests (database C:\Users\manis\AppData\Local\Temp\accountable-test-83TwPs\test.db) ===
+
+
+ RUN  v5.1.1 C:/github/accountable/frontend
+
+
+ Test Files  2 passed (2)
+      Tests  12 passed (12)
+   Start at  12:54:41
+   Duration  1.32s (environment 74%, setup 18%, tests 6%, transform 1%, import 1%)
+
+
+=== e2e tests (database C:\Users\manis\AppData\Local\Temp\accountable-test-83TwPs\test.db) ===
+
+[WebServer] 2026-11-21 12:54:44 INFO Accountable 0.1.0 starting. Open http://127.0.0.1:5174
+[WebServer] 2026-11-21 12:54:44 INFO database C:\Users\manis\AppData\Local\Temp\accountable-test-83TwPs\test.db (schema 0001_initial, new)
+[WebServer] 2026-11-21 12:54:44 INFO sample data loaded: no
+[WebServer] 2026-11-21 12:54:44 INFO API on http://127.0.0.1:8001
+[WebServer] 2026-11-21 12:54:44 INFO request id=8261ac9fe2f6498cb9ef0935df6bea00 method=GET path=/api/health status=200 duration_ms=12
+
+Running 1 test using 1 worker
+
+[WebServer] 2026-11-21 12:54:47 INFO request id=a403501db2644c43bb0f0cc8a9b2bc53 method=GET path=/api/health status=200 duration_ms=2
+[WebServer] 2026-11-21 12:54:47 INFO request id=87606460b1434a149f31c15ef436ba5f method=GET path=/api/health status=200 duration_ms=2
+  ok 1 e2e\smoke.spec.ts:5:1 › R1 the app opens on the dashboard with the top bar and reaches the API (496ms)
+
+  1 passed (4.8s)
+
+All tests passed: backend, frontend, e2e.
+EXIT CODE: 0

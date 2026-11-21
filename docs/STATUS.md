@@ -1,4 +1,4 @@
-The project has not yet started. No code has been written.
+The MVP is being built from `docs/plan.md`. Phase 1 (foundation) is done.
 
 ## Done
 
@@ -28,6 +28,9 @@ The project has not yet started. No code has been written.
   Five decisions (E-1 to E-5) need the engineer's answer before work starts. No application code has been written.
 - 2026-11-21: The engineer approved `docs/plan.md`, with E-1 to E-4 as recommended and E-5 changed: the build log is a separate file, `docs/build_logs.log`, tracked through one exception line in `.gitignore`. Phase 0 is done (checkpoint C0). Node 24.16, uv 0.11 and Chrome 157 are present and the ports are free. Python 3.12 isn't installed, and uv downloads it on the first `uv sync`. Evidence is in `docs/build_logs.log`.
 
+- 2026-11-21: Phase 1 is done (checkpoint C1, on Windows). `npm run dev` installs what's missing and starts the empty app at `http://127.0.0.1:5173`. `npm test` (pytest, Vitest, Playwright on a temporary database) and `npm run lint` pass. The backend has config with an injectable clock, logging, the error format, the Host, Origin, size and JSON checks, the schema by Alembic migration `0001_initial`, the business rules and the API contract. The frontend has the top bar, tokens, bundled fonts, an error boundary and the API client. The engineer approved six extra frontend dev packages, the dashboard item shapes, and `closed_at` for deals created closed (plan 1.4 and `docs/build_logs.log`). On this machine, PowerShell blocks `npm.ps1`, so type `npm.cmd run dev` there.
+- 2026-11-21: Verification run after checkpoint C1. Everything passed: `npm test` (238 backend, 12 frontend, 1 e2e), `npm run lint`, backend coverage 93% (`rules.py` 100%), an ad hoc frontend build, `npm audit` and `pip-audit`. A failing test in any suite makes `npm test` exit 1. Windows Application Control blocks `pip-audit.exe`, so use `uv run python -m pip_audit`. `AGENTS.md` now documents `npm test`. Outputs are in `docs/evidence/2026-11-21-verification/`.
+
 ## Next
 
-- Phase 1 of `docs/plan.md` (T1.1 to T1.8): contracts and foundation, ending at checkpoint C1.
+- Phase 2 of `docs/plan.md` (T2.1 to T2.8): core backend services, API, seed, commands and dashboard, ending at checkpoint C2.

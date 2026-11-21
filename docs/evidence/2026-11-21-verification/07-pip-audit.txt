@@ -1,0 +1,7 @@
+$ uv run pip-audit   (plan T4.1)
+error: Failed to spawn: `pip-audit`
+  Caused by: An Application Control policy has blocked this file. (os error 4551)
+EXIT CODE: 2
+$ uv run python -m pip_audit   (same tool run through python.exe, because Windows Application Control blocked pip-audit.exe)
+No known vulnerabilities found
+EXIT CODE: 0
