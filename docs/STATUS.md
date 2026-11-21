@@ -18,7 +18,16 @@ The project has not yet started. No code has been written.
 
 - 2026-11-21: The product owner chose mockup 1 (`docs/mockups/1-spec-reference/`) as the visual reference. `docs/spec.md` (references, 3.9, NFR-9, V-M04, ADR-012) and `docs/plan.md` now point to it. 
 - 2026-11-21: Settled the badge contrast contradiction (ADR-017). Badges stay at 12px, and those with white text use the darker `--raspberry-text` or `--cerulean-text` fill. The spec's section 3.9 and both mockups were updated, and the screenshots re-taken.
+- 2026-11-21: Rewrote `docs/plan.md` as version 3.0, a draft awaiting engineer approval:
+  - a repository baseline and file-level inventory
+  - 30 tasks in six phases, each with objective, files, steps, constraints, verification, evidence, exit and escalation
+  - optional parallel streams
+  - a 24-item risk register
+  - proof with commands and requirement-to-test traceability
+
+  Five decisions (E-1 to E-5) need the engineer's answer before work starts. No application code has been written.
+- 2026-11-21: The engineer approved `docs/plan.md`, with E-1 to E-4 as recommended and E-5 changed: the build log is a separate file, `docs/build_logs.log`, tracked through one exception line in `.gitignore`. Phase 0 is done (checkpoint C0). Node 24.16, uv 0.11 and Chrome 157 are present and the ports are free. Python 3.12 isn't installed, and uv downloads it on the first `uv sync`. Evidence is in `docs/build_logs.log`.
 
 ## Next
 
-- Phase 0 of `docs/plan.md`: skeleton and commands.
+- Phase 1 of `docs/plan.md` (T1.1 to T1.8): contracts and foundation, ending at checkpoint C1.

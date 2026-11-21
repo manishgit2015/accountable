@@ -1,0 +1,45 @@
+Accountable MVP build log
+=========================
+One entry per task in docs/plan.md (section 4.7), appended in order and never rewritten.
+Each entry: task, date, commands run, results, reports, files changed, requirements covered, open issues.
+A check is recorded as passing only if it was actually run and passed.
+
+----------------------------------------------------------------------
+T0.1  Validate the environment and repository assumptions
+Date: 2026-11-21
+Commands run:
+  node --version              -> v24.16.0 (needs >=24: OK)
+  npm --version               -> 11.13.0
+  uv --version                -> uv 0.11.20 (2026-06-10)
+  uv python find 3.12         -> not found (no Python 3.12 installed)
+  uv python list --only-installed -> 3.14.6 and 3.10.20 only
+  chrome --version            -> Google Chrome 157.0.8103.80
+  netstat (ports 8000, 5173, 8001, 5174) -> all free
+  ls backend frontend e2e scripts package.json pyproject.toml -> all absent
+  git branch --show-current   -> build-mvp
+Results: PASS, with one finding.
+Finding: Python 3.12 isn't installed. uv downloads a managed 3.12 automatically on the
+  first `uv sync` (T1.1), which matches DEP-3 (the first run fetches what's missing and
+  needs the internet once). Not a blocker. No install was done in this task.
+Files changed: docs/build_logs.log (this entry)
+Requirements covered: R1 (prerequisites), NFR-6 (Windows checked here), DEP-3
+Open issues: macOS and Linux are checked in T5.1.
+
+----------------------------------------------------------------------
+T0.2  Confirm the open decisions
+Date: 2026-11-21
+Decisions (engineer, 2026-11-21):
+  E-1  Allow PRAGMA text in db.py's connection hook only, tested as the only text SQL.  APPROVED
+  E-2  No Uvicorn reload by default; ACCOUNTABLE_RELOAD=1 turns it on.                     APPROVED
+  E-3  NFR-1 measured on in-app navigation; cold first load recorded without threshold.  APPROVED
+  E-4  V-S10 automated as a 127.0.0.1-only socket check; LAN address checked in V-M02.   APPROVED
+  E-5  Build log in this separate file, docs/build_logs.log, tracked in git.              CHANGED by engineer
+Commands run:
+  git check-ignore -v docs/build_logs.log -> matched by .gitignore:79 "!docs/build_logs.log" (negation: not ignored)
+  git status --short          -> "?? docs/build_logs.log" (visible to git, so it can be committed)
+Files changed: docs/build_logs.log (created), .gitignore (one line: !docs/build_logs.log),
+  docs/plan.md (status Approved, decisions recorded, E-5 applied), docs/STATUS.md
+Requirements covered: ENG-10
+Open issues: none.
+
+Checkpoint C0: PASSED. Environment confirmed, E-1 to E-5 decided. Next: Phase 1 (T1.1).

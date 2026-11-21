@@ -76,4 +76,5 @@ Thumbs.db
 # Logs and scratch
 logs/
 *.log
+!docs/build_logs.log
 tmp/
