@@ -9,6 +9,10 @@ The project has not yet started. No code has been written.
 
 - 2026-11-20: The project owner chose mockup B (hero and top navigation). `docs/spec.md` was updated to match: the top bar layout, the hero dashboard, the donut of open value by stage, the pipeline cards and the capped Won and Lost columns. Mockup B was trimmed to MVP scope (no user name, avatar or global search) and re-screenshotted.
 
+- 2026-11-21: Wrote `docs/plan.md`: the files that will change, ten phases of work (0 to 9), the risks and how we handle them, and the unit and end-to-end tests that prove each requirement. No code yet.
+
+- 2026-11-21: Restructured `docs/intent.md` into 14 sections, from business context to approval, after interviewing the product owner. Assumptions and proposed targets are marked as such. The product owner approved it the same day.
+
 ## Next
 
-- Build the MVP from `docs/spec.md`, using `docs/mockups/b-hero-topnav/` as the visual reference.
+- Phase 0 of `docs/plan.md`: skeleton and commands.
