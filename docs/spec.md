@@ -41,9 +41,9 @@ Nothing in this spec widens that scope. Where the intent leaves a choice open, t
 | `docs/intent.md` | The approved intent (approved 21 Nov 2026). Section numbers below are written as "intent §5", and its success and acceptance criteria as SC1–SC5 and AC1–AC9. |
 | `docs/TECH_STACK.md` | The stack. This is a constraint from the intent (§8). |
 | `.claude/skills/brand` | Fonts, colors, surfaces and tone |
-| `docs/mockups/b-hero-topnav/` | The approved visual reference for the dashboard and pipeline (approved 20 Nov 2026) |
+| `docs/mockups/1-spec-reference/` | The approved visual reference for the dashboard and pipeline (mockup 1, approved 21 Nov 2026). It replaces mockup B, which set the layout and has been removed. |
 | `docs/plan.md` | The build plan. It needs refreshing to match this version (section 18). |
-| Architecture decisions | ADR-001 to ADR-016, in section 16.3. There are no separate ADR files yet. |
+| Architecture decisions | ADR-001 to ADR-017, in section 16.3. There are no separate ADR files yet. |
 
 ### Markers and IDs
 
@@ -194,7 +194,7 @@ Each row runs from the approved intent to the requirements here, then to the ver
 
 ### 3.9 Look and feel
 
-The look follows the brand guidelines and mockup B, as detailed below. These rules are verified by eye (V-M04).
+The look follows the brand guidelines and mockup 1, as detailed below. These rules are verified by eye (V-M04).
 
 #### Layout
 
@@ -243,13 +243,13 @@ All colors are CSS custom properties in one tokens file, and components use only
 
 - **Stage colors:** New Sea Mist, Qualified Cerulean, Proposal Marigold, Negotiation Coral, Won Sea Green, Lost Raspberry.
 - **Contact status:** Lead Sea Mist, Qualified Cerulean, Customer Sea Green.
-- White text on Cerulean or Raspberry is used only for bold text of 14px or more.
+- White text on Cerulean or Raspberry is used only for bold text of 14px or more. Anything smaller with white text, such as badges, uses the darker `--cerulean-text` (5.5:1) or `--raspberry-text` (5.0:1) as its fill instead (ADR-017).
 - The only gradient is the faint Sea Green fill under the revenue line.
 
 #### Components
 
 - **Buttons:** primary is a Sea Green fill with Midnight text, 8px corners and 36px high. Secondary is white with a soft shadow. Destructive is a Raspberry fill with bold white text, used only in delete dialogs.
-- **Badges:** pill shaped, 12px/600, filled with the stage or status color.
+- **Badges:** pill shaped, 12px/600. New, Proposal, Negotiation, Won, Lead and Customer badges are filled with their stage or status color, with Midnight text. Qualified (stage and status) badges are filled with `--cerulean-text`, and Late and Lost badges with `--raspberry-text`, both with white text (ADR-017).
 - **Tables:** header row in 12px/500 Muted ink, rows 48px high, a `#F0F4F5` row hover, and numbers right-aligned in JetBrains Mono.
 - **Pipeline cards:** white, 10px corners and 12px padding. A 30px rounded square with the organization's initials sits beside the name (14px/600) and "organization · contact" in Muted ink. Below them come the value and the date or Late badge, then a 5px probability meter in the stage color with the percentage. "Add deal" is a dashed outline button at the top of each open column. A dragged card lifts with a larger shadow, and the drop gap is a dashed Sea Mist placeholder.
 - **Closed rows:** white and 10px corners. Each is one line: the name (shortened with an ellipsis) and organization on the left, the short value and date on the right.
@@ -567,7 +567,7 @@ There are no other external systems, no webhooks and no telemetry. The app makes
 | NFR-6 / R1 | Portability | The same commands work on current Windows 11, macOS and Ubuntu LTS *[Assumption: these versions]* |
 | NFR-7 | Accessibility, best effort (intent §7) | Every action can be done with the keyboard, including pipeline drags (R66). Focus is always visible. Form fields have labels. Text meets the color rules in section 3.9. There's no formal standard. |
 | NFR-8 | Usability | SC1: someone new answers the intent's five questions within a couple of clicks of the dashboard |
-| NFR-9 | Look and feel | Section 3.9 and mockup B. The product owner approves it (SC5). |
+| NFR-9 | Look and feel | Section 3.9 and mockup 1. The product owner approves it (SC5). |
 | R5 / NFR-10 | Screen sizes | Designed for 1280px and wider, and usable at 1024px with no horizontal page scroll |
 | R7 / NFR-11 | Clean console | No errors in the browser console on any screen |
 | NFR-12 | Browsers | Current Chrome, Edge, Firefox and Safari *[Assumption]*. Automated tests use Chrome. |
@@ -722,7 +722,7 @@ These steps go in `docs/STATUS.md` when the app is built.
 | V-M01 | The coding agent's end-to-end walkthrough, every screen by eye, then the product owner's review | AC9 |
 | V-M02 | A fresh clone on Windows, macOS and Linux: first run, then a second run with the network off | AC1, R1, R2, NFR-6 |
 | V-M03 | Crash test: kill the backend process (`kill -9`, or Task Manager) straight after a save, restart, and check the change | AC8, REL-1 |
-| V-M04 | Every screen compared by eye with mockup B and the brand rules | SC5, NFR-9 |
+| V-M04 | Every screen compared by eye with mockup 1 and the brand rules | SC5, NFR-9 |
 | V-M05 | Someone new answers the SC1 questions with no instructions | SC1, NFR-8 |
 | V-M06 | Two weeks of real use, with the product owner checking SC2–SC4 | SC2–SC4 |
 
@@ -794,11 +794,12 @@ The delivery risks, with how each is handled, are in `docs/plan.md` ("Risks"). T
 | ADR-009 | An unversioned `/api` | Approved 21 Nov 2026. The frontend is the only client. The alternative, `/api/v1` now, costs little and is clearer for future clients. |
 | ADR-010 | The development servers are the runtime for users | Approved 21 Nov 2026. It's what `TECH_STACK.md` sets. The alternative, a built frontend served by FastAPI, starts faster and runs one process, but adds a build step. |
 | ADR-011 | Stage colors, contrast rules, funnel from stage history, the contact must match the organization, reopening keeps the date, follow-up groups, timelines follow the current contact (concerns 1–10 in version 1.x) | Approved 20 Nov 2026 |
-| ADR-012 | Mockup B is the visual direction | Approved 20 Nov 2026 |
+| ADR-012 | Mockup B set the layout (approved 20 Nov 2026). Mockup 1 (`docs/mockups/1-spec-reference/`), which follows that layout and spec 2.0, is the visual reference. | Approved 21 Nov 2026 |
 | ADR-013 | Times are stored and compared in the computer's local time | Approved 21 Nov 2026. It matches "today" in the intent. The alternative, UTC plus a stored time zone, is safer for hosting later. |
 | ADR-014 | No metrics, tracing or alerting in the MVP | Approved 21 Nov 2026 |
 | ADR-015 | The `closed_at` column drives the month figures | Approved 21 Nov 2026. See challenge C-3. |
 | ADR-016 | Duplicate names are allowed | Approved 21 Nov 2026. See R22. |
+| ADR-017 | Small text with a white color uses darker fills: badges stay at 12px, and their Cerulean and Raspberry fills become `--cerulean-text` and `--raspberry-text`. This resolves a contradiction between the badge style and the contrast rule in 3.9. | Approved 21 Nov 2026 |
 
 ### 16.4 Challenges to ambiguous requirements
 
@@ -834,7 +835,7 @@ SC2–SC4 (two weeks of use) are checked after release, and aren't part of done.
 | **Owner** | The product owner (the project owner) |
 | **Author** | The coding agent, acting as architect |
 | **Status** | Version 2.0, approved |
-| **Approved inputs** | Intent (21 Nov 2026), concerns 1–10 and mockup B (20 Nov 2026), and the network, concurrency, migration and logging decisions (21 Nov 2026) |
+| **Approved inputs** | Intent (21 Nov 2026), concerns 1–10 and mockup B's layout (20 Nov 2026), mockup 1 as the visual reference (21 Nov 2026), and the network, concurrency, migration and logging decisions (21 Nov 2026) |
 | **Approval decision** | Approved by the product owner on 21 Nov 2026: the funnel window (C-1), the won month (C-3), every proposed threshold and every proposed decision. C-2 followed the same day: the Won and Lost columns show this month only (R60). |
 
 ### Self-review

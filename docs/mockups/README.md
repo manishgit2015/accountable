@@ -1,35 +1,50 @@
 # Mockups: dashboard and pipeline
 
-These are three design directions for the MVP's dashboard and pipeline, built from `docs/spec.md` and the brand guidelines. Each folder has the HTML and a Playwright screenshot of each page, taken at 1440px wide in Google Chrome with no console errors. All three use the same made-up sample data, fixed at Friday 20 November 2026, so they can be compared side by side.
+These are two mockups of the MVP's dashboard and pipeline, built from `docs/spec.md` (version 2.0) and the brand skill. Both follow the spec's layout exactly:
 
-**Chosen: B.** On 2026-11-20 the project owner picked mockup B, and `docs/spec.md` now follows it. B was then trimmed to the MVP's scope: the greeting has no name, the top bar has no avatar or global search, and the funnel caption no longer mentions a time range. A and C are kept for reference only.
+- the floating top bar, with no avatar or search
+- the Midnight hero panel, then the funnel, won/lost bars and donut, then follow-ups beside recent activity
+- the pipeline's stage strip above six columns, with narrower Won and Lost columns showing this month only (R60)
 
-Open any `.html` file straight in a browser. Shared tokens, data and chart helpers are in `assets/`. The fonts come from Google Fonts, so the mockups need the internet; the real app bundles them (spec R2).
+They differ only in visual treatment, so either can be built from the spec as written.
 
-## A: Spec layout (`a-spec-layout/`)
+**Chosen: mockup 1.** On 21 Nov 2026 the product owner picked mockup 1 as the visual reference. `docs/spec.md` and `docs/plan.md` now point to it. Mockup 2 is kept for reference only.
 
-![Dashboard A](a-spec-layout/dashboard.png)
-![Pipeline A](a-spec-layout/pipeline.png)
+Each folder has the HTML and a Playwright screenshot of each page, taken in Google Chrome at 1440px wide with no console errors. Both use the same made-up sample data from `shared/`, fixed at Friday 20 November 2026. Open any `.html` file straight in a browser. The fonts come from Google Fonts, so the mockups need the internet. The real app bundles them (R2).
 
-This one follows the spec exactly: a Midnight sidebar with a Sea Green pill for the current page, then the 12-column dashboard grid. That grid has four summary tiles, a full-width pipeline-by-stage strip, the revenue line chart beside follow-ups, and the won/lost bars, funnel and recent activity in the bottom row. The pipeline board has six equal columns on tinted lanes. It shows a lifted card being dragged in Negotiation and a dashed drop gap in Proposal.
+## 1. Spec reference (`1-spec-reference/`)
 
-## B: Hero and top navigation (`b-hero-topnav/`)
+![Dashboard 1](1-spec-reference/dashboard.png)
+![Pipeline 1](1-spec-reference/pipeline.png)
 
-![Dashboard B](b-hero-topnav/dashboard.png)
-![Pipeline B](b-hero-topnav/pipeline.png)
+The spec read literally:
 
-Navigation moves into a floating white bar, which leaves the full width for content. The dashboard opens on a Midnight hero panel with an Instrument Serif greeting, the four figures and a large revenue chart. Below it sit the funnel, the won/lost bars and a donut of open value by stage, then follow-ups and recent activity side by side. On the pipeline, a stage strip sits above the board. Cards show organization initials and a probability meter, and Won and Lost are narrower columns of compact rows.
+- The hero's four figures sit straight on the Midnight panel.
+- The revenue line has a dot for each month.
+- The funnel is a set of bars on grey tracks, with the percentage carried over from the stage before.
+- Lost deals are Sea Mist beside the won bars.
+- Follow-ups are one list in three groups.
+- On the pipeline, columns sit straight on the page, and cards have a grey initials square and a labeled probability meter.
+- It also shows a card being dragged (in Negotiation) and its drop gap (in Proposal).
 
-## C: Focus rail (`c-focus-rail/`)
+## 2. Lanes and tiles (`2-lanes-and-tiles/`)
 
-![Dashboard C](c-focus-rail/dashboard.png)
-![Pipeline C](c-focus-rail/pipeline.png)
+![Dashboard 2](2-lanes-and-tiles/dashboard.png)
+![Pipeline 2](2-lanes-and-tiles/pipeline.png)
 
-This is the densest of the three. A slim white icon rail sits on the left, the analytics take the middle and a "Your day" column on the right holds follow-ups and recent activity. The summary tiles carry sparklines. The revenue chart is a bar chart with the current month in Marigold, the line chart shows deals won per month, the funnel is drawn as a real funnel, and the pipeline-by-stage panel marks expected revenue as a dark line under each bar. Pipeline columns are white panels, each with a bar showing its share of the open pipeline. Late cards get a light Raspberry fill as well as the Late badge.
+The same layout with more structure:
 
-## Points the mockups raised, and how they were settled
+- The hero's figures sit in dark tiles.
+- The revenue line has no dots and labels the current month's value at its end.
+- The funnel tapers, with "carried" chips between stages.
+- Lost deals are Raspberry, matching the Lost stage color.
+- The donut lists expected revenue too.
+- Follow-ups show as three side-by-side groups.
+- Recent activity is a connected timeline.
+- On the pipeline, the stage strip names each stage inside its segment, each column sits on a lane tinted in its stage color, and the initials square takes the stage tint.
 
-- **Won and Lost columns grow without limit.** The spec (R60) now says they list the 5 most recently closed deals with "N more · Show all", and their count and value cover the last 12 months.
-- **Names and avatars.** These were dropped from B, since the MVP has no accounts. The greeting is just "Good morning".
-- **Tile sparklines (C)** would need a history the data model doesn't keep. This doesn't matter now that B is chosen.
-- **Layout.** The spec's "Layout", "Dashboard layout", R61, R62 and R73 were rewritten to match B.
+## Points the mockups raise for the spec
+
+- **Badge text contrast.** Spec 3.9 set badges at 12px/600 with white text on Raspberry and Cerulean, but only allowed white on those colors for bold text of 14px or more. The product owner chose darker fills on 21 Nov 2026 (ADR-017). Badges stay 12px, and the white-text ones use `--raspberry-text` or `--cerulean-text`. Both mockups' Late badges now use the darker Raspberry, and the screenshots were re-taken.
+- **Long names in Won and Lost.** In the narrower closed columns, longer deal and organization names are cut short with an ellipsis, as R60 and spec 3.9 allow. The full name is one click away.
+- **Visual reference.** Spec 3.9 and `docs/plan.md` pointed to the removed `docs/mockups/b-hero-topnav/`. They now point to mockup 1.

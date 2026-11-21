@@ -1,16 +1,15 @@
-// Made-up sample data shared by every mockup. "Today" is fixed at 20 Nov 2026.
-const TODAY = new Date("2026-11-20T12:00:00");
-
+// Made-up sample data shared by both mockups. "Today" is fixed at Friday 20 Nov 2026.
 const STAGES = [
-  { key: "new", name: "New", prob: 5, color: "var(--stage-new)", text: "var(--ink-muted)" },
-  { key: "qualified", name: "Qualified", prob: 20, color: "var(--stage-qualified)", text: "var(--cerulean-text)" },
-  { key: "proposal", name: "Proposal", prob: 40, color: "var(--stage-proposal)", text: "var(--marigold-text)" },
-  { key: "negotiation", name: "Negotiation", prob: 70, color: "var(--stage-negotiation)", text: "var(--coral-text)" },
-  { key: "won", name: "Won", prob: 100, color: "var(--stage-won)", text: "var(--sea-green-text)" },
-  { key: "lost", name: "Lost", prob: 0, color: "var(--stage-lost)", text: "var(--raspberry-text)" },
+  { key: "new", name: "New", prob: 5, color: "var(--sea-mist)", tint: "#EEF3F4", onColor: "var(--ink)" },
+  { key: "qualified", name: "Qualified", prob: 20, color: "var(--cerulean)", tint: "#E3F1F6", onColor: "#fff" },
+  { key: "proposal", name: "Proposal", prob: 40, color: "var(--marigold)", tint: "#FFF4DC", onColor: "var(--ink)" },
+  { key: "negotiation", name: "Negotiation", prob: 70, color: "var(--coral)", tint: "#FDEBE5", onColor: "var(--ink)" },
+  { key: "won", name: "Won", prob: 100, color: "var(--sea-green)", tint: "#DDF8EF", onColor: "var(--ink)" },
+  { key: "lost", name: "Lost", prob: 0, color: "var(--raspberry)", tint: "#FDE6EC", onColor: "#fff" },
 ];
 const OPEN = ["new", "qualified", "proposal", "negotiation"];
 
+// Open deals, in board order within each column.
 const DEALS = [
   { name: "Fleet telematics pilot", org: "Northwind Logistics", contact: "Priya Raman", stage: "new", value: 18000, close: "2026-12-18" },
   { name: "Website rebuild", org: "Bramble & Oak", contact: "Tom Ashworth", stage: "new", value: 9500, close: "2027-01-10" },
@@ -28,19 +27,20 @@ const DEALS = [
   { name: "Grid analytics licence", org: "Copperline Energy", contact: "Hannah Price", stage: "negotiation", value: 120000, close: "2026-12-15" },
   { name: "Office network upgrade", org: "Bramble & Oak", contact: "Tom Ashworth", stage: "negotiation", value: 16000, close: "2026-11-06" },
   { name: "Telehealth integration", org: "Kestrel Health", contact: "Dana Whitfield", stage: "negotiation", value: 48000, close: "2026-12-08" },
+  // Closed this calendar month (R60: the board shows this month only).
   { name: "Route optimisation", org: "Northwind Logistics", contact: "Priya Raman", stage: "won", value: 34000, close: "2026-11-17" },
-  { name: "Packaging line sensors", org: "Atlas Fabrication", contact: "Marcus Bell", stage: "won", value: 27500, close: "2026-11-12" },
+  { name: "Packaging line sensors", org: "Atlas Fabrication", contact: "Marcus Bell", stage: "won", value: 14500, close: "2026-11-12" },
   { name: "Studio licences", org: "Lumen Studio", contact: "Ines Laurent", stage: "won", value: 8000, close: "2026-11-05" },
+  { name: "Spare parts portal", org: "Atlas Fabrication", contact: "Marcus Bell", stage: "won", value: 5000, close: "2026-11-03" },
   { name: "Solar monitoring", org: "Copperline Energy", contact: "Hannah Price", stage: "lost", value: 52000, close: "2026-11-09" },
-  { name: "Catering platform", org: "Fernhill Foods", contact: "Grace Okafor", stage: "lost", value: 12000, close: "2026-10-28" },
 ];
-// The Won and Lost columns hold more deals than the mockups draw.
-const MORE_CLOSED = { won: 51, lost: 20 };
 
+// Last 12 months, Dec 2025 to Nov 2026 (Nov is month to date).
 const MONTHS = ["Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov"];
 const REVENUE_WON = [42000, 38500, 51000, 47500, 63000, 58000, 71500, 66000, 79000, 84500, 92000, 61500];
 const DEALS_WON = [3, 3, 4, 3, 5, 4, 5, 4, 6, 6, 7, 4];
 const DEALS_LOST = [2, 1, 2, 3, 2, 2, 1, 3, 2, 2, 1, 1];
+// Value reaching each stage, for deals created in the last 12 months (R74).
 const FUNNEL = [
   { key: "new", value: 2140000 },
   { key: "qualified", value: 1620000 },
@@ -51,17 +51,17 @@ const FUNNEL = [
 
 const FOLLOW_UPS = {
   overdue: [
-    { title: "Send revised ERP quote", about: "ERP migration · Atlas Fabrication", due: "17 Nov", type: "email" },
-    { title: "Chase decision on scheduling suite", about: "Dana Whitfield · Kestrel Health", due: "18 Nov", type: "call" },
+    { title: "Send revised ERP quote", about: "ERP migration · Atlas Fabrication", due: "17 Nov" },
+    { title: "Chase decision on scheduling suite", about: "Dana Whitfield · Kestrel Health", due: "18 Nov" },
   ],
   today: [
-    { title: "Confirm pilot start date", about: "Priya Raman · Northwind Logistics", due: "Today", type: "call" },
-    { title: "Email safety training agenda", about: "Plant safety training · Atlas Fabrication", due: "Today", type: "email" },
+    { title: "Confirm pilot start date", about: "Priya Raman · Northwind Logistics", due: "Today" },
+    { title: "Email safety training agenda", about: "Plant safety training · Atlas Fabrication", due: "Today" },
   ],
   week: [
-    { title: "Demo grid analytics to the CFO", about: "Grid analytics licence · Copperline Energy", due: "23 Nov", type: "call" },
-    { title: "Check loyalty app scope", about: "Luis Ortega · Harbor Street Coffee", due: "25 Nov", type: "note" },
-    { title: "Send contract draft", about: "Telehealth integration · Kestrel Health", due: "26 Nov", type: "email" },
+    { title: "Demo grid analytics to the CFO", about: "Grid analytics licence · Copperline Energy", due: "23 Nov" },
+    { title: "Check loyalty app scope", about: "Luis Ortega · Harbor Street Coffee", due: "25 Nov" },
+    { title: "Send contract draft", about: "Telehealth integration · Kestrel Health", due: "26 Nov" },
   ],
   later: 9,
 };
@@ -75,64 +75,58 @@ const ACTIVITY = [
   { type: "stage", to: "won", title: "Packaging line sensors moved from Negotiation to Won", about: "Atlas Fabrication", when: "12 Nov 2026, 14:48" },
   { type: "call", title: "Budget approved for Q1, wants a phased plan", about: "Hannah Price · Copperline Energy", when: "11 Nov 2026, 09:30" },
   { type: "stage", to: "lost", title: "Solar monitoring moved from Proposal to Lost", about: "Copperline Energy", when: "9 Nov 2026, 17:05" },
+  { type: "email", title: "Sent the revised website timeline", about: "Website rebuild · Bramble & Oak", when: "6 Nov 2026, 13:15" },
+  { type: "stage", to: "won", title: "Studio licences moved from Proposal to Won", about: "Lumen Studio", when: "5 Nov 2026, 11:40" },
 ];
 
 /* Helpers */
 const stage = (key) => STAGES.find((s) => s.key === key);
-const isLate = (d) => OPEN.includes(d.stage) && new Date(d.close + "T00:00:00") < new Date("2026-11-20T00:00:00");
+const isLate = (d) => OPEN.includes(d.stage) && d.close < "2026-11-20";
 const prob = (d) => stage(d.stage).prob;
 const expected = (d) => Math.round((d.value * prob(d)) / 100);
 const sum = (arr, f) => arr.reduce((t, x) => t + f(x), 0);
 const money = (n) => "$" + Math.round(n).toLocaleString("en-US");
 const moneyShort = (n) => {
-  if (n >= 1e6) return "$" + (n / 1e6).toFixed(n >= 1e7 ? 0 : 2).replace(/\.?0+$/, "") + "M";
+  if (n >= 1e6) return "$" + (n / 1e6).toFixed(2).replace(/\.?0+$/, "") + "M";
   if (n >= 1e3) return "$" + (n / 1e3).toFixed(n >= 1e5 ? 0 : 1).replace(/\.0$/, "") + "K";
   return "$" + n;
 };
-const dateShort = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+const dateLong = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+const dateShort = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 const byStage = (key) => DEALS.filter((d) => d.stage === key);
 const openDeals = DEALS.filter((d) => OPEN.includes(d.stage));
 const OPEN_VALUE = sum(openDeals, (d) => d.value);
 const OPEN_EXPECTED = sum(openDeals, expected);
-const WIN_RATE = Math.round((sum(DEALS_WON, (x) => x) / (sum(DEALS_WON, (x) => x) + sum(DEALS_LOST, (x) => x))) * 100);
+const LATE_COUNT = openDeals.filter(isLate).length;
+const WON_TOTAL = sum(DEALS_WON, (x) => x), LOST_TOTAL = sum(DEALS_LOST, (x) => x);
+const WIN_RATE = Math.round((WON_TOTAL / (WON_TOTAL + LOST_TOTAL)) * 100);
+const initials = (s) => s.split(/[\s&,]+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
 /* Lucide-style icons, inline so the mockups need no icon package */
 const ICONS = {
-  dashboard: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
-  pipeline: '<rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/>',
-  deals: '<path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
-  contacts: '<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M22 21a7 7 0 0 0-5-6.7"/>',
-  orgs: '<path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/><path d="M9 10h.01M15 10h.01"/>',
-  search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   call: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
   email: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
   note: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
   stage: '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
   calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
-  more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
-  filter: '<path d="M3 5h18M6 12h12M10 19h4"/>',
 };
 const icon = (name, cls = "icon") => `<svg class="${cls}" viewBox="0 0 24 24">${ICONS[name]}</svg>`;
 
-/* Shared list renderers */
-function feedItem(a) {
+function topBar(active) {
+  const tabs = [["dashboard", "Dashboard", "dashboard.html"], ["pipeline", "Pipeline", "pipeline.html"], ["deals", "Deals", "#"], ["contacts", "Contacts", "#"], ["orgs", "Organizations", "#"]];
+  return `<header class="topbar">
+    <div class="brand"><span class="mark">A</span>Accountable</div>
+    <nav class="tabs">${tabs.map(([k, l, h]) => `<a href="${h}" class="${k === active ? "on" : ""}">${l}</a>`).join("")}</nav>
+    <div class="right"><button class="btn btn-primary">${icon("plus")}Add deal</button></div>
+  </header>`;
+}
+
+function feedItem(a, { sourceStyle = "meta" } = {}) {
   const s = a.type === "stage" ? stage(a.to) : null;
-  const ico = s
-    ? `<span class="ico" style="background:${s.color};color:${["qualified", "lost"].includes(s.key) ? "#fff" : "var(--ink)"}">${icon("stage")}</span>`
-    : `<span class="ico">${icon(a.type)}</span>`;
+  const ico = s ? `<span class="ico" style="background:${s.color};color:${s.onColor}">${icon("stage")}</span>` : `<span class="ico">${icon(a.type)}</span>`;
   return `<li>${ico}<div class="body"><div class="title">${a.title}</div><div class="meta">${a.about} · ${a.when}</div></div></li>`;
 }
 function followItem(f, overdue) {
-  return `<li><span class="check"></span><div class="body"><div class="title">${f.title}</div><div class="meta">${f.about}</div></div><span class="num" style="font-size:12px;white-space:nowrap;${overdue ? "color:var(--raspberry-text)" : "color:var(--ink-muted)"}">${f.due}</span></li>`;
-}
-function followUpsHTML() {
-  return `
-    <div class="group-label" style="color:var(--raspberry-text)">Overdue · ${FOLLOW_UPS.overdue.length}</div>
-    <ul class="feed">${FOLLOW_UPS.overdue.map((f) => followItem(f, true)).join("")}</ul>
-    <div class="group-label">Today · ${FOLLOW_UPS.today.length}</div>
-    <ul class="feed">${FOLLOW_UPS.today.map((f) => followItem(f)).join("")}</ul>
-    <div class="group-label">Next 7 days · ${FOLLOW_UPS.week.length}</div>
-    <ul class="feed">${FOLLOW_UPS.week.map((f) => followItem(f)).join("")}</ul>
-    <div class="meta muted" style="font-size:12px;margin-top:8px">${FOLLOW_UPS.later} more due later</div>`;
+  return `<li><span class="check"></span><div class="body"><div class="title">${f.title}</div><div class="meta">${f.about}</div></div><span class="num" style="font-size:12px;white-space:nowrap;color:${overdue ? "var(--raspberry-text)" : "var(--ink-muted)"}">${f.due}</span></li>`;
 }

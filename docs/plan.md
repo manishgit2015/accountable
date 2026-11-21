@@ -7,7 +7,7 @@ This plan builds what the approved intent (`docs/intent.md`) asks for, as the ap
 - decisions: ADR
 - the intent's acceptance and success criteria: AC1–AC9 and SC1–SC5
 
-The stack is in `docs/TECH_STACK.md`, and the visual reference is mockup B in `docs/mockups/b-hero-topnav/`. Mockup B labels the closed columns "12 months", but the spec's R60 (this month only) wins.
+The stack is in `docs/TECH_STACK.md`, and the visual reference is mockup 1 in `docs/mockups/1-spec-reference/`.
 
 No code has been written yet. The repo holds only the course material and these docs.
 
@@ -167,7 +167,7 @@ Each phase ends with `npm test` and `npm run lint` passing, and `docs/STATUS.md`
 3. Follow-ups with mark done, and recent activity.
 4. Empty states (R78).
 
-*Done when* V-F09 and V-E07 pass, and the page matches mockup B by eye.
+*Done when* V-F09 and V-E07 pass, and the page matches mockup 1 by eye.
 
 ### Phase 8: Hardening
 
@@ -182,7 +182,7 @@ Each phase ends with `npm test` and `npm run lint` passing, and `docs/STATUS.md`
 ### Phase 9: Walkthrough, sign-off and release
 
 1. V-M01: the coding agent's end-to-end walkthrough, fixing what it finds (AC9).
-2. V-M04: every screen against mockup B and the brand. V-M05: first-time use (SC1).
+2. V-M04: every screen against mockup 1 and the brand. V-M05: first-time use (SC1).
 3. `docs/STATUS.md` gets the runbook, backup and restore steps (spec 12).
 4. Check every Definition of Done item (spec 17).
 5. The product owner uses it and approves it (AC9, SC5).
@@ -208,7 +208,7 @@ After release, the product owner checks SC2–SC4 over two weeks of use (V-M06).
 | **Backups and WAL** | A user copies only `accountable.db` and misses the `-wal` file | The runbook says to stop the app and copy the whole `backend/data/` folder. |
 | **Performance** | Loading everything into the browser, or building timelines, gets slow | Indexes from spec 6.2. V-P01 runs at 2 × volume. ADR-007 names server-side paging as the fallback. |
 | **Offline** | A library or font from a CDN breaks the app without internet | Only bundled packages. V-E00 blocks every request that isn't local. |
-| **Brand fidelity** | Screens drift from mockup B, or small Sea Green or Marigold text fails contrast | Tokens only, with the `-text` variants for text. V-M04 compares against the mockup. |
+| **Brand fidelity** | Screens drift from mockup 1, or small Sea Green or Marigold text fails contrast | Tokens only, with the `-text` variants for text. V-M04 compares against the mockup. |
 | **Recharts in tests** | Charts render nothing in jsdom | The setup stubs ResizeObserver. Chart contents are checked in end-to-end tests. |
 | **Test data leaking** | Tests change the real database | `run-tests.mjs` and `conftest.py` refuse to run against the default path. The test servers use their own ports. |
 | **Scope creep** | Adding things outside the intent, such as global search, user names or board filters | ENG-10: anything the spec doesn't settle goes to the product owner first. |
@@ -280,6 +280,6 @@ Every test runs through `e2e/fixtures.ts` (V-E00), so each one fails on a consol
 | V-M01 | The coding agent's full walkthrough, then the product owner's review (AC9) | 9 |
 | V-M02 | A fresh clone on Windows, macOS and Linux, then a second run with the network off (AC1, R1, R2) | 0 and 8 |
 | V-M03 | Kill the backend right after a save, restart, and find the change there (AC8, REL-1) | 8 |
-| V-M04 | Every screen against mockup B and the brand (SC5) | 7 and 9 |
+| V-M04 | Every screen against mockup 1 and the brand (SC5) | 7 and 9 |
 | V-M05 | Someone new answers the SC1 questions with no instructions | 9 |
 | V-M06 | Two weeks of real use, checking SC2–SC4. This is after release, not part of done. | After release |

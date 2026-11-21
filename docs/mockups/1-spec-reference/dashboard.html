@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accountable · Dashboard (mockup 1)</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="style.css">
+<script src="../shared/data.js"></script>
+<script src="../shared/charts.js"></script>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+const segs = openByStage();
+const funnel = FUNNEL.map((f, i) => {
+  const s = stage(f.key);
+  const carried = i ? Math.round(f.value / FUNNEL[i - 1].value * 100) + "% carried" : "&nbsp;";
+  return `<div class="funnel-row"><span style="font-weight:500">${s.name}</span>
+    <span class="track"><span class="fill" style="display:block;width:${f.value / FUNNEL[0].value * 100}%;background:${s.color}"></span></span>
+    <span class="fig num">${moneyShort(f.value)}<small>${carried}</small></span></div>`;
+}).join("");
+
+document.getElementById("app").innerHTML = topBar("dashboard") + `
+<div class="grid">
+  <section class="hero">
+    <div>
+      <h1>Good morning</h1>
+      <div class="lead">Friday 20 November 2026 · ${FOLLOW_UPS.overdue.length} follow-ups overdue, ${LATE_COUNT} deals running late</div>
+      <div class="kgrid">
+        <div class="k"><div class="l">Open pipeline</div><div class="v">${moneyShort(OPEN_VALUE)}</div><div class="s">${openDeals.length} open deals</div></div>
+        <div class="k"><div class="l">Expected revenue</div><div class="v">${moneyShort(OPEN_EXPECTED)}</div><div class="s">Value × probability</div></div>
+        <div class="k"><div class="l">Won this month</div><div class="v" style="color:var(--sea-green)">${moneyShort(REVENUE_WON[11])}</div><div class="s">${DEALS_WON[11]} deals so far</div></div>
+        <div class="k"><div class="l">Win rate, last 12 months</div><div class="v">${WIN_RATE}%</div><div class="s">${WON_TOTAL} won · ${LOST_TOTAL} lost</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="chart-head"><h2>Revenue won</h2><span style="font-size:12px">Last 12 months · <span class="num" style="color:#fff">${money(sum(REVENUE_WON, x => x))}</span></span></div>
+      <div class="chart">${heroLine(REVENUE_WON)}</div>
+    </div>
+  </section>
+
+  <div class="panel c5">
+    <div class="panel-head"><h2>Sales funnel</h2><span class="sub">Value reaching each stage · deals created in the last 12 months</span></div>
+    ${funnel}
+  </div>
+  <div class="panel c4">
+    <div class="panel-head"><h2>Deals won and lost</h2><div class="legend"><span><i class="dot" style="background:var(--sea-green)"></i>Won</span><span><i class="dot" style="background:var(--sea-mist)"></i>Lost</span></div></div>
+    <div class="chart">${wonLostBars(DEALS_WON, DEALS_LOST, { w: 400, h: 250 })}</div>
+  </div>
+  <div class="panel c3">
+    <div class="panel-head"><h2>Open by stage</h2></div>
+    <div style="position:relative;display:grid;place-items:center;margin:2px 0 14px">
+      ${donut(segs.map(g => ({ v: g.v, color: g.s.color })), { size: 150, thick: 22 })}
+      <div style="position:absolute;text-align:center"><div class="num" style="font-size:18px;font-weight:600">${moneyShort(OPEN_VALUE)}</div><div class="label">open</div></div>
+    </div>
+    ${segs.map(g => `<div style="display:flex;align-items:center;gap:8px;margin:7px 0;font-size:13px"><span class="dot" style="background:${g.s.color}"></span>${g.s.name}<span class="num" style="margin-left:auto">${money(g.v)}</span></div>`).join("")}
+  </div>
+
+  <div class="panel c6">
+    <div class="panel-head"><h2>Follow-ups</h2><span class="sub">${FOLLOW_UPS.later} more due later</span></div>
+    <div class="group-label" style="color:var(--raspberry-text)">Overdue · ${FOLLOW_UPS.overdue.length}</div>
+    <ul class="feed">${FOLLOW_UPS.overdue.map(f => followItem(f, true)).join("")}</ul>
+    <div class="group-label">Today · ${FOLLOW_UPS.today.length}</div>
+    <ul class="feed">${FOLLOW_UPS.today.map(f => followItem(f)).join("")}</ul>
+    <div class="group-label">Next 7 days · ${FOLLOW_UPS.week.length}</div>
+    <ul class="feed">${FOLLOW_UPS.week.map(f => followItem(f)).join("")}</ul>
+  </div>
+  <div class="panel c6">
+    <div class="panel-head"><h2>Recent activity</h2><span class="sub">Latest 10</span></div>
+    <ul class="feed">${ACTIVITY.map(a => feedItem(a)).join("")}</ul>
+  </div>
+</div>`;
+</script>
+</body>
+</html>

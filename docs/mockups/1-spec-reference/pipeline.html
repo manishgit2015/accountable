@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accountable · Pipeline (mockup 1)</title>
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="style.css">
+<script src="../shared/data.js"></script>
+<script src="../shared/charts.js"></script>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+function card(d, extra = "") {
+  const s = stage(d.stage), late = isLate(d);
+  return `<div class="card ${extra}">
+    <div class="top"><span class="chip">${initials(d.org)}</span><div><div class="t">${d.name}</div><div class="o">${d.org} · ${d.contact}</div></div></div>
+    <div class="row"><span class="num" style="font-size:15px;font-weight:600">${money(d.value)}</span>${late ? `<span class="badge badge-late">Late · ${dateShort(d.close)}</span>` : `<span class="num muted">${dateLong(d.close)}</span>`}</div>
+    <div class="meter"><i style="width:${prob(d)}%;background:${s.color}"></i></div>
+    <div class="row" style="margin-top:6px"><span class="muted">Probability</span><span class="num">${prob(d)}%</span></div>
+  </div>`;
+}
+const closedRow = d => `<div class="closed"><div style="min-width:0"><div class="t">${d.name}</div><div class="o">${d.org}</div></div><div class="r"><div class="num" style="font-weight:600">${moneyShort(d.value)}</div><div class="num muted" style="font-size:11px">${dateShort(d.close)}</div></div></div>`;
+
+function column(s) {
+  const deals = byStage(s.key), closed = !OPEN.includes(s.key);
+  let body;
+  if (closed) body = deals.slice(0, 5).map(closedRow).join("") + `<div class="month-note">Closed in November</div>`;
+  else {
+    let cards = deals.map(d => card(d));
+    if (s.key === "proposal") cards.splice(1, 0, `<div class="drop"></div>`);
+    if (s.key === "negotiation") cards[2] = card(deals[2], "lift");
+    body = `<div class="add">${icon("plus")}Add deal</div>` + cards.join("");
+  }
+  return `<section>
+    <div class="col-head"><span class="dot" style="background:${s.color}"></span><span class="name">${s.name}</span><span class="count">${deals.length}</span>
+      <span class="val"><span class="num">${moneyShort(sum(deals, d => d.value))}</span><div class="e">${closed ? "this month" : `<span class="num">${moneyShort(sum(deals, expected))}</span> expected`}</div></span></div>
+    <div class="stack">${body}</div>
+  </section>`;
+}
+const segs = openByStage();
+document.getElementById("app").innerHTML = topBar("pipeline") + `
+<div class="ph">
+  <div><h1>Pipeline</h1><div class="muted" style="margin-top:4px">Drag a card to change its stage or its place in a column</div></div>
+  <div style="display:flex;gap:28px;text-align:right">
+    <div><div class="label">Open pipeline</div><div class="num" style="font-size:24px;font-weight:600">${money(OPEN_VALUE)}</div></div>
+    <div><div class="label">Expected revenue</div><div class="num" style="font-size:24px;font-weight:600">${money(OPEN_EXPECTED)}</div></div>
+  </div>
+</div>
+<div class="panel">
+  <div style="display:flex;gap:3px;height:12px">${segs.map(g => `<span style="flex:${g.v};background:${g.s.color};border-radius:4px"></span>`).join("")}</div>
+  <div class="strip-legend">${segs.map(g => `<div><div class="label" style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:${g.s.color}"></span>${g.s.name} · ${g.n} deals</div>
+    <div class="num" style="font-size:18px;font-weight:600;margin-top:4px">${money(g.v)}</div><div class="label"><span class="num">${money(g.e)}</span> expected</div></div>`).join("")}</div>
+</div>
+<div class="board">${STAGES.map(column).join("")}</div>`;
+</script>
+</body>
+</html>
