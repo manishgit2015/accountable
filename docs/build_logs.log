@@ -1316,3 +1316,17 @@ The engineer answered "Approved, tag it" to "Have you used the app, and do you a
   SC5)?" (Phase 5 session). DoD item 9: MET by that approval.
 Still open at approval: DoD item 5 (V-M02 on macOS and Linux, and Windows with Wi-Fi off) and V-M05; the engineer
   chose to release with them pending. The T5.2 and T5.4 listed differences are accepted as they are for v0.1.0.
+
+----------------------------------------------------------------------
+Release v0.1.0 (DEP-5)
+Date: 2026-11-22
+The engineer chose "One commit, then tag": phases 2-5 overlap in the same files, so they couldn't be split into
+  one commit per phase.
+Commands run:
+  git add -A -- . ':!docs/Review.md'; git commit -> b8442d5 "Build: phases 2-5 (backend, frontend, hardening,
+    readiness)". docs/Review.md left untracked (not build output; not the agent's file).
+  git tag -a v0.1.0 b8442d5 -> annotated tag; `git describe --tags` -> v0.1.0. Local only, not pushed.
+After the tag: docs/STATUS.md got the release notes and the updated Next list, and this entry was added; both
+  are uncommitted, for the engineer's next commit.
+DoD at release: items 1-4 and 6-10 met; item 5 (V-M02 on macOS, Linux and Windows with Wi-Fi off) and V-M05
+  are still open, and the engineer chose to release with them open.

@@ -1,4 +1,4 @@
-The MVP is being built from `docs/plan.md`. Phases 1 to 4 are done (C4). Phase 5's agent work is done; checkpoint C5 and the `v0.1.0` tag wait for the engineer (see "Next").
+The MVP is released as `v0.1.0` (22 Nov 2026), built from `docs/plan.md`, phases 0 to 5. A few verification runs are still open (see "Next").
 
 ## Using Accountable
 
@@ -106,12 +106,23 @@ Your data is in the `backend/data/` folder: `accountable.db`, and while the app 
 
 - 2026-11-22: Phase 5's agent work is done (T5.1–T5.5, on Windows); checkpoint C5 is not reached yet. A fresh clone's first `npm run dev` installed everything and started in 15 s; the second run, with outbound traffic blocked, needed no install and started in 4 s; the app can't be reached on the LAN addresses (V-M02, Windows). Screenshots at 1440px compared with mockup 1 (V-M04, `docs/evidence/2026-11-22-visual/`): "Add deal" now has its "+" and card "organization · contact" wraps to two lines. This file now has the install, run, seed, clear, backup, restore, logs and runbook sections. The V-M01 walkthrough found one defect, now fixed with a test: deleting from a record's own page showed "no longer exists" with 404 console errors instead of going back to the list. `npm test` (388 backend, 106 frontend, 48 e2e), `npm run lint`, `npm run audit` and `npm run test:perf` pass, and coverage is 99%. Impact note (tooling only, no app behaviour): `playwright.config.ts` and `scripts/run-tests.mjs` gain a `visual` mode (`node scripts/run-tests.mjs visual`) so `e2e/visual/compare.spec.ts` can run. Evidence and the full difference and finding lists are in `docs/build_logs.log` (T5.1–T5.5).
 
+- 2026-11-22: The engineer used and approved the app (AC9, SC5). Phases 2 to 5 were committed together as "Build: phases 2-5" (b8442d5, since their changes overlap in the same files), and tagged `v0.1.0` (annotated, local, not pushed).
+- 2026-11-22: Rewrote the review policy as `docs/REVIEW.md` (it was the untracked `docs/Review.md`) in the 14-section structure, keeping only what applies to Accountable. It has eight review passes, P0–P3 severity, a report format and merge criteria. The engineer approved it the same day, and asked for an independent review of `build-mvp` against `main`. Also re-ran the checks on 22 Nov: `npm test` (388 backend, 106 frontend, 48 e2e), `npm run lint` and `npm run audit` all pass.
+
+## Release notes: v0.1.0 (22 Nov 2026)
+
+The first release of Accountable: a local sales CRM for one salesperson.
+
+- Organizations, contacts and deals, with search, sort, paging, side-panel forms, inline adds, and deletes that show what they'll affect.
+- Record pages with linked records and timelines of activities and stage changes. Activities can have follow-ups, which can be marked done.
+- A pipeline board: drag by mouse or keyboard, probabilities and totals update at once, and Won and Lost columns show this month's deals.
+- A dashboard: the figures, revenue won by month, the sales funnel, deals won and lost, open value by stage, follow-ups and recent activity.
+- Sample data on first run, `npm run seed` and `npm run clear`, local only (127.0.0.1), and works offline once installed.
+- Known open items: V-M02 not yet run on macOS and Linux, or on Windows with Wi-Fi off; V-M05 (someone new) not yet run; the differences listed in `docs/build_logs.log` (T5.2, T5.4) accepted as they are.
+
 ## Next
 
-Waiting on the engineer for checkpoint C5 (`docs/build_logs.log`, T5.5):
-
-- Use the app and approve it, including how it looks (AC9, SC5), or say what to change.
-- Run V-M02 on macOS and Linux, and on Windows with Wi-Fi really off (commands in T5.1).
+- Run V-M02 on macOS and Linux, and on Windows with Wi-Fi off (commands in `docs/build_logs.log`, T5.1), and record the results here.
 - Have someone new try the SC1 questions (V-M05, questions in T5.4).
-- Decide the listed differences: two source names on dashboard rows (needs a contract change), Cerulean follow-up links, the flat won/lost history in the sample data, the Deals table's default sort showing old closed deals first, and the identical "Add deal" button names on the pipeline.
-- Then commit "Build: phase 5" and tag `v0.1.0`.
+- Two weeks of real use to check SC2 to SC4 (V-M06).
+- Possible later changes from Phase 5: two source names on dashboard rows (needs a contract change), Cerulean follow-up links, a richer won/lost history in the sample data, the Deals table's default sort, and distinct names for the pipeline's "Add deal" buttons.
