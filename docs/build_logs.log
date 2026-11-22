@@ -329,3 +329,990 @@ Recommendation for T4.1: the `npm run audit` script should call `uv run python -
   machine's Application Control policy, rather than the pip-audit.exe launcher.
 Change control: AGENTS.md (new "Checking your work" section) and docs/evidence/ (saved command outputs) are outside
   plan section 1. Both were added at the engineer's request. No application behaviour changed.
+
+----------------------------------------------------------------------
+T2.1  Organizations, contacts and deals: create, read, update and delete
+Date: 2026-11-21
+Commands run:
+  uv run pytest backend/tests/test_organizations.py test_contacts.py test_deals.py
+    -> 139 passed (the T1.6 schema tests plus the new API tests; the deal file also holds T2.3's PATCH cases)
+Covered: create 201 with the spec 5.3 shape and timestamps, GET by ID, lists (organizations and contacts by
+  name ignoring case, deals by close date, R47), PATCH changes only the fields sent and sets updated_at,
+  required fields and R21 rules through the API (422 per field, nothing saved), R22 duplicate names allowed,
+  R44 contact count, open deal count and open value (Won and Lost excluded), R11 organization required and
+  must exist, status default lead, R23 contact must belong to the organization on create and when either link
+  is sent ("Choose a contact from Acme Ltd."), R34 a link cleared by a delete is kept and exempt until filled
+  in, and can't be set back to null, a new deal's first stage change row (from none) and top-of-column
+  position (R67), probability from the stage unless sent (R15), is_late and expected_revenue, D-3 (created at
+  Won: closed_at = now, contact unchanged), 404 for every missing ID.
+Design notes:
+  - services/__init__.py: ServiceError (NotFound 404, Invalid 422, StalePosition 409) and unit_of_work(engine),
+    one transaction per request (REL-2). Services never import FastAPI; main.py maps ServiceError to the spec
+    5.2 format with one exception handler.
+  - Routers are HTTP only: they open unit_of_work, call one service and return the schemas model. Routers get
+    their transaction through app.services, not app.db.
+  - A link to a record that doesn't exist is a 422 next to the field ("That organization doesn't exist.
+    Choose another."), not a database error.
+Files changed: backend/app/services/__init__.py, services/records.py, routers/organizations.py,
+  routers/contacts.py, routers/deals.py, backend/app/main.py (router registration in ROUTERS, the ServiceError
+  handler), backend/tests/test_organizations.py, test_contacts.py, test_deals.py
+Requirements covered: R10-R12, R15 (creation), R18 (creation row), R21-R23, R34, R44, R47 (API order), R67
+  (creation position), spec 5.3
+Open issues: none.
+
+----------------------------------------------------------------------
+T2.2  Activities
+Date: 2026-11-21
+Commands run:
+  uv run pytest backend/tests/test_activities.py -> 24 passed
+Covered: log on a contact or a deal, each type, occurred_at defaults to now, planned activity in the future
+  and a follow-up in the past accepted (spec 4.5), exactly one parent through the API (both or neither: 422),
+  a parent that doesn't exist (422), mark done and undone, edit only the fields sent, clear the follow-up,
+  delete (204) and a second delete or edit (404), no GET by ID (405), list newest first.
+Files changed: backend/app/services/records.py (activity part), services/deletes.py (delete_activity),
+  routers/activities.py, backend/app/main.py (registration), backend/tests/test_activities.py
+Requirements covered: R13, R53, R55
+Open issues: none.
+
+----------------------------------------------------------------------
+T2.3  Stage changes and moves
+Date: 2026-11-21
+Commands run:
+  uv run pytest backend/tests/test_move.py -> 18 passed
+  (PATCH stage-change cases are in test_deals.py, in T2.1's 139)
+Covered (every spec 4.2 row through the API): open -> open (usual probability, close date unchanged, row),
+  any -> Won (100%, close date today, closed_at now, contact becomes customer), any -> Lost (0%, today,
+  contact unchanged), Won -> open (usual probability, close date and customer kept, closed_at null, so it
+  can show Late, WF-7), same stage and new place (no row), saved with no stage change (as sent, no row, place
+  kept), a probability sent with the stage kept (R15). PATCH puts a deal whose stage changed at the top of
+  its new column (R67). /move: exact drop between two cards (midpoint), within a column, at either end,
+  into an empty column; 409 stale_position for a neighbour in another stage, not adjacent, deleted, a
+  non-empty column with both null, the deal itself, and the wrong end, each changing nothing; a repeated
+  move gives the same end state and one row; the 1e-6 gap renumbers the column 1.0, 2.0, 3.0 first and
+  returns the renumbered deals; Won with a cleared contact succeeds and changes no contact; 404 for a
+  missing deal.
+Design notes:
+  - services/moves.change_stage is the one code path: records.update_deal (PATCH) and moves.move both call it,
+    and it takes the effects from rules.stage_change_effects, reading the previous state in the same
+    transaction.
+  - A close date sent in the same PATCH as a move to Won or Lost is replaced by today (R16 "by any route");
+    afterwards it can be edited, and closed_at stays.
+  - The Won and Lost columns are this month's deals only (R60, by closed_at), so neighbours, ends and
+    renumbering for those columns are checked against what the board shows.
+Files changed: backend/app/services/moves.py, routers/deals.py (move route; PATCH delegates through
+  records.update_deal to moves.change_stage), backend/tests/test_move.py, test_deals.py
+Requirements covered: R15-R18, R24, R60 (column membership), R63, R67, spec 4.2, 5.4, 6.4
+Open issues: none.
+
+----------------------------------------------------------------------
+T2.4  Deletes and delete-impact
+Date: 2026-11-21
+Commands run:
+  uv run pytest backend/tests/test_deletes.py -> 11 passed
+Covered (checked on the rows with SQL counts, not only through the API): organization impact
+  {contacts_kept, deals_kept}; deleting an organization keeps its contacts and deals with organization_id NULL
+  and keeps every activity and stage change (R31); contact impact {deals_kept, activities_deleted}; deleting a
+  contact keeps their deals with contact_id NULL, deletes their own activities and keeps the deals' (R32);
+  deal impact {activities_deleted, stage_changes_deleted}; deleting a deal deletes its activities and stage
+  changes and nothing else (R33); won deals keep counting on the dashboard after their organization and
+  contact are deleted (R35); a second delete and the impact of something gone are 404 (REL-5).
+Design notes: deletes.py issues one DELETE and relies on the foreign keys (SET NULL and CASCADE, spec 6.1). The
+  cascade isn't repeated in Python.
+Files changed: backend/app/services/deletes.py, the delete and delete-impact routes in routers/organizations.py,
+  contacts.py, deals.py, backend/tests/test_deletes.py
+Requirements covered: R30 (counts from the server), R31-R36
+Open issues: none.
+
+----------------------------------------------------------------------
+T2.5  Timelines
+Date: 2026-11-21
+Commands run:
+  uv run pytest backend/tests/test_timelines.py -> 9 passed
+Covered: the deal timeline merges activities and stage changes newest first with source = the deal; the
+  contact timeline has their own activities (source = contact) plus the activities and stage changes of deals
+  where they're the main contact now, and changes when the deal's contact changes; the organization timeline
+  combines its contacts' activities, its deals' activities and its deals' stage changes, and excludes other
+  organizations; entries at the same moment keep a stable order (a stage change above an activity); 404 for a
+  missing record; the full entry shape (kind, id, type, from_stage, to_stage, description, at, source).
+  Bounded queries: an organization timeline with 20+ activities runs at most 3 statements (counted with a
+  SQLAlchemy cursor event).
+Design notes: planned activity (in the future) sits at its own time at the top of a timeline. The dashboard's
+  recent list (T2.8) leaves it out until it happens.
+Files changed: backend/app/services/timeline.py, the timeline routes in routers/organizations.py, contacts.py,
+  deals.py, backend/tests/test_timelines.py
+Requirements covered: R50-R52, R54
+Open issues: none.
+
+----------------------------------------------------------------------
+T2.6  Sample data and first-run seeding
+Date: 2026-11-21
+Commands run:
+  uv run pytest backend/tests/test_seed.py -> 14 passed
+  Counts printed by the seed (clock 2026-11-21 14:30): 12 organizations, 40 contacts, 45 deals, 150 activities
+  Dashboard on the sample data: open value $653,700, expected $266,535, won this month $61,500 (4 deals),
+    win rate 15 won / 12 lost = 56%, 2 overdue follow-ups, 4 late deals, follow-ups 2 overdue / 2 today /
+    3 next 7 days / 9 later. Contacts: 19 lead, 9 qualified, 12 customer. Deals: 5 new, 4 qualified,
+    4 proposal, 5 negotiation, 15 won, 12 lost.
+Covered: R80 counts and coverage (8 industries, all three statuses, all six stages); R81 a won and a lost deal
+  in every one of the last 12 months, open close dates within the next 3 months, at least 4 late; R82
+  follow-ups overdue, today, next 7 days, later and done; R83 every deal's history starts at its creation
+  (created_at), chains from stage to stage, ends at its current stage, and closed deals' closed_at and close
+  date come from the last move; R17 contacts of won deals are customers; nothing dated after now except 2
+  planned activities; deterministic for the same moment and shifted with the date; coverage still holds on
+  1 Mar 00:30, 31 Dec 23:50 and 29 Feb; seeding again replaces everything; clear_all empties every table;
+  only a database just created is seeded (an existing, emptied one isn't).
+Design notes:
+  - Names and scenarios start from docs/mockups/shared/data.js: the 16 open deals in board order, this month's
+    4 won and 1 lost, the mockup's follow-ups and recent activity. Four organizations, 32 contacts, 2 open
+    deals and 22 earlier closed deals are added, all made up. Web and email addresses use .example (R84).
+  - Each deal is walked through its path with rules.creation_effects and rules.stage_change_effects, which give
+    the probability, close date, closed_at, the stage change rows and the customer status.
+  - Times that would fall after now (early in the morning) are clamped, and this month's closed deals are kept
+    inside this month, so the coverage holds on any date.
+  - main.prepare_database seeds in its own transaction only when the migration started from an empty file, and
+    the start-up line now says "sample data loaded: yes" or "no" (OBS-4).
+Files changed: backend/app/seed.py, backend/app/main.py (seed if new, start-up line), backend/tests/test_seed.py
+Requirements covered: R4 (first run), R80-R84, OBS-4
+Open issues: if seeding a new file failed after its migration, the next start would find a migrated, empty
+  database and not seed it (REL-9 forbids reseeding an existing file). Not seen in testing.
+
+----------------------------------------------------------------------
+T2.7  Seed and clear commands
+Date: 2026-11-21
+Commands run:
+  uv run pytest backend/tests/test_cli.py -> 8 passed
+  Manual run on Windows beside a running backend (scratch database in the session scratchpad, never
+  backend/data/accountable.db; ACCOUNTABLE_API_PORT=8011):
+    python -m app.main -> "database ...manual-t27.db (schema 0001_initial, new)", "sample data loaded: yes"
+    GET /api/organizations while running -> 12
+    echo no | npm.cmd run clear     -> "This deletes all data. Type yes to continue: Nothing was changed." exit 1
+    npm.cmd run clear -- --yes      -> "All data deleted: 12 organizations, 40 contacts, 45 deals, 150 activities
+                                       removed." exit 0; the running API then returned 0 organizations
+    echo yes | npm.cmd run seed     -> "This replaces all data with the sample data. Type yes to continue: Sample
+                                       data loaded: 12 organizations, 40 contacts, 45 deals, 150 activities." exit 0;
+                                       the running API then returned 12 organizations and the dashboard figures
+    The scratch server was stopped afterwards (port 8011 free).
+Covered: anything but "yes" (no, empty, y, "yes please") changes nothing and exits 1, with the spec's question;
+  "yes" loads and prints the spec's summary; --yes skips the question; clear empties every table and keeps the
+  schema; no terminal (EOF) counts as no; a bad argument, an unusable database path and a bad setting exit 2
+  with "Nothing was changed"; seed and clear work while the app's engine holds an open read transaction, and
+  the app sees the new data on its next read (REL-10); the real `python -m app.cli` process exits 0 and 1.
+Design notes: the command migrates the file to head first, so it also works on a new or older file. One
+  transaction each. The file is never deleted. e2e/fixtures.ts already calls `app.cli seed --yes` before each
+  end-to-end test, which now runs.
+Files changed: backend/app/cli.py, package.json (seed and clear scripts), backend/tests/test_cli.py
+Requirements covered: R4, spec 5.6, REL-10
+Open issues: none.
+
+----------------------------------------------------------------------
+T2.8  Dashboard figures
+Date: 2026-11-21
+Commands run:
+  uv run pytest backend/tests/test_dashboard.py -> 15 passed
+Covered on a fixed data set (deals walked through their stages at known moments): open value and expected
+  revenue, open by stage (count, value, expected), won this month, 12-month win rate by count (60%) and its
+  rounding (33, 67, 50, 13), months oldest first with revenue won, won and lost by closed_at (a win at
+  31 Oct 23:59:59 is October, one at 1 Nov 00:00:00 is November, one 13 months ago is outside), editing the
+  close date doesn't move a won deal (ADR-015), the funnel from history over deals created in the last 12
+  months (34,000 / 32,000 / 28,000 / 27,000 / 19,000, with a deal created at Proposal counting at New and
+  Qualified), follow-ups grouped (overdue, today, next 7 days inclusive of day 7) with later_count, their source
+  and done ones excluded, marking one done removes it at once, counts for the greeting line, recent = the 10
+  latest up to now (planned activity excluded), the month boundary following the clock on each load
+  (30 Nov 23:59:59 vs 1 Dec 00:00), a deal won today counting at once, and an empty database (zeros, "None
+  yet" as percent null, 12 empty months, 5 funnel stages).
+Design notes: figures are aggregated in SQL (Core GROUP BY, CASE and correlated subqueries); only open follow-ups
+  due within 7 days are loaded as rows. Expected revenue is summed per deal with R20's rounding. The win rate
+  and the months use the same 12-calendar-month window. Each figure is its own function.
+Files changed: backend/app/services/dashboard.py, routers/dashboard.py, backend/app/main.py (registration),
+  backend/tests/test_dashboard.py
+Requirements covered: R70-R79 (backend), ADR-015, C-1, D-2 (follow-up and recent shapes)
+Open issues: none.
+
+----------------------------------------------------------------------
+Checkpoint C2  Core backend
+Date: 2026-11-21
+Commands run:
+  uv run pytest (all backend tests) -> 370 passed
+    test_organizations/contacts/deals 139, test_activities 24, test_move 18, test_deletes 11, test_timelines 9,
+    test_seed 14, test_cli 8, test_dashboard 15, test_errors 6, test_db/rules/migrations/logging/security/smoke 126
+  uv run pytest --cov=app.services --cov=app.rules -> rules.py 100%, services/__init__ 100%, dashboard 100%,
+    deletes 100%, moves 100%, records 99%, timeline 100%; services and rules together 99% (480 statements,
+    1 missed). Whole backend 97%.
+  npm.cmd run lint -> Ruff check "All checks passed!", ruff format --check "44 files already formatted",
+    ESLint (no findings), Prettier checks pass, tsc on both projects. Exit 0.
+  npm.cmd test -> "=== backend tests" 370 passed; "=== frontend tests" 2 files, 12 passed; "=== e2e tests"
+    1 passed (each e2e test now resets its database with `app.cli seed --yes`);
+    "All tests passed: backend, frontend, e2e." Exit 0. Temporary database
+    %TEMP%\accountable-test-4SOnin\test.db.
+Result:
+  - V-B01 to V-B14 pass. V-B13 is as far as it can go with one migration: "upgrade from the previous version
+    with data" still waits for the first migration after 0001 (open since T1.4).
+  - The API answers every spec 5 shape: the four resources' list, create, get (not for activities), patch and
+    delete; timeline and delete-impact for organizations, contacts and deals; /move; /dashboard; /health. The
+    response models are schemas.py's, unchanged from C1.
+  - npm test and npm run lint pass.
+  - No contract change to schemas.py, no new dependency, and no file outside plan section 1's Phase 2 list was
+    changed. E-1 still holds (test_db's text-SQL check passes: PRAGMA only, in db.py's hook).
+  Not committed by the agent. The engineer commits "Build: phase 2".
+
+----------------------------------------------------------------------
+T3.1  Shared library and components
+Date: 2026-11-21
+Commands run:
+  npx tsc -p tsconfig.json (frontend) -> no errors
+  npx vitest run -> lib/format.test.ts 5, lib/deals.test.ts 12, components/DataTable.test.tsx 9,
+    components/ConfirmDialog.test.tsx 6, components/OfflineBanner.test.tsx 3, ErrorBoundary.test.tsx 3 (all passed;
+    totals in the C3 run below)
+  The first DataTable run failed one test (a number column sorted descending first, TanStack's default for
+  numbers); every column now sorts ascending first (sortDescFirst: false), and it passed.
+Design notes:
+  - format.ts: "$12,500", "$1.2M"/"$82.5K"/"$636K" (mockup 1's rule, with 999,950 shown as "$1M"), "12 Nov 2026",
+    "12 Nov", "Today, 14:30" / "Yesterday, 16:10" / "12 Nov 2026, 14:30", local dates and times only (ADR-013).
+    date-fns isn't used: the few formats are plain functions.
+  - deals.ts: the one stage list (key, label, usual probability, open, color token), contact statuses, activity
+    types, late (R19), expected revenue with halves up (R20, as rules.py), greeting (R79), the summary line,
+    initials, and "closed this month" by closed_at (R60, the same test as the backend's board column).
+  - DataTable: TanStack Table v9 (useTable with sorting, global filtering and pagination features). Search over
+    text columns ignoring case, sort with an arrow and aria-sort, 25 per page, "Showing 1–25 of 312", empty state
+    with its Add button, "No matches for 'xyz'" with Clear search, a Radix row menu (Edit, Delete), row click.
+    Search and sort live in the component, so they reset when the page is left (R47).
+  - SidePanel (480px) and ConfirmDialog (centered) on Radix Dialog. DeleteRecordDialog reads delete-impact when
+    it opens and words it per R30–R33 ("Its 4 contacts and 3 deals will be kept, with no organization.").
+  - Picker: a labelled native select with "+ Add …" as its last item, so keyboard and screen readers work as is
+    (no new dependency; Radix Select isn't installed).
+  - Timeline, EmptyState (with QueryState for loading and error), NotFound (R56), OfflineBanner (REL-7).
+  - ConfirmDialog.tsx also holds DeleteRecordDialog, and EmptyState.tsx holds QueryState: both are small and
+    used everywhere, so no new file outside plan 1.4's list.
+Files changed: frontend/src/lib/format.ts, deals.ts (+ tests), src/components/DataTable.tsx, SidePanel.tsx,
+  ConfirmDialog.tsx, EmptyState.tsx, Timeline.tsx, Picker.tsx, OfflineBanner.tsx, NotFound.tsx (+ tests)
+Requirements covered: R40–R43, R46, R47, R30, R54, R56, REL-7, spec 3.9 Writing; V-F01–V-F04, V-F10 (banner)
+Open issues: none.
+
+----------------------------------------------------------------------
+T3.2  API types, hooks and refetching
+Date: 2026-11-21
+Commands run:
+  npx vitest run src/api -> client.test.ts (the 9 Phase 1 tests plus the hook tests below), all passed
+Design notes:
+  - types.ts: every spec 5 shape in camelCase, checked field by field against backend/app/schemas.py
+    (follow_ups.next_7_days becomes next7Days through client.ts's one translation).
+  - queries.ts: a hook per endpoint (10 reads, 10 changes), the query client (reads retried once except a
+    404, changes never: REL-5), the connection state behind the offline banner, and the optimistic move.
+  - Refetching (spec 7.2): after any save, every query that shows records is invalidated (organizations,
+    contacts, deals, activities, timelines, dashboard). Names, counts and totals appear on every page, so this
+    is the simple correct set; only the queries on screen refetch. mutateAsync resolves after the refetch, so
+    an inline add comes back with the new record already in the picker.
+  - A DELETE that finds the record already gone (404) counts as done (REL-5).
+  - Contract note (no change made): the timeline entry shape has no follow_up_date or done, which R55 needs on
+    timelines. useTimelineItems joins each activity entry with GET /api/activities by ID, so the backend is
+    unchanged. This is one extra list request per record page.
+Tests: each read hook's path; each change hook's method and path; snake_case bodies; the refetch set; retry
+  once but not on 404; a timeline's activities carry follow-up and done; optimisticMove (midpoint, Won at 100%
+  closed now, same column = position only); useMoveDeal shows the move at once and keeps the server's answer,
+  puts the board back and reports MOVE_FAILED on 500, and reloads on 409 with "The board changed. Try again."
+Files changed: frontend/src/api/types.ts, queries.ts, client.test.ts; src/main.tsx (uses createQueryClient)
+Requirements covered: spec 5, spec 7.2, ENG-6, REL-5, REL-7, R64 (cache side)
+Open issues: none.
+
+----------------------------------------------------------------------
+T3.3–T3.5  Organizations, contacts and deals
+Date: 2026-11-21
+Commands run:
+  npx vitest run src/forms -> DealForm.test.tsx 7, ContactForm.test.tsx 4, all passed on the first run
+  npm.cmd test -- e2e start organizations -> 4 passed
+  npm.cmd test -- e2e contacts deals -> 8 passed
+Design notes:
+  - Forms use React Hook Form with the R21 rules as Zod schemas (src/forms/fields.tsx, with a 15-line Zod
+    resolver, since @hookform/resolvers isn't an approved dependency). Messages match backend/app/schemas.py's
+    wording. A refused save keeps the form open and puts the server's messages next to the fields (R48), with
+    "Reference: xxxxxxxx" when it isn't a field message. Save is disabled while saving and while offline.
+  - Contact form: organization required on create (R11); an edit with a cleared link doesn't send it (R34);
+    "+ Add organization" opens a second side panel and comes back with it chosen (WF-3).
+  - Deal form: the stage fills in its usual probability, which can be overwritten (R15); the contact picker
+    lists only the chosen organization's contacts and clears a contact that no longer matches (R23); "+ Add
+    organization" and "+ Add contact" (the new contact defaults to the chosen organization). An edit sends only
+    what changed and never an empty link.
+  - Tables: columns per R44, money and percentages right-aligned in JetBrains Mono, "Value (USD)" headings,
+    the Late badge and Raspberry date (R19), the contacts' segmented status filter with counts.
+  - Record pages (R50–R52): details, lists with links and badges, the timeline; Edit and Delete; "Add contact"
+    and "Add deal" from the organization page, "Add deal" from the contact page (prefilled).
+  - The top bar's "Add deal" now opens the deal form (App.tsx), and goes to the new deal's page.
+Files changed: src/forms/fields.tsx, OrganizationForm.tsx, ContactForm.tsx, DealForm.tsx (+ tests),
+  src/pages/organizations/*, contacts/*, deals/*, src/App.tsx (routes), e2e/organizations.spec.ts,
+  contacts.spec.ts, deals.spec.ts
+Requirements covered: R10–R12, R15, R19, R21, R23, R30–R34, R40–R48, R50–R52; V-F05, V-F06, V-E02–V-E04
+Open issues: none.
+
+----------------------------------------------------------------------
+T3.6  Activities on record pages
+Date: 2026-11-21
+Commands run:
+  npm.cmd test -- e2e record-pages activities -> first run 6 passed, 2 failed: Playwright's check() expects the
+    box to stay ticked, but ticking a dashboard follow-up removes it by design; changed to click(). The next run
+    failed once more: the timeline's checkbox only changed after the refetch, so uncheck() saw no change. The
+    timeline now shows the new done state at once and puts it back if the save fails. Then 8 passed.
+Design notes: ActivityForm (type, description, when it happened defaulting to now, optional follow-up date; the
+  future is allowed) on contact and deal pages. ActivityTimeline (in ActivityForm.tsx) adds Edit (side panel),
+  Delete (after asking) and the follow-up tick to the Timeline; stage changes have no actions (R55). Record
+  pages for a missing ID, or one deleted in another tab, show "This deal no longer exists" with a link back.
+Files changed: src/components/ActivityForm.tsx, the contact and deal page files, e2e/record-pages.spec.ts,
+  e2e/activities.spec.ts
+Requirements covered: R13, R51, R53–R56, spec 4.3; V-E05, V-E08
+Open issues: none.
+
+----------------------------------------------------------------------
+T3.7  Pipeline
+Date: 2026-11-21
+Commands run:
+  npx vitest run src/pages/pipeline -> Column.test.tsx 8, DealCard.test.tsx 5, passed
+  npm.cmd test -- e2e pipeline -> first run: 4 failed. The first board used @dnd-kit/sortable across
+    containers; moving a card between columns looped in onDragOver ("Maximum update depth exceeded"), and the
+    keyboard's arrows moved the card 25px at a time. Rewritten (below). Two later failures were the tests: they
+    read the columns before the cards loaded, and the within-column drag grabbed a card below the 900px window.
+    Then 9 passed.
+  Browser (built-in, scratch database on the test ports): a pointer drag from New to Qualified moved the card and
+    the totals; Space, ArrowRight, Space moved Website rebuild to Qualified.
+Design notes:
+  - Columns are the only drop targets (useDroppable), cards are useDraggable, and a DragOverlay shows the lifted
+    card (larger shadow, slight tilt). The drop place is the number of the column's other cards whose middle is
+    above the lifted card's middle, read from the live layout. The dashed gap only moves cards below it, so the
+    place doesn't flip back and forth. The original card stays, faded.
+  - Keyboard (R66): Space lifts and drops, Escape cancels, ArrowLeft/Right jump a column, ArrowUp/Down one card.
+    Enter on a focused card opens the deal; so does a click (a 6px move starts a drag).
+  - /move neighbours come from the board order by position. Won and Lost list this month's deals most recent
+    first; a drop there goes to the top, next to the column's first card by position, which satisfies the
+    server's check. Won and Lost aren't reordered by hand.
+  - Optimistic move (R64): the deals cache changes at once (stage, midpoint position, usual probability, closed
+    now for Won/Lost), so the header totals, the strip and "Open pipeline" move on drop; the server's answer then
+    replaces it. A failure puts the cache back with "Couldn't move the deal. Check the app is still running and
+    try again."; a 409 reloads the board with "The board changed. Try again." (REL-11).
+  - Won and Lost: this month only by closed_at, latest 5 with "N more · Show all" (and "Show the latest 5"),
+    count and value for this month, "Closed in November". "Add deal" on each open column opens the form with that
+    stage; the new card lands at the top (server position).
+  - @dnd-kit/utilities isn't imported (it's only a transitive dependency).
+Files changed: src/pages/pipeline/PipelinePage.tsx, StageStrip.tsx, Board.tsx, Column.tsx, DealCard.tsx,
+  ClosedRow.tsx (+ Column.test.tsx, DealCard.test.tsx), src/api/queries.ts (optimistic move), src/App.tsx,
+  e2e/pipeline.spec.ts
+Requirements covered: R60–R67, REL-8, REL-11; V-F07, V-F08, V-E06
+Open issues: none.
+
+----------------------------------------------------------------------
+T3.8  Dashboard
+Date: 2026-11-21
+Commands run:
+  npx vitest run src/pages/dashboard -> FollowUps.test.tsx 5 passed
+  npm.cmd test -- e2e start won-deal -> start 2 passed; won-deal first run 1 failed (the test picked Marcus Bell,
+    who is already a customer in the sample data; it now picks a Negotiation deal whose contact isn't), then a
+    click straight after a drop was ignored (dnd-kit ignores clicks for 50 ms after a drop; the test waits 100 ms
+    as a person would). Then 2 passed.
+Design notes: every figure comes from GET /api/dashboard, one panel per field. HeroPanel: greeting from the local
+  hour (R79), the server's date and the summary line, four figures in white JetBrains Mono (won this month in
+  Sea Green, "None yet" for no win rate), and the Recharts area line with the one Sea Green gradient, Sea Mist axis
+  text and #0F4C60 gridlines. FunnelPanel with "N% carried", WonLostChart (won Sea Green, lost Sea Mist),
+  StageDonut with the total in the middle, FollowUps (Overdue, Today, Next 7 days, "N more due later", a tick
+  removes it at once and puts it back if the save fails), RecentActivity (10 latest, each a link). Each panel has
+  its empty state (R78). Chart tooltips are white panels.
+Files changed: src/pages/dashboard/* (+ FollowUps.test.tsx), src/App.tsx (index route), e2e/start.spec.ts,
+  e2e/won-deal.spec.ts; e2e/smoke.spec.ts removed (replaced by start.spec.ts, as T1.8 planned)
+Requirements covered: R70–R79, AC6, AC7; V-F09, V-E01, V-E07
+Open issues: none.
+
+----------------------------------------------------------------------
+Checkpoint C3  Frontend integration
+Date: 2026-11-21
+Commands run:
+  npm.cmd test -> "=== backend tests" 370 passed (1 warning: Starlette's TestClient deprecation, as since T1.2);
+    "=== frontend tests" 12 files, 106 passed; "=== e2e tests" 31 passed (1.0m);
+    "All tests passed: backend, frontend, e2e." Exit 0. Temporary database
+    %TEMP%\accountable-test-KLPRYu\test.db, ports 8001/5174.
+  npm.cmd run lint -> Ruff check "All checks passed!", ruff format --check "44 files already formatted", ESLint
+    (no findings), Prettier "All matched files use Prettier code style!" for frontend and for e2e/scripts, tsc on
+    both projects. Exit 0.
+  Vitest run four more times in a row while fixing one flaky assertion (an isSuccess read before the re-render,
+  now in waitFor): 106 passed each time after the fix.
+Result:
+  - V-F01 format.test.ts, V-F02 deals.test.ts, V-F03 DataTable.test.tsx, V-F04 ConfirmDialog.test.tsx,
+    V-F05 DealForm.test.tsx, V-F06 ContactForm.test.tsx, V-F07 Column.test.tsx, V-F08 DealCard.test.tsx,
+    V-F09 FollowUps.test.tsx, V-F10 ErrorBoundary.test.tsx + client.test.ts + OfflineBanner.test.tsx: pass.
+  - V-E01 start (2), V-E02 organizations (2), V-E03 contacts (3), V-E04 deals (5), V-E05 record-pages (5),
+    V-E06 pipeline (9), V-E07 won-deal (2), V-E08 activities (3): pass.
+  - V-E00 holds in every e2e test: no console error and no request outside localhost. Four tests cause an
+    error response on purpose (missing records' 404, a refused save's 422, a mocked 500, a stale 409); each
+    accepts only Chrome's "Failed to load resource: ... status of <that code>" line for itself (see below).
+  - npm test and npm run lint pass. Checkpoint C3 holds.
+Look and feel against mockup 1 (built-in browser at 1440x900, scratch database on the test ports, never
+  backend/data/accountable.db):
+  - Dashboard: matches the layout and styles: Midnight hero with the serif greeting, date and summary line, the
+    2x2 figures (won this month in Sea Green), the Sea Green revenue line with its one gradient, funnel /
+    won-lost / donut in 5-4-3 columns, follow-ups and recent activity in 6-6.
+  - Pipeline: matches: totals top right, the stacked strip with each stage's count, value and expected, six
+    columns with narrower Won and Lost, cards with initials chip, Late badges (ADR-017 fill), meters in the
+    stage color, dashed "Add deal", compact closed rows and "Closed in November".
+  - Differences, for V-M04 / T5.2:
+    1. The top bar's "Add deal" has no "+" icon (mockup has one). TopBar.tsx is T1.7's file and wasn't changed.
+    2. Cards show "organization · contact" on one line with an ellipsis; the mockup wraps it to two lines.
+    3. Recent activity and follow-up rows show one source (the deal or contact) under the title; the mockup
+       shows two ("Priya Raman · Northwind Logistics"). The API's source has one name (spec 5.3).
+    4. Tables, forms and record pages have no mockup; they follow spec 3.9 (white panels, 48px rows, 12px Muted
+       headings, mono numbers right-aligned, 480px side panel, centered delete dialog).
+Changes outside plan section 1's Phase 3 list (impact notes, no behaviour or contract change):
+  - frontend/src/styles/global.css and tokens.css (T1.7's files): the Phase 3 component styles, and two tokens
+    (--cerulean-tint for timeline icons, --drop-fill for the drop gap) so colors stay in the tokens file.
+  - frontend/vite.config.ts (T1.7's file): optimizeDeps pre-bundles the runtime packages. Without it, Vite's
+    first page load on a clean cache answers 504 "Outdated Optimize Dep", a console error that would fail V-E00
+    on a fresh clone. Checked: with node_modules/.vite/deps deleted, the next e2e run had no console error.
+  - e2e/fixtures.ts (T1.8's file): (a) a `guards.allowConsoleError(pattern)` fixture so a test that causes an
+    error response on purpose can accept that one line; every other console error still fails. (b) a `dragTo`
+    helper with stepped mouse moves (RK-17).
+  - e2e/smoke.spec.ts removed, as T1.8 said start.spec.ts replaces it.
+  - No new dependency. No backend file changed. docs/spec.md, docs/intent.md, docs/mockups, README.md and course
+    files untouched.
+Open issues:
+  - The e2e browser clock is fixed at 21 Nov 2026 14:30 (fixtures.ts), but the e2e backend runs on the system
+    clock and seeds relative to it. They agree today; on another day, "today", "this month" on the board and the
+    greeting could disagree with the server's figures and some e2e assertions (for example "21 Nov 2026" close
+    dates, "Closed in November") would fail. Suggest for Phase 4 (T4.3) or the engineer: an
+    ACCOUNTABLE_FIXED_NOW-style setting for the test backend, or not fixing the browser clock. Not changed here:
+    it touches backend config (out of scope for Phase 3).
+  - The timeline joins GET /api/activities to show follow-ups and done flags (T3.2 note): one extra list request
+    per record page, to check in V-P01 (T4.2).
+  Not committed by the agent. The engineer commits "Build: phase 3".
+
+----------------------------------------------------------------------
+T4.1  Security verification and dependency audit
+Date: 2026-11-21
+Commands run:
+  uv run pytest backend/tests/test_security.py backend/tests/test_logging.py -> first run 3 failed (the test
+    read activities through GET /api/activities/{id}, which doesn't exist: 405; now read from the list),
+    then 57 passed.
+  npm.cmd test -- e2e security -> 3 passed (V-S08, V-S09, V-S10).
+  npm.cmd run audit (= npm audit --audit-level=high && uv run python -m pip_audit) -> "found 0 vulnerabilities",
+    "No known vulnerabilities found". Exit 0.
+  npm.cmd audit (every severity) -> found 0 vulnerabilities. uv run python -m pip_audit -> pip-audit 2.10.1,
+    No known vulnerabilities found.
+Result:
+  - V-S01 foreign Host 403, V-S02 foreign/missing Origin 403 and nothing changed, V-S03 no CORS headers: pass
+    (since T1.3).
+  - V-S04 test_SEC6_VS04_*: <script> and <img onerror> text in every free-text field of all four record types is
+    stored and returned unchanged as JSON text: pass.
+  - V-S05 test_SEC5_VS05_*: "'; DROP TABLE deals; --" stored as text everywhere, the table list unchanged, deals,
+    dashboard still answer, the row found by an equality query: pass.
+  - V-S06 413 / 415 (T1.3) and now the unknown field "is_admin" refused with 422 and the field message on the
+    organization, contact and activity endpoints, with nothing saved: pass.
+  - V-S07 a crash is a generic 500 with no stack (test_errors.py, T1.2); test_logging.py now also runs a full
+    create/edit/refuse/delete round on the real endpoints and checks no name, email, phone, note or ID reaches
+    the log, only path templates: pass.
+  - V-S08 e2e: script and <img onerror> names added through the form show as text in the table, as the record
+    page heading and notes; no <script>/<img> element is created, window.__injected stays unset, no dialog: pass.
+  - V-S09 e2e: the form shows "Enter a website like example.com or https://example.com." and doesn't save;
+    the API answers 422 with a website field message for javascript:, JavaScript:, data: and vbscript:; a
+    good website becomes an https link with target=_blank and rel=noopener noreferrer: pass.
+  - V-S10 (E-4): e2e reads the OS's listening sockets (netstat -an on Windows/macOS, ss -Hltn on Linux) while
+    Playwright's servers run, and both test ports 8001 and 5174 listen on 127.0.0.1 only; backend tests check
+    run() hands uvicorn host 127.0.0.1 and the port check binds loopback only: pass. The LAN address itself is
+    for V-M02 by hand (T5.1).
+Files changed: backend/tests/test_security.py, backend/tests/test_logging.py, e2e/security.spec.ts (new),
+  package.json ("audit" script).
+Requirements covered: SEC-1–SEC-3, SEC-5–SEC-8, SEC-11; V-S01–V-S10.
+Open issues: pip-audit must run as `uv run python -m pip_audit` on this machine (the script does). The audits
+  need the network; they're a release check, not part of npm test.
+
+----------------------------------------------------------------------
+T4.2  Performance
+Date: 2026-11-21
+Commands run:
+  ACCOUNTABLE_DB=<scratchpad>/perf.db uv run --no-sync --directory backend python -m app.perfdata -> "200
+    organizations, 2000 contacts, 1000 deals, 10000 activities" in 0.9 s.
+  npm.cmd run test:perf -> first run: NFR-1 passed; NFR-2 failed on its own test (a move with no neighbours into
+    a full column is correctly 409 stale_position; the test now moves the 2nd Proposal card above the 1st);
+    then a strict-locator and a heading-name fix in the NFR-3 test. Final full run: 4 passed (2.9m), exit 0,
+    "All tests passed: perfdata, perf."
+  uv run pytest backend/tests/test_perfdata.py -> 3 passed.
+Timing report (p95 of 20 runs, Windows 11, installed Chrome, Vite dev server per ADR-010; also written to
+  test-results/perf/report.json, which git ignores):
+  Cold first load of the app (no threshold, E-3) ........ 809 ms (one load)
+  NFR-1 (<=500 ms), click to the page's data shown, query cache empty each run:
+    Dashboard 172, Pipeline 143, Deals 63, Contacts 77, Organizations 51,
+    Organization page 226, Contact page 186, Deal page 156 ms
+  NFR-2 lists and dashboard (<=300 ms): organizations 4, contacts (2,000) 32, deals (1,000) 13,
+    activities (10,000) 92, dashboard 11 ms
+  NFR-2 other calls (<=100 ms): health 2, organization 2, contact 2, deal 2, organization timeline (busiest
+    organization) 3, contact timeline 2, deal timeline 2, delete-impact 2, PATCH deal 4, move 3,
+    POST activity 3, PATCH activity 3 ms
+  NFR-3 (<=100 ms), key press or click to the table updated (includes React render and one frame):
+    Contacts search 51, Contacts sort by Name 45, Deals search 49, Deals sort by Value 37 ms
+  Every threshold is met. No fix was needed, so no application code changed. The record pages' extra
+  GET /api/activities (T3.2 note) is in the Organization/Contact/Deal page figures; the 10,000-row list is
+  the slowest API call at 92 ms, well under 300 ms.
+How it's measured: in the browser with performance.now() and requestAnimationFrame (from the click or keydown
+  to the page's data in the DOM, with no aria-busy loading panel). Each NFR-1 run starts with a fresh load of
+  another page so the data has to be fetched; the test asserts at least one /api request happened in each
+  measured window. API timings are round trips from Node to 127.0.0.1:8001 after one warm-up call. The perf
+  file keeps V-E00's console and outside-request guards itself (it can't use fixtures.ts, whose reset would
+  replace the performance data).
+Files changed: backend/app/perfdata.py (new), backend/tests/test_perfdata.py (new), e2e/perf/perf.spec.ts (new),
+  package.json ("test:perf"); outside T4.2's list (impact notes in docs/STATUS.md, no app behaviour change):
+  scripts/run-tests.mjs (a "perf" mode: perfdata, then Playwright with ACCOUNTABLE_PERF=1, on its own temporary
+  database), playwright.config.ts (with ACCOUNTABLE_PERF=1 it runs only e2e/perf/, with a 5-minute timeout).
+Requirements covered: R6, NFR-1–NFR-3, NFR-13, E-3; V-P01.
+Open issues: timings are from this machine only. perfdata refuses backend/data/accountable.db (tested with a
+  monkeypatched engine factory, never against the real file).
+
+----------------------------------------------------------------------
+T4.3  Reliability and failure handling
+Date: 2026-11-21
+Commands run:
+  npm.cmd test -- e2e persistence -> first run 2 passed, 3 failed (test bugs: the row searched for was on page 2
+    of the deals table; the banner locator matched the banner and the page's own error line; the REL-4 test
+    timed out after the previous test's 120 s timeout). A separate debug run (deleted afterwards) showed the
+    10 s timeout message does appear: the browser's fixed clock doesn't stop timers. After the fixes:
+    5 passed (31.8s).
+  npm.cmd test -- e2e commands -> first run failed (two "Add ..." buttons on an empty table page: the page's and
+    the empty state's; the test now expects both and clicks the empty state's). Then 1 passed (8.7s).
+  V-M03 by hand (PowerShell, a scratch database in the session scratchpad, port 8011; never
+    backend/data/accountable.db): five rounds of: start the backend; POST a new organization and PATCH a deal's
+    value through the API; `taskkill /pid <uv> /T /F` straight after the answer (no clean shutdown); start a new
+    backend on the same file; GET both back.
+Result:
+  - V-E10 persistence.spec.ts: an added, an edited and a deleted organization are as saved after a reload and in
+    a new tab (R3); a deal's value and stage saved through the edit form survive the backend being killed and
+    restarted (the test runs its own backend on a free port on the test database, routes the browser's /api calls
+    to it, kills its process tree, sees the offline banner, starts a new backend, sees the banner go and the
+    saved values back): pass.
+  - Mocked API (persistence.spec.ts): REL-6 a 503 busy shows "Accountable is busy. Try again." with the
+    reference 9f2c, keeps the form and its values, and the second try (not automatic, REL-5) saves; REL-4 a save
+    with no answer shows "Accountable didn't answer in time. Check it's still running and try again." after
+    10.0–14 s, with the save button disabled meanwhile; REL-7 refused connections show the banner "Can't reach
+    Accountable. Check it's still running in the terminal.", the table on screen stays, Add is disabled while
+    down, and the banner goes and saving works when it's back: pass.
+  - V-E09 commands.spec.ts: with the app open, `clear --yes` (the app's CLI on the test database), then every
+    screen shows its empty state (six dashboard panels, six pipeline columns at 0 deals and $0 open, "No deals
+    yet", "No contacts yet", "No organizations yet" with their Add buttons), the first organization can be added;
+    `seed --yes` then brings back 12 organizations, 45 deals, 40 contacts and a filled dashboard: pass.
+  - V-M03 crash test notes: round 1–5 each "found=True ... ok=True": the new organization and the deal value
+    (70001…70005) were there after every hard kill. Files after the last round: crash.db 126,976 bytes,
+    crash.db-wal 0 bytes (checkpointed on the next open), crash.db-shm. Nothing listened on 8011 afterwards.
+    No data was lost, so no escalation. (The automated restart test above also kills the backend outright.)
+    Limitation: this kills the process, not the machine; a power cut relies on synchronous=FULL (V-B02).
+Files changed: e2e/persistence.spec.ts (new), e2e/commands.spec.ts (new). No application code changed.
+Requirements covered: R3, R4, R78, REL-1–REL-7, REL-10, AC2, AC8; V-E09, V-E10, V-M03.
+Open issues: none.
+
+----------------------------------------------------------------------
+T4.4  Accessibility and layout
+Date: 2026-11-21
+Commands run:
+  npm.cmd test -- e2e keyboard pipeline / keyboard layout (several runs while writing the tests) -> final run
+    7 passed (27.0s): keyboard 3, layout 4.
+  Three throwaway debug specs (deleted afterwards) to find two causes, below.
+Findings and fixes:
+  1. NFR-7: after a keyboard move into another column the card is drawn again in its new column and focus fell
+     to the page body, so the next key press did nothing and no focus was visible. Fix in
+     frontend/src/pages/pipeline/Board.tsx: a keyboard drop remembers the card, and once the board shows it in
+     its new place (stage, or position within the column, changed) focus goes back to it. Pointer drags are
+     unchanged. pipeline.spec.ts (V-E06, 9 tests) still passes with it.
+  2. R5: at 1024px the Deals table (9 columns, 1,187px) already scrolled inside its panel, but the page still
+     scrolled sideways by 149px: the visually hidden "Actions" heading label is absolutely positioned, and the
+     panel wasn't a positioning container, so the label escaped it. Fix in frontend/src/styles/global.css:
+     `.table-panel { position: relative; }`. No visible change at 1280px and wider.
+  Test-side lessons (not app issues): dnd-kit's keyboard sensor listens for the arrows a moment after Space, so
+  the test waits 100 ms; Chrome orders a date field's parts by the computer's region (here dd/mm/yyyy), so the
+  test types 12/12/2026, which reads the same either way; adding a deal from the top bar opens its page.
+Result:
+  - V-E11 keyboard.spec.ts, keyboard only (Tab, Shift+Tab, Enter, Space, arrows, Escape, typing), and every Tab
+    stop is checked for a visible focus indicator (outline or the focus-ring shadow): an organization added,
+    found with search, edited through the row menu, an edit cancelled with Escape, and deleted through the menu
+    and the confirm dialog; a deal added from the top bar with native selects chosen by typing (organization,
+    contact, stage, probability prefilled 40%) and a typed close date; a pipeline card reached with Tab, moved
+    New -> Proposal with Space, the arrows and Space, keeps a visible focus, and opens with Enter: pass.
+  - V-E12 layout.spec.ts at 1024x800 and 1280x800: no horizontal page scroll on the dashboard, pipeline, deals,
+    contacts and organizations, on an organization's, a contact's and a deal's page, with the Add deal side
+    panel open and with the delete dialog open: pass.
+Files changed: e2e/keyboard.spec.ts (new), e2e/layout.spec.ts (new), frontend/src/pages/pipeline/Board.tsx (focus
+  fix), frontend/src/styles/global.css (one rule).
+Requirements covered: NFR-7, R5, R66; V-E11, V-E12.
+Open issues: best effort per the intent: no screen reader or formal contrast audit was done.
+
+----------------------------------------------------------------------
+Engineer decision (Phase 4): e2e clocks
+Date: 2026-11-21
+Question raised at the start of Phase 4 (open issue from C3): the e2e browser clock is fixed at
+  2026-11-21 14:30 (e2e/fixtures.ts) but the e2e backend used the computer's clock, so date-dependent
+  assertions would fail on any other day. Options: (a) a test-only fixed clock for the backend, or
+  (b) stop fixing the browser clock.
+Decision: (a), "Fixed backend clock (Recommended)", chosen by the engineer and relayed by the Phase 3 session.
+Change:
+  - backend/app/config.py: load_settings() reads ACCOUNTABLE_FIXED_NOW (a local ISO date and time, no time zone);
+    when set, the clock is FixedClock at that moment, otherwise SystemClock as before. A bad value stops with a
+    ConfigError naming the variable.
+  - backend/app/main.py: start-up logs a WARNING "clock fixed at ... by ACCOUNTABLE_FIXED_NOW (tests only)" when it
+    is set, so it can't be on unnoticed.
+  - scripts/run-tests.mjs: sets ACCOUNTABLE_FIXED_NOW=2026-11-21T14:30:00 for the e2e and perf suites only (pytest
+    fixes its own clock). playwright.config.ts passes it to the backend server. Since the seed/clear commands in
+    fixtures.ts inherit the same environment, the sample data is seeded relative to the same moment.
+  - e2e/fixtures.ts: refuses to run unless ACCOUNTABLE_FIXED_NOW equals FIXED_NOW, so the two can't drift.
+  - backend/tests/test_config.py (new): unset gives SystemClock; set gives that now and today; three bad values
+    are refused.
+  npm run dev never sets it: package.json's dev script and scripts/ensure-installed.mjs are unchanged, so users
+  always get the computer's clock. DEP-2's documented variables are unchanged; this one is test-only.
+Commands run: uv run pytest backend/tests/test_config.py backend/tests/test_security.py backend/tests/test_cli.py
+  -> 63 passed. The full npm test with it is recorded under Checkpoint C4.
+
+----------------------------------------------------------------------
+T4.5  Quality gates
+Date: 2026-11-21
+Commands run:
+  uv run pytest --cov=app.rules --cov=app.services --cov-report=term-missing ->
+    rules.py 68 statements 100%; services/__init__ 100%, dashboard 100%, deletes 100%, moves 100%,
+    records 151 statements 1 missed (line 280) 99%, timeline 100%; TOTAL 480 statements, 1 missed, 99%.
+    Threshold (spec 13.2) is 90%: met without new tests, so no coverage-only tests were written.
+  npm.cmd run lint -> first run failed: Prettier flagged frontend/src/styles/global.css (the T4.4 rule's comment
+    line); after `prettier --write` on that file: Ruff "All checks passed!", "46 files already formatted", ESLint
+    clean, Prettier "All matched files use Prettier code style!" (frontend, and e2e/playwright.config/scripts),
+    tsc -p tsconfig.json and tsc -p tsconfig.node.json clean. Exit 0.
+Files changed: frontend/src/styles/global.css (formatting only).
+Requirements covered: ENG-2, ENG-3, spec 13.2 coverage.
+Open issues: the e2e .ts files are formatted by Prettier but not type-checked by tsc (tsconfig.node.json doesn't
+  include them; T1.8's setup, unchanged).
+
+----------------------------------------------------------------------
+Checkpoint C4  Engineering hardening
+Date: 2026-11-21
+Commands run:
+  npm.cmd test (1st) -> backend 383 passed, frontend 106 passed; e2e 4 failed: the computer slept for ~1.9 h
+    during the first e2e test (it reported 1.9h), then ERR_NETWORK_IO_SUSPENDED / ERR_NETWORK_CHANGED console
+    errors and a 30 s page-load timeout on wake. Environmental; not counted. Keep-awake was then requested.
+  (The fixed-clock change was made here, see "Engineer decision (Phase 4): e2e clocks" above.)
+  npm.cmd test (2nd) -> backend 388, frontend 106 passed; e2e 43 passed, 4 failed: two from another ~2.5 h
+    sleep (ERR_NETWORK_IO_SUSPENDED), and two real ones in activities.spec.ts (Phase 3): with the backend now
+    at 14:30 like the browser, the activities the test logs at 14:30 are the newest, so they rightly show under
+    Recent activity (R75); the test checked the whole page for "gone" instead of the follow-up groups. Before,
+    the seed was dated from the real time (later in the day), which pushed them out of the top 10 by chance.
+    Fixed in the test: it checks the Overdue, Today and Next 7 days groups (and after a reload).
+  npm.cmd test (3rd) -> 46 passed, 1 failed: pipeline.spec.ts R66 keyboard test, an ArrowRight sent within
+    milliseconds of Space before dnd-kit listens (the same race found in T4.4; RK-17). The test now waits 100 ms
+    after Space, as keyboard.spec.ts does.
+  npm.cmd test (4th, final) -> "=== backend tests" 388 passed (1 warning: Starlette's TestClient deprecation,
+    as since T1.2); "=== frontend tests" 12 files, 106 passed; "=== e2e tests" 47 passed (2.0m); backend log
+    "WARNING clock fixed at 2026-11-21T14:30:00 by ACCOUNTABLE_FIXED_NOW (tests only)"; "All tests passed:
+    backend, frontend, e2e." Exit 0. Temporary database %TEMP%\accountable-test-l43FeH\test.db, ports 8001/5174.
+  npm.cmd run lint -> Ruff "All checks passed!", "47 files already formatted", ESLint clean, Prettier "All
+    matched files use Prettier code style!" (frontend; e2e, playwright.config.ts, scripts), tsc on both
+    projects. Exit 0.
+  npm.cmd run test:perf (again, with the fixed clock) -> 4 passed (3.1m), exit 0. p95: NFR-1 Dashboard 292,
+    Pipeline 194, Deals 73, Contacts 367, Organizations 65, Organization page 219, Contact page 162, Deal page
+    178 ms (<=500); NFR-2 lists 5/17/11/84/13 ms (<=300), other calls 2–4 ms (<=100); NFR-3 Contacts search 57,
+    sort 70, Deals search 48, sort 38 ms (<=100). The tails were noisier than T4.2's run (Contacts navigation
+    367 vs 77 ms, one 490 ms sort outlier) but every p95 is within its threshold.
+  npm.cmd run audit (T4.1) -> 0 vulnerabilities (npm), no known vulnerabilities (pip-audit).
+Result: C4 holds.
+  - Every automated V case passes: V-B01–V-B14, V-F01–V-F10, V-E00–V-E12, V-S01–V-S10, V-P01.
+  - Thresholds met: NFR-1–NFR-3 at 2x volume; coverage of rules.py and services/ 99% (>=90%).
+  - Audits clean: nothing high or critical (nothing at all) in npm or PyPI dependencies.
+  - V-M03 done by hand with no data lost (T4.3).
+Files changed in Phase 4:
+  New: backend/app/perfdata.py, backend/tests/test_perfdata.py, backend/tests/test_config.py,
+    e2e/security.spec.ts, e2e/perf/perf.spec.ts, e2e/persistence.spec.ts, e2e/commands.spec.ts,
+    e2e/keyboard.spec.ts, e2e/layout.spec.ts.
+  Modified: backend/tests/test_security.py, backend/tests/test_logging.py, package.json ("audit", "test:perf"),
+    frontend/src/pages/pipeline/Board.tsx (keyboard focus fix), frontend/src/styles/global.css (one rule).
+  Outside the plan's Phase 4 list (impact notes in docs/STATUS.md; the clock change is the engineer's decision):
+    backend/app/config.py and backend/app/main.py (ACCOUNTABLE_FIXED_NOW, test-only), scripts/run-tests.mjs (perf
+    mode; fixed clock for e2e/perf), playwright.config.ts (perf mode; passes the clock), e2e/fixtures.ts (clocks
+    must match), e2e/activities.spec.ts and e2e/pipeline.spec.ts (Phase 3 tests steadied, see above).
+  No new dependency. README.md, course/**, docs/intent.md, docs/spec.md, docs/mockups/**, docs/Review.md,
+    .claude/** and .mcp.json untouched. Never used backend/data/accountable.db.
+Open issues:
+  - This machine sleeps during long runs even with keep-awake held (lid or manual sleep); a run spanning a sleep
+    fails with network-suspended errors and should simply be repeated.
+  - Performance figures are from this one machine; the V-M02 LAN-address check is manual in Phase 5 (T5.1).
+  Not committed by the agent. The engineer commits "Build: phase 4".
+
+----------------------------------------------------------------------
+T5.1  Cross-platform and offline run (V-M02)
+Date: 2026-11-22
+Fresh clone on Windows 11 (this machine), Node 24.16.0, uv 0.11.20:
+  The Phase 2-4 work isn't committed, so `git clone` alone gives only Phase 1. The clone was made as:
+  git clone C:\github\accountable <scratchpad>\clone, then every file from `git ls-files -co --exclude-standard`
+  copied over it and the deleted e2e/smoke.spec.ts removed. cmp over all 227 files: identical to the working
+  tree, i.e. what "Build: phase 4/5" will commit. No node_modules, .venv or backend/data in the clone.
+Commands run:
+  Run 1 (online), PowerShell, in the clone: npm.cmd run dev, started 08:38:14.
+    -> "installing the frontend packages" (npm install: added 341 packages, 0 vulnerabilities, 9 s),
+       "installing the backend packages (and Python 3.12 if needed)" (uv: "Using CPython 3.12.13", "Creating
+       virtual environment at: .venv", installed 54 packages), then concurrently started both servers:
+       "Accountable 0.1.0 starting. Open http://127.0.0.1:5173", database <clone>\backend\data\accountable.db
+       "(schema 0001_initial, new)", "sample data loaded: yes", "API on http://127.0.0.1:8000", Vite ready.
+       /api/health 200 through the proxy at 08:38:29: 15 s including both installs.
+    Built-in browser on http://127.0.0.1:5173/ (Vite cache cold): dashboard with sample data, console has only
+      Vite's debug lines and React's DevTools info line; no error or warning.
+  LAN check (E-4), with run 1 up:
+    Get-NetIPAddress -> LAN IPv4 192.168.1.100 (Wi-Fi) and 172.22.192.1 (virtual adapter).
+    Get-NetTCPConnection -State Listen -> 8000 and 5173 listen on 127.0.0.1 only.
+    Test-NetConnection 192.168.1.100 and 172.22.192.1, ports 8000 and 5173 -> TcpTestSucceeded=False (all 4);
+    127.0.0.1:8000 and :5173 -> True. PASS: the app can't be reached on the computer's network address.
+  Run 1 stopped (TaskStop, then the leftover listeners stopped by hand, as known on this machine).
+  Run 2 ("network off"), PowerShell, in the clone: HTTP_PROXY, HTTPS_PROXY, ALL_PROXY, npm_config_proxy and
+    npm_config_https_proxy set to http://127.0.0.1:9 (nothing listens there, so any outbound request from npm,
+    uv, Node or Python fails), NO_PROXY=127.0.0.1,localhost; npm.cmd run dev, started 08:39:57.
+    -> "Accountable: ready." with no install step, both servers up, "(schema 0001_initial)" (not new),
+       "sample data loaded: no", /api/health 200 at 08:40:01: 4 s (NFR-5 <=15 s met).
+    Built-in browser: pipeline then dashboard load with no console error; performance resource entries have
+       one origin only, http://127.0.0.1:5173.
+Result:
+  Windows: PASS for first run from a clean clone (installs, seeds, prints the address, AC1, R1, DEP-3), second
+    run with no install and no outbound access (R2, NFR-4), NFR-5 (4 s), and E-4's LAN check (SEC-1).
+  Limitation, recorded honestly: the network was blocked by a dead proxy, not by turning the Wi-Fi adapter
+    off. Turning the adapter off is a system setting the agent doesn't change. It covers npm, uv and any
+    proxy-aware client; a client that ignores proxy variables would not be caught (the app itself makes no
+    outbound call: V-E00 checks the browser in every e2e test). The engineer's Wi-Fi-off run is listed below.
+PENDING (needs the engineer; not run, not claimed):
+  - Windows, real network off: turn Wi-Fi off, then in the clone (or the repo after committing) run
+    `npm.cmd run dev`, open http://127.0.0.1:5173, click through the five tabs, Ctrl+C.
+  - macOS and Linux, each on a machine with Node 24+, uv and Google Chrome:
+      git clone <repo> accountable && cd accountable && git checkout build-mvp
+      npm run dev          # first run: expect the two install lines, then "Open http://127.0.0.1:5173"
+      open http://127.0.0.1:5173 and check the dashboard shows sample data; Ctrl+C (both servers must stop:
+        lsof -iTCP:8000 -iTCP:5173 -sTCP:LISTEN prints nothing)
+      turn the network off, then: npm run dev   # expect no install line, up within 15 s, the app works
+      lsof -iTCP -sTCP:LISTEN | grep -E ':(8000|5173)'   # expect 127.0.0.1 only
+      from another device, or with the machine's LAN IP: curl -m 3 http://<LAN-IP>:5173/   # expect refused
+      npm test             # optional: all suites in that system's Chrome
+    Record the output per system in docs/build_logs.log and a line in docs/STATUS.md (DoD item 5).
+Files changed: none (scratch clone only, outside the repo). Never used backend/data/accountable.db.
+Requirements covered: V-M02 (Windows part), AC1, R1, R2, NFR-4, NFR-5, NFR-6 (partial), SEC-1/E-4.
+Open issues: V-M02 on macOS and Linux and the Wi-Fi-off run are pending for the engineer (above).
+
+----------------------------------------------------------------------
+T5.2  Visual comparison (V-M04)
+Date: 2026-11-22
+Commands run:
+  node scripts/run-tests.mjs visual -> e2e/visual/compare.spec.ts, 2 passed (dashboard, pipeline), both with the
+    V-E00 guards (no console error, no non-local request), sample data, fixed clock 2026-11-21 14:30, 1440px.
+    Run twice: before and after the two fixes below.
+Screenshots (full page, 1440px wide): docs/evidence/2026-11-22-visual/dashboard.png and pipeline.png (the
+  after-fix versions), compared by eye with docs/mockups/1-spec-reference/dashboard.png and pipeline.png.
+Matches mockup 1:
+  - Top bar: floating white panel, Midnight square "A" mark, the five tabs with the Midnight pill, "Add deal"
+    on the right, no line under it, no user name or avatar.
+  - Dashboard: Midnight hero with the serif greeting, date and summary line, the 2x2 figures in white mono with
+    won this month in Sea Green, the Sea Green revenue line with its one gradient, Sea Mist axis text and dark
+    gridlines, "Last 12 months · $594,500"; funnel / won-lost / donut in 5-4-3 columns with "N% carried",
+    legends and the donut total; follow-ups (Overdue in Raspberry, Today, Next 7 days, "9 more due later") and
+    recent activity (round icons, stage-change icons in the destination stage's color, "Latest 10") in 6-6.
+  - Pipeline: title and subtitle, open pipeline and expected revenue top right, the stacked strip with each
+    stage's count, value and expected, six columns with narrower Won and Lost, dashed "+ Add deal", cards with
+    the initials chip, mono value and date, Late badges in the ADR-017 fill, meters in the stage color, compact
+    closed rows with ellipsis and "Closed in November".
+Differences found, and what was done:
+  1. FIXED. The top bar's "Add deal" had no "+" icon. frontend/src/components/TopBar.tsx: lucide's Plus
+     (aria-hidden, so the button's name stays "Add deal"), as the column buttons already have; also replaced a
+     stale Phase 1 comment.
+  2. FIXED. Cards cut "organization · contact" to one line with an ellipsis; the mockup wraps it.
+     frontend/src/styles/global.css `.card .o`: wraps to at most two lines, then an ellipsis (line-clamp), so a
+     very long pair can't make a card grow without bound. Checked in the second screenshot ("Northwind
+     Logistics · Priya / Raman", "Silverbirch Analytics · Leo / Brandt").
+  3. LISTED FOR THE ENGINEER (contract change, not made). Follow-up and recent-activity rows show one source
+     name under the title ("ERP migration"); the mockup shows two ("ERP migration · Atlas Fabrication"). The
+     dashboard API's item source has one name (spec 5.3/5.5), so showing the second needs a contract change in
+     spec 5 and schemas.py. Recommendation: accept as is for v0.1.0, or approve adding the organization name to
+     the dashboard items as a later change.
+  4. LISTED. Follow-up source names are links in Cerulean text (spec 3.9: links use --cerulean-text); the
+     mockup shows them in Muted ink. Kept: they are links to the record. Engineer's call.
+  5. LISTED (data, not style). The sample data closes about one won and one lost deal a month before November,
+     so "Deals won and lost" shows flat bars and a 56% win rate (15 won, 12 lost), where the mockup's made-up
+     figures vary month to month (54 won, 22 lost). The figures are right for the data (V-B10, V-B11); the
+     shape differs. Changing seed.py is outside Phase 5's files; a richer history is a possible later change.
+  6. Not compared (no mockup): tables, forms, record pages and dialogs. They follow spec 3.9 (checked by eye in
+     T5.4).
+Files changed:
+  - e2e/visual/compare.spec.ts (new, plan 1.5).
+  - frontend/src/components/TopBar.tsx, frontend/src/styles/global.css (fixes 1 and 2).
+  - Outside plan 1's Phase 5 list (impact note in docs/STATUS.md; tooling only, no app behaviour):
+    playwright.config.ts (ACCOUNTABLE_VISUAL=1 runs only e2e/visual/; the default run still ignores it) and
+    scripts/run-tests.mjs (a `visual` mode, as `perf`, with the temporary database, test ports and fixed clock).
+    Without them the planned spec can't run, because the default config ignores e2e/visual/.
+  - docs/evidence/2026-11-22-visual/ (the two screenshots, the evidence the plan asks for).
+Requirements covered: V-M04, NFR-9, AC7 (line, bar and pipeline visuals present). SC5 needs the engineer.
+Open issues: differences 3 to 5 above need the engineer's decision; V-M04's sign-off is the engineer's (SC5).
+
+----------------------------------------------------------------------
+T5.3  Operational documentation
+Date: 2026-11-22
+Commands run (in the scratch clone from T5.1, whose backend/data is a scratch database, app stopped):
+  copied backend/data -> ../backup; `echo no | npm run clear` -> "Type yes to continue: Nothing was changed.";
+  `npm run clear -- --yes` -> "All data deleted: 12 organizations, 40 contacts, 45 deals, 150 activities
+  removed." exit 0, deals 0; deleted backend/data and copied the backup back -> deals 45, organizations 12
+  (restored); `npm run seed -- --yes` -> "Sample data loaded: 12 organizations, 40 contacts, 45 deals, 150
+  activities." Confirms the back-up, restore, seed and clear steps as written.
+  Checked against the code: log file backend/logs/accountable.log (logging.py, RotatingFileHandler), default
+  database backend/data/accountable.db (config.py), the "Port ... is already in use" line (main.py), the
+  question text and `--yes` (cli.py).
+Result: docs/STATUS.md has a new "Using Accountable" section: install Node 24+ and uv (and Chrome for tests),
+  run (including npm.cmd on Windows, Ctrl+C, 127.0.0.1-only, the optional settings), seed and clear, back up
+  and restore the whole backend/data/ folder including the -wal file (and before upgrading, DEP-6), logs and
+  the request reference, health, the spec 12 runbook (every row, plus three rows from this build's findings:
+  the PowerShell execution policy, a failed first install, finding a leftover copy on Windows), and the
+  developer commands.
+Files changed: docs/STATUS.md.
+Requirements covered: spec 12 runbook, OBS-2, OBS-3, DEP-2, DEP-3, DEP-6, DEP-7; DoD item 7.
+Open issues: the install steps for macOS and Linux are written from uv's and Node's documented methods, not
+  run here (part of the pending V-M02 runs in T5.1).
+
+----------------------------------------------------------------------
+T5.4  End-to-end walkthrough (V-M01) and first-time use (V-M05)
+Date: 2026-11-22
+Set-up: npm.cmd run dev in the repo with ACCOUNTABLE_DB=<scratchpad>\walk.db (new, seeded) on the test ports
+  8001/5174, real clock (Sunday 22 Nov 2026, morning). Built-in browser at 1440x900, console and network read
+  after every step. Never used backend/data/accountable.db. Every change below was made in that scratch database.
+Walkthrough, as a salesperson (each screen checked by eye; console checked after each step):
+  Dashboard: greeting "Good morning", "Sunday 22 November 2026 · 2 follow-ups overdue, 4 deals running late",
+    four figures, revenue line, funnel, won/lost bars, donut, follow-ups, recent activity. Ticked "Send revised
+    ERP quote" done: it left the Overdue group at once and the summary line changed to "1 follow-up overdue".
+  Pipeline: dragged "Fleet telematics pilot" New -> Qualified with the mouse: card moved, probability 5% -> 20%,
+    strip and column totals and expected revenue changed. Dragged "Plant safety training" Negotiation -> Won: it
+    joined the Won column as "22 Nov", Won total $61.5K -> $81K, open pipeline and expected revenue dropped.
+    "Add deal" in the Negotiation column opened the form with stage Negotiation and probability 70%; Escape
+    closed it.
+  Deal page (the won deal): Won badge, probability 100%, close date 22 Nov 2026, "Closed Today, 08:44", timeline
+    "Moved from Negotiation to Won" on top. Ticked its follow-up done ("· Done"). Logged a call with a follow-up
+    on 25 Nov: it appeared at the top of the timeline.
+  Contact page (Marcus Bell): Customer, six deals with closed/close dates, the merged timeline with each entry's
+    source deal, including the call just logged and the won stage change.
+  Contacts: status segments All 40 / Lead 19 / Qualified 9 / Customer 12. "Add contact" with nothing filled in:
+    "Enter a name." and "Choose an organization.". "+ Add organization" opened a second panel; a javascript:
+    website was refused ("Enter a website like example.com or https://example.com."); a bare domain was
+    accepted and the new organization was selected in the contact form. A bad email was refused ("Enter an
+    email like name@example.com."). Saved: All 41, Lead 20.
+  Organizations: search "harbor" found both; the new one's website link is https://harborview-clinics.example/
+    in a new tab (noopener noreferrer). Delete from the row menu: "Delete Harborview Clinics? Its 1 contact and
+    0 deals will be kept, with no organization." Confirmed: gone; the contact's page shows Organization "None".
+  Deals: table with Late badges, mono numbers right-aligned, default sort by close date. Top bar "Add deal":
+    organization Northwind -> contact list filtered to its three contacts; stage Proposal -> probability 40%;
+    a past close date -> its page opened with "This deal is running late". Edit panel: probability 55%, date
+    20 Dec 2026, saved; the late warning went away. Stage picker -> Lost: 0%, close date today, "Closed",
+    "Moved from Proposal to Lost". Delete from the deal page: see finding 1.
+  Organization page (Atlas Fabrication): details, open deals "1 · $88,000", four contacts with status badges,
+    six deals, and the combined timeline of its contacts' and deals' entries with their sources.
+  Also covered in T5.1 (first run on a new database, seeded; second run, data kept) and T5.3 (seed, clear, and
+    the question refused without "yes").
+Findings:
+  1. FIXED (defect, R7 and R30). Deleting a deal from its own page didn't go back to the Deals list: the page
+     showed "This deal no longer exists" and the console had two "Failed to load resource ... 404" errors. The
+     same code path served the contact and organization pages. Cause: after any save, every record query is
+     refetched (spec 7.2), including the deleted record and its timeline while the page still shows them; their
+     404 swapped the page for the not-found view, which unmounted the dialog before its onDeleted (navigate to
+     the list) could run. The e2e delete tests delete from the table rows, so this wasn't covered.
+     Fix in frontend/src/api/queries.ts: useDeleteRecord refetches as before, except the deleted record's own
+     queries (the record, its timeline and its delete-impact). Re-checked in the browser: deleting a contact
+     from its page went to /contacts, and the network log has no request for it after the DELETE.
+     Regression test: e2e/record-pages.spec.ts "R30 deleting from a record's page goes back to its list, with
+     no 404" (deal, contact, organization). Commands: `node scripts/run-tests.mjs e2e record-pages` -> first run
+     1 failed (my locator matched the timeline's Delete buttons too; now the header's, .first()), then 6 passed.
+     With the old useDeleteRecord put back temporarily, `... e2e record-pages -g R30` failed as expected (stayed
+     on /deals/8, two 404 console errors); the fix was then restored.
+  2. Not a defect. A downscaled screenshot seemed to say "All 48"; the DOM says "All 40" (JetBrains Mono's
+     dotted zero at small scale). The browser tool also names the organization form's Website field by its
+     placeholder; the label is linked to the input (FieldShell's htmlFor/id), so nothing to fix.
+  3. LISTED (as specified, engineer's call). The Deals table's default sort (R47, "close date with the soonest
+     first") is ascending, so last year's closed deals come first. That's the approved rule; showing open deals
+     first would be a spec change.
+  4. LISTED (best-effort accessibility, NFR-7). The four column "Add deal" buttons on the pipeline all have the
+     same accessible name, so a screen reader can't tell which stage each one adds to. Suggest an aria-label
+     such as "Add deal in Negotiation", a small change, if the engineer wants it.
+  5. LISTED (sample data). Some seeded stage changes are at night ("Created at New 20 Oct 2026, 02:00", "Moved
+     from New to Qualified 28 Oct 2026, 05:00"), and one seeded activity is in the future ("Workshop booked
+     with the plant managers", 24 Nov). Allowed by the rules (R53 allows future activities); only realism.
+     seed.py isn't in Phase 5's files.
+  6. Development-only noise, not errors: React StrictMode makes each page's first requests show twice in the
+     network log (one ERR_ABORTED, one 200); the console has Vite's debug lines and React's DevTools info line.
+  No other console error or warning appeared at any step.
+V-M05 (someone new, SC1, NFR-8): PENDING. It needs a person who hasn't seen Accountable. Not done, not claimed.
+  How to run it: start with the sample data, open the dashboard, give no instructions, ask each question and
+  count the clicks from the dashboard (target: "within a couple of clicks"). Note where they hesitate.
+    Q1. Which companies do we deal with?              (expected: Organizations tab, 1 click)
+    Q2. Who are our contacts? Which are customers?    (expected: Contacts tab, then Customer, 1-2 clicks)
+    Q3. What's in the pipeline, and what's it worth?  (expected: dashboard figures, 0; or Pipeline tab, 1 click)
+    Q4. What happened last with Atlas Fabrication?    (expected: Organizations, Atlas Fabrication, top of its
+        timeline, 2 clicks; or a Recent activity row on the dashboard)
+    Q5. What needs doing next?                        (expected: dashboard Follow-ups, 0 clicks)
+  Record per question: answered or not, clicks, time and any confusion, in docs/build_logs.log.
+Files changed: frontend/src/api/queries.ts (fix 1), e2e/record-pages.spec.ts (its regression test): fixes the
+  walkthrough needed. Behaviour change: deleting from a record's page now goes back to the list, as the dialog
+  already intended.
+Requirements covered: V-M01 (the agent's part), AC9 (the agent's part), R7, R30, R2 (no non-local request seen).
+Open issues: V-M05 pending (a person); the product owner's V-M01 review and AC9/SC5 approval pending (the
+  engineer); findings 3-5 for the engineer.
+
+----------------------------------------------------------------------
+T5.5  Definition of Done (spec 17) and release
+Date: 2026-11-22
+Final gates, run after every Phase 5 change:
+  npm.cmd run lint -> first run exit 1: Prettier flagged e2e/record-pages.spec.ts and scripts/run-tests.mjs
+    (this phase's edits); after `prettier --write` on those two: Ruff "All checks passed!", "47 files already
+    formatted", ESLint clean, Prettier "All matched files use Prettier code style!" (frontend; e2e,
+    playwright.config.ts, scripts), tsc on both projects. Exit 0.
+  npm test -> "=== backend tests" 388 passed, 1 warning (Starlette's TestClient deprecation, as since T1.2);
+    "=== frontend tests" 12 files, 106 passed; "=== e2e tests" 48 passed (2.0m; 47 + the new R30 test);
+    "All tests passed: backend, frontend, e2e." Exit 0. Temporary database
+    %TEMP%\accountable-test-Z6x1ZO\test.db, ports 8001/5174.
+  npm run audit -> "found 0 vulnerabilities" (npm), "No known vulnerabilities found" (pip-audit). Exit 0.
+  uv run pytest --cov=app.rules --cov=app.services -> TOTAL 480 statements, 1 missed, 99% (threshold 90%).
+  npm run test:perf -> 4 passed (3.0m), exit 0. p95: NFR-1 Dashboard 179, Pipeline 159, Deals 80, Contacts 79,
+    Organizations 55, Organization page 238, Contact page 166, Deal page 153 ms (<=500); NFR-2 lists 4/30/11/89/12
+    ms (<=300), other calls 2-4 ms (<=100); NFR-3 Contacts search 49, sort 46, Deals search 45, sort 30 ms (<=100).
+Definition of Done, item by item:
+  1. Every requirement built, or a deliberate change approved: MET as far as the agent can check. The C2-C4
+     entries trace every R, NFR, SEC, REL, OBS, DEP and ENG item to a passing test (plan 4.6). Approved
+     deviations on record: D-2 and the extra frontend dev packages (Phase 1), ACCOUNTABLE_FIXED_NOW (Phase 4).
+     Phase 5 behaviour change: deleting from a record page now returns to the list (a fix toward R7/R30).
+     Open for the engineer, not deviations from the spec: V-M04 differences 3-5 (T5.2), walkthrough findings 3-5
+     (T5.4).
+  2. V-B01 to V-P01 pass, npm test passes on a clean checkout, perf meets thresholds: MET on Windows. npm test
+     and test:perf above. "Clean checkout": T5.1's fresh clone ran npm run dev from empty; `npm test` itself
+     was run in the working repo, not in the clone.
+  3. Lint, formatting, types, coverage: MET (lint exit 0; coverage 99%).
+  4. No high or critical dependency findings: MET (npm run audit: none at all).
+  5. V-M02 on Windows, macOS and Linux and V-M03, results in docs/STATUS.md: NOT MET. Windows done (T5.1),
+     with the network blocked by a dead proxy, not Wi-Fi off. macOS, Linux and the Wi-Fi-off run are PENDING
+     for the engineer (exact commands in T5.1). V-M03 done in T4.3, no data lost.
+  6. V-M01 walkthrough, every screen by eye, no console errors, issues fixed: MET for the agent's part (T5.4):
+     the one defect found is fixed and covered by a test; no other console error. The product owner's review is
+     item 9.
+  7. docs/STATUS.md says how to install, run, seed, clear, back up and restore, with the runbook: MET (T5.3).
+  8. No *[Unapproved]* item left in the spec: MET. grep finds "[Unapproved]" only in the marker's definition
+     (line 54) and in DoD item 8 itself (line 825). docs/spec.md wasn't changed in Phase 5.
+  9. The product owner has used the app and approved it, including how it looks (AC9, SC5): PENDING (the
+     engineer). V-M05 (someone new, the SC1 questions in T5.4) is PENDING too.
+  10. Tagged v0.1.0 (DEP-5): NOT DONE, on purpose. Only after the engineer's approval (item 9), and with item 5
+     settled. Version is 0.1.0 in package.json and pyproject.toml.
+Result: C5 is NOT reached yet. Everything the agent can do is done and passing; items 5 (macOS, Linux,
+  Wi-Fi off), 9 (approval, V-M05) and 10 (tag) wait for the engineer.
+Files changed in Phase 5:
+  New: e2e/visual/compare.spec.ts, docs/evidence/2026-11-22-visual/dashboard.png and pipeline.png.
+  Modified: frontend/src/components/TopBar.tsx and frontend/src/styles/global.css (V-M04 fixes),
+    frontend/src/api/queries.ts (the delete fix), e2e/record-pages.spec.ts (its test), docs/STATUS.md,
+    docs/build_logs.log.
+  Outside plan 1's Phase 5 list (impact note in docs/STATUS.md; tooling only): playwright.config.ts and
+    scripts/run-tests.mjs (the `visual` mode that runs e2e/visual/).
+  package-lock.json shows as modified in `git status`, but `git diff --quiet` finds no content change: starting
+    the walkthrough ran `npm install` once (Phase 4 changed package.json, so the install fingerprint changed,
+    as designed), and npm rewrote the file with CRLF line endings. Nothing to commit there beyond line endings.
+  No new dependency. README.md, course/**, community_contributions/**, assets/**, .claude/**, .mcp.json,
+    docs/intent.md, docs/spec.md, docs/mockups/** and docs/Review.md untouched. backend/data/accountable.db
+    never used: T5.1 and T5.3 used the scratch clone's own database, T5.2/T5.4 and the gates used temporary or
+    scratch databases on the test ports.
+Open issues (for the engineer):
+  - Approve the app (AC9, SC5), or list what to change; then tag v0.1.0 and commit "Build: phase 5".
+  - V-M02 on macOS and Linux, and Windows with Wi-Fi off (T5.1 has the commands).
+  - V-M05 with someone new (T5.4 has the questions).
+  - Decide V-M04 differences 3-5 (T5.2) and walkthrough findings 3-5 (T5.4).
+  Not committed or tagged by the agent.
+
+----------------------------------------------------------------------
+Engineer approval (AC9, SC5)
+Date: 2026-11-22
+The engineer answered "Approved, tag it" to "Have you used the app, and do you approve it for v0.1.0 (AC9,
+  SC5)?" (Phase 5 session). DoD item 9: MET by that approval.
+Still open at approval: DoD item 5 (V-M02 on macOS and Linux, and Windows with Wi-Fi off) and V-M05; the engineer
+  chose to release with them pending. The T5.2 and T5.4 listed differences are accepted as they are for v0.1.0.

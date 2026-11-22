@@ -106,9 +106,28 @@ class Settings:
         return f"http://127.0.0.1:{self.web_port}"
 
 
+def _fixed_now() -> datetime | None:
+    """ACCOUNTABLE_FIXED_NOW: tests only. The end-to-end run sets it (scripts/run-tests.mjs) so the backend's
+    "now" is the browser's fixed clock in e2e/fixtures.ts (engineer's decision, Phase 4). `npm run dev` never
+    sets it, so the app uses the computer's clock."""
+    raw = os.environ.get("ACCOUNTABLE_FIXED_NOW", "").strip()
+    if not raw:
+        return None
+    try:
+        moment = datetime.fromisoformat(raw)
+    except ValueError as exc:
+        raise ConfigError(
+            f"ACCOUNTABLE_FIXED_NOW must be a local date and time like 2026-11-21T14:30, not {raw!r}."
+        ) from exc
+    if moment.tzinfo is not None:
+        raise ConfigError("ACCOUNTABLE_FIXED_NOW is local time with no time zone (ADR-013).")
+    return moment.replace(microsecond=0)
+
+
 def load_settings() -> Settings:
-    """Read the ACCOUNTABLE_* environment variables (DEP-2, E-2)."""
+    """Read the ACCOUNTABLE_* environment variables (DEP-2, E-2, and the test-only ACCOUNTABLE_FIXED_NOW)."""
     raw_db = os.environ.get("ACCOUNTABLE_DB", "").strip()
+    fixed = _fixed_now()
     level = os.environ.get("ACCOUNTABLE_LOG_LEVEL", "").strip().upper() or "INFO"
     if level not in ("DEBUG", "INFO", "WARNING", "ERROR"):
         raise ConfigError(f"ACCOUNTABLE_LOG_LEVEL must be DEBUG, INFO, WARNING or ERROR, not {level!r}.")
@@ -118,4 +137,5 @@ def load_settings() -> Settings:
         web_port=_port("ACCOUNTABLE_WEB_PORT", DEFAULT_WEB_PORT),
         log_level=level,
         reload=_flag("ACCOUNTABLE_RELOAD"),
+        clock=FixedClock(fixed) if fixed else SystemClock(),
     )

@@ -71,3 +71,25 @@ def test_OBS2_log_file_rotates_at_5_mb_keeping_3(client: TestClient, settings: S
     client.get("/api/health")
     assert (LOG_MAX_BYTES, LOG_BACKUPS) == (5 * 1024 * 1024, 3)
     assert (Path(settings.log_dir) / "accountable.log").exists()
+
+
+def test_SEC8_VS07_record_endpoints_never_log_bodies_ids_or_values(client: TestClient, settings: Settings) -> None:
+    """A full round on real endpoints: create, read, edit, search-style list, delete. Only templates reach the log."""
+    values = ("Zanzibar Unique Org", "zara.unique@example.com", "+44 7700 900123", "Secret note text 98765")
+    org = client.post("/api/organizations", json={"name": values[0], "notes": values[3]}).json()
+    contact = client.post(
+        "/api/contacts",
+        json={"name": "Zara Unique", "organization_id": org["id"], "email": values[1], "phone": values[2]},
+    ).json()
+    client.patch(f"/api/contacts/{contact['id']}", json={"job_title": "Head of Secrets"})
+    client.get(f"/api/organizations/{org['id']}/timeline")
+    client.post("/api/contacts", json={"name": "", "organization_id": org["id"], "email": "not-an-email-unique"})
+    client.delete(f"/api/contacts/{contact['id']}")
+    text = _log_text(settings)
+    for value in (*values, "Zara Unique", "Head of Secrets", "not-an-email-unique"):
+        assert value not in text
+    assert "method=POST path=/api/organizations status=201" in text
+    assert "method=PATCH path=/api/contacts/{contact_id} status=200" in text
+    assert "method=POST path=/api/contacts status=422" in text
+    assert "method=DELETE path=/api/contacts/{contact_id} status=204" in text
+    assert "path=/api/organizations/{organization_id}/timeline status=200" in text

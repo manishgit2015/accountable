@@ -17,4 +17,24 @@ export default defineConfig({
     },
   },
   preview: { host: "127.0.0.1" },
+  // Pre-bundle the runtime packages on start-up. Otherwise Vite finds them on the first page load and
+  // answers 504 "Outdated Optimize Dep" while it re-bundles, which shows as a console error (R7, V-E00).
+  optimizeDeps: {
+    entries: ["index.html"],
+    include: [
+      "react",
+      "react-dom/client",
+      "react-router",
+      "@tanstack/react-query",
+      "@tanstack/react-table",
+      "react-hook-form",
+      "zod",
+      "recharts",
+      "@dnd-kit/core",
+      "@dnd-kit/sortable",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-dropdown-menu",
+      "lucide-react",
+    ],
+  },
 });

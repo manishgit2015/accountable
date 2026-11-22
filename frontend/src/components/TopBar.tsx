@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { NavLink } from "react-router";
 
 import { Button } from "./Button";
@@ -29,8 +30,9 @@ export function TopBar({ onAddDeal }: { onAddDeal?: () => void }) {
         ))}
       </nav>
       <div className="topbar-right">
-        {/* The deal form arrives in Phase 3 (T3.5). Until then the button is shown but disabled. */}
+        {/* Disabled only when no handler is given (the app always gives one). */}
         <Button variant="primary" onClick={onAddDeal} disabled={!onAddDeal}>
+          <Plus size={16} aria-hidden="true" />
           Add deal
         </Button>
       </div>

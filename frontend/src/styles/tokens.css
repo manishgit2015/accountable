@@ -22,6 +22,9 @@
   --sea-mist: #cdd8db;
   --tint: #e6edef;
   --hero-grid: #0f4c60;
+  /* Light Cerulean behind timeline icons, and the drop gap's fill (mockup 1) */
+  --cerulean-tint: #e3f1f6;
+  --drop-fill: rgba(255, 255, 255, 0.5);
 
   /* Stage colors (spec 3.9) */
   --stage-new: var(--sea-mist);

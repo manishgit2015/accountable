@@ -1,4 +1,71 @@
-The MVP is being built from `docs/plan.md`. Phase 1 (foundation) is done.
+The MVP is being built from `docs/plan.md`. Phases 1 to 4 are done (C4). Phase 5's agent work is done; checkpoint C5 and the `v0.1.0` tag wait for the engineer (see "Next").
+
+## Using Accountable
+
+Accountable runs on your own computer only. Nothing leaves it, and it works without the internet once installed.
+
+### Install (once)
+
+1. **Node.js 24 or later.** Install the current LTS from https://nodejs.org. Check with `node --version`.
+2. **uv** (it runs the Python backend and downloads Python 3.12 for you). Follow https://docs.astral.sh/uv/getting-started/installation/: on Windows `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`, on macOS and Linux `curl -LsSf https://astral.sh/uv/install.sh | sh`. Open a new terminal afterwards. Check with `uv --version`.
+3. **Google Chrome**, only if you run the tests.
+4. Get the code: `git clone <repository>` and `cd accountable`.
+
+The first `npm run dev` installs the rest itself (the npm packages, the Python packages and Python 3.12), so the first run needs the internet. Later runs don't.
+
+### Run
+
+- `npm run dev`, then open **http://127.0.0.1:5173**. The first run on a new database loads the sample data.
+- On Windows, if PowerShell says "running scripts is disabled", type `npm.cmd` instead of `npm` (for example `npm.cmd run dev`).
+- Stop it with Ctrl+C in that terminal (on Windows, answer `Y` to "Terminate batch job").
+- The app listens on 127.0.0.1 only (ports 8000 for the API and 5173 for the page), so other computers can't reach it.
+- Optional settings: `ACCOUNTABLE_DB` (database path), `ACCOUNTABLE_API_PORT`, `ACCOUNTABLE_WEB_PORT`, `ACCOUNTABLE_LOG_LEVEL` (default `INFO`) and `ACCOUNTABLE_RELOAD=1` (restart the backend when its code changes, for development).
+
+### Sample data and starting fresh
+
+- `npm run seed` replaces **all** data with the sample data.
+- `npm run clear` deletes **all** data, to start with your real data.
+- Both ask "Type yes to continue" first, and change nothing unless you type `yes`. Add `-- --yes` to skip the question (`npm run clear -- --yes`). They work while the app is running; reload the page afterwards.
+
+### Back up and restore
+
+Your data is in the `backend/data/` folder: `accountable.db`, and while the app runs also `accountable.db-wal` and `accountable.db-shm`. The `-wal` file can hold your latest changes, so always copy the whole folder, never the `.db` file alone.
+
+- **Back up:** stop the app (Ctrl+C), then copy the `backend/data/` folder somewhere safe, for example `backend/data-backup-2026-11-22/` or another drive.
+- **Restore:** stop the app, delete or rename `backend/data/`, put the copied folder back as `backend/data/`, then `npm run dev`.
+- **Before upgrading** (pulling a new version), back up first. Database upgrades only go forward, so restoring the copy is the way back.
+- Accountable doesn't make backups itself.
+
+### Logs
+
+- Every request is logged to the terminal and to `backend/logs/accountable.log` (rotated at 5 MB, keeping 3 old files). Lines never contain your data: only the time, a request ID, the method, the path pattern, the status and the time taken.
+- When the app shows an error with "Reference: 9f2c", search the log for `9f2c` to find that request.
+- Start-up logs the address, the database path, the schema version and whether sample data was loaded.
+- `http://127.0.0.1:5173/api/health` answers `{"status":"ok",...}` when the app and its database are working.
+
+### When something goes wrong (runbook)
+
+| Symptom | Action |
+|---|---|
+| "Port 8000 (or 5173) is already in use" | Close the other copy of Accountable, or the program using that port, and run `npm run dev` again. On Windows, a copy left running can be found with `Get-NetTCPConnection -LocalPort 8000,5173 -State Listen` and stopped in Task Manager. |
+| "uv not found" or "node not found" (or "needs Node.js 24") | Install them as in "Install" above, open a new terminal, and run `npm run dev` again. |
+| "running scripts is disabled" in PowerShell | Use `npm.cmd run dev`. |
+| "Can't reach Accountable" in the browser | Check the terminal running `npm run dev`. Restart it if it stopped. |
+| "Accountable is busy" | Wait a moment and try again. If it keeps happening, check nothing else has the database file open (a database viewer, a sync tool). |
+| The database won't open | Stop the app, copy `backend/data/` somewhere safe, and look in `backend/logs/accountable.log` for the error. |
+| The first run fails while installing | Check the internet connection and run `npm run dev` again. It only installs what's missing. |
+| Starting again from the sample data | `npm run seed` |
+| Starting with real data | `npm run clear` |
+| Backing up | Stop the app and copy the `backend/data/` folder, which holds the database and its `-wal` file |
+| Restoring | Stop the app and put the copied folder back as `backend/data/` |
+
+### For developers
+
+- `npm test` runs every test (pytest, Vitest, Playwright in the installed Chrome) on a temporary database and the test ports 8001 and 5174. It never touches `backend/data/accountable.db`. `npm test -- backend`, `-- frontend` or `-- e2e` runs one suite.
+- `npm run lint` checks lint, formatting and types. `npm run format` fixes formatting.
+- `npm run audit` checks the npm and Python dependencies for known vulnerabilities.
+- `npm run test:perf` times the app at 2× the expected data volume (V-P01).
+- `node scripts/run-tests.mjs visual` saves 1440px screenshots of the dashboard and pipeline to `docs/evidence/2026-11-22-visual/`, for comparing with mockup 1 (V-M04).
 
 ## Done
 
@@ -31,6 +98,20 @@ The MVP is being built from `docs/plan.md`. Phase 1 (foundation) is done.
 - 2026-11-21: Phase 1 is done (checkpoint C1, on Windows). `npm run dev` installs what's missing and starts the empty app at `http://127.0.0.1:5173`. `npm test` (pytest, Vitest, Playwright on a temporary database) and `npm run lint` pass. The backend has config with an injectable clock, logging, the error format, the Host, Origin, size and JSON checks, the schema by Alembic migration `0001_initial`, the business rules and the API contract. The frontend has the top bar, tokens, bundled fonts, an error boundary and the API client. The engineer approved six extra frontend dev packages, the dashboard item shapes, and `closed_at` for deals created closed (plan 1.4 and `docs/build_logs.log`). On this machine, PowerShell blocks `npm.ps1`, so type `npm.cmd run dev` there.
 - 2026-11-21: Verification run after checkpoint C1. Everything passed: `npm test` (238 backend, 12 frontend, 1 e2e), `npm run lint`, backend coverage 93% (`rules.py` 100%), an ad hoc frontend build, `npm audit` and `pip-audit`. A failing test in any suite makes `npm test` exit 1. Windows Application Control blocks `pip-audit.exe`, so use `uv run python -m pip_audit`. `AGENTS.md` now documents `npm test`. Outputs are in `docs/evidence/2026-11-21-verification/`.
 
+- 2026-11-21: Phase 2 is done (checkpoint C2, on Windows). The backend now has the full API in spec 5: organizations, contacts, deals and activities, timelines, delete-impact, `/move` (one code path with `PATCH` for stage effects) and the dashboard. A new database starts with sample data built from mockup 1's names, and `npm run seed` and `npm run clear` reset or empty it (they ask first, or take `-- --yes`, and work while the app runs). `npm test` (370 backend, 12 frontend, 1 e2e) and `npm run lint` pass. Evidence is in `docs/build_logs.log`.
+
+- 2026-11-21: Phase 3 is done (checkpoint C3, on Windows). The frontend now has the Organizations, Contacts and Deals tables (search, sort, 25 per page, side-panel forms with inline adds, deletes with counts), record pages with timelines and "Log activity", the pipeline board (drag by mouse or keyboard, optimistic moves with rollback, reload on 409, Won and Lost for this month) and the dashboard as in mockup 1. `npm test` (370 backend, 106 frontend, 31 e2e) and `npm run lint` pass. Impact notes (no behaviour change): styles and two tokens added to `global.css`/`tokens.css`, Vite pre-bundles its packages so a fresh clone has no console error, and `e2e/fixtures.ts` lets a test accept the one error line it causes on purpose. Open: the e2e browser clock is fixed while the test backend uses the real clock (see `docs/build_logs.log`).
+
+- 2026-11-21: Phase 4 is done (checkpoint C4, on Windows): security (V-S01–V-S10, `npm run audit` clean), performance at 2× the intent's volume (`npm run test:perf`, every p95 under NFR-1–NFR-3), reliability (reload, killed-backend restart, seed/clear, timeout, 503, offline banner, V-M03 crash test by hand with no loss), keyboard-only use and no sideways scroll at 1024/1280px, and 99% coverage of `rules.py` and `services/`. Two fixes: a keyboard-moved pipeline card keeps its focus, and wide tables no longer make the page scroll sideways at 1024px. The engineer chose a test-only fixed backend clock (`ACCOUNTABLE_FIXED_NOW`, set only by `npm test`) so e2e results don't depend on the day. `npm test` (388 backend, 106 frontend, 47 e2e) and `npm run lint` pass. Impact notes (no app behaviour change): `scripts/run-tests.mjs` and `playwright.config.ts` gain the perf mode and the fixed clock; `e2e/fixtures.ts` checks the clocks match; `activities.spec.ts` and `pipeline.spec.ts` (Phase 3) were steadied; new `backend/tests/test_perfdata.py` and `test_config.py`. Evidence is in `docs/build_logs.log`.
+
+- 2026-11-22: Phase 5's agent work is done (T5.1–T5.5, on Windows); checkpoint C5 is not reached yet. A fresh clone's first `npm run dev` installed everything and started in 15 s; the second run, with outbound traffic blocked, needed no install and started in 4 s; the app can't be reached on the LAN addresses (V-M02, Windows). Screenshots at 1440px compared with mockup 1 (V-M04, `docs/evidence/2026-11-22-visual/`): "Add deal" now has its "+" and card "organization · contact" wraps to two lines. This file now has the install, run, seed, clear, backup, restore, logs and runbook sections. The V-M01 walkthrough found one defect, now fixed with a test: deleting from a record's own page showed "no longer exists" with 404 console errors instead of going back to the list. `npm test` (388 backend, 106 frontend, 48 e2e), `npm run lint`, `npm run audit` and `npm run test:perf` pass, and coverage is 99%. Impact note (tooling only, no app behaviour): `playwright.config.ts` and `scripts/run-tests.mjs` gain a `visual` mode (`node scripts/run-tests.mjs visual`) so `e2e/visual/compare.spec.ts` can run. Evidence and the full difference and finding lists are in `docs/build_logs.log` (T5.1–T5.5).
+
 ## Next
 
-- Phase 2 of `docs/plan.md` (T2.1 to T2.8): core backend services, API, seed, commands and dashboard, ending at checkpoint C2.
+Waiting on the engineer for checkpoint C5 (`docs/build_logs.log`, T5.5):
+
+- Use the app and approve it, including how it looks (AC9, SC5), or say what to change.
+- Run V-M02 on macOS and Linux, and on Windows with Wi-Fi really off (commands in T5.1).
+- Have someone new try the SC1 questions (V-M05, questions in T5.4).
+- Decide the listed differences: two source names on dashboard rows (needs a contract change), Cerulean follow-up links, the flat won/lost history in the sample data, the Deals table's default sort showing old closed deals first, and the identical "Add deal" button names on the pipeline.
+- Then commit "Build: phase 5" and tag `v0.1.0`.

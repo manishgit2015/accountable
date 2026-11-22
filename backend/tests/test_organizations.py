@@ -1,6 +1,5 @@
-"""V-B03 (T1.6 part): organization request rules (R10, R21), and the 422 format they produce.
-
-The CRUD endpoints, list counts and open value are added in T2.1.
+"""V-B03: organization request rules (R10, R21) and the 422 format (T1.6), and the API (T2.1):
+create, read, update and delete, list counts and open value (R44), duplicates (R22).
 """
 
 import pytest
@@ -143,3 +142,133 @@ def test_spec52_rule_failures_reach_the_client_as_422_with_a_message_per_field(
     response = client.post("/api/check-organization", json=["not", "an", "object"])
     assert response.status_code == 422
     assert response.json()["error"]["fields"] == {"_": "Send a JSON object."}
+
+
+# The API (T2.1) ------------------------------------------------------------------------------------
+
+
+def _org(client: TestClient, **fields) -> dict:
+    response = client.post("/api/organizations", json={"name": "Acme Ltd", **fields})
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
+def _contact(client: TestClient, org_id: int, name: str = "Jo Bloggs") -> dict:
+    response = client.post("/api/contacts", json={"name": name, "organization_id": org_id})
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
+def _deal(client: TestClient, org_id: int, contact_id: int, stage: str, value: int) -> dict:
+    body = {
+        "name": f"{stage} deal",
+        "organization_id": org_id,
+        "contact_id": contact_id,
+        "stage": stage,
+        "value": value,
+        "close_date": "2026-12-31",
+    }
+    response = client.post("/api/deals", json=body)
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
+def test_R10_create_returns_201_with_the_record_and_timestamps(client: TestClient) -> None:
+    org = _org(client, website="acme.example", industry=" Retail ", notes=None)
+    assert org == {
+        "id": org["id"],
+        "name": "Acme Ltd",
+        "website": "https://acme.example",
+        "industry": "Retail",
+        "notes": None,
+        "contact_count": 0,
+        "open_deal_count": 0,
+        "open_value": 0,
+        "created_at": "2026-11-21T14:30:00",
+        "updated_at": "2026-11-21T14:30:00",
+    }
+    assert client.get(f"/api/organizations/{org['id']}").json() == org
+
+
+def test_R10_R21_create_refuses_broken_rules_with_422_and_saves_nothing(client: TestClient) -> None:
+    response = client.post("/api/organizations", json={"name": "x" * 201, "website": "javascript:alert(1)"})
+    assert response.status_code == 422
+    assert set(response.json()["error"]["fields"]) == {"name", "website"}
+    assert client.get("/api/organizations").json() == []
+
+
+def test_R22_two_organizations_may_share_a_name(client: TestClient) -> None:
+    _org(client)
+    _org(client)
+    assert [o["name"] for o in client.get("/api/organizations").json()] == ["Acme Ltd", "Acme Ltd"]
+
+
+def test_R47_list_is_every_organization_sorted_by_name_ignoring_case(client: TestClient) -> None:
+    for name in ("Zeta", "alpha", "Mid"):
+        _org(client, name=name)
+    assert [o["name"] for o in client.get("/api/organizations").json()] == ["alpha", "Mid", "Zeta"]
+
+
+def test_R44_list_counts_contacts_open_deals_and_open_value(client: TestClient) -> None:
+    acme = _org(client)
+    other = _org(client, name="Other")
+    jo = _contact(client, acme["id"])
+    _contact(client, acme["id"], "Sam")
+    _contact(client, other["id"], "Kim")
+    _deal(client, acme["id"], jo["id"], "new", 1000)
+    _deal(client, acme["id"], jo["id"], "negotiation", 2500)
+    _deal(client, acme["id"], jo["id"], "won", 9000)  # closed: not open
+    _deal(client, acme["id"], jo["id"], "lost", 7000)
+    listed = {o["name"]: o for o in client.get("/api/organizations").json()}
+    assert (listed["Acme Ltd"]["contact_count"], listed["Acme Ltd"]["open_deal_count"]) == (2, 2)
+    assert listed["Acme Ltd"]["open_value"] == 3500
+    assert (listed["Other"]["contact_count"], listed["Other"]["open_deal_count"], listed["Other"]["open_value"]) == (
+        1,
+        0,
+        0,
+    )
+    assert client.get(f"/api/organizations/{acme['id']}").json() == listed["Acme Ltd"]
+
+
+def test_spec53_patch_changes_only_the_fields_sent_and_sets_updated_at(client: TestClient, clock) -> None:
+    org = _org(client, website="acme.example", industry="Retail")
+    clock.at = clock.at.replace(hour=16)
+    response = client.patch(f"/api/organizations/{org['id']}", json={"industry": "Wholesale", "notes": "Big"})
+    assert response.status_code == 200
+    changed = response.json()
+    assert (changed["industry"], changed["notes"], changed["website"]) == ("Wholesale", "Big", "https://acme.example")
+    assert (changed["created_at"], changed["updated_at"]) == ("2026-11-21T14:30:00", "2026-11-21T16:30:00")
+    cleared = client.patch(f"/api/organizations/{org['id']}", json={"website": None}).json()
+    assert cleared["website"] is None and cleared["industry"] == "Wholesale"
+
+
+def test_spec53_patch_refuses_a_blank_name(client: TestClient) -> None:
+    org = _org(client)
+    response = client.patch(f"/api/organizations/{org['id']}", json={"name": "  "})
+    assert response.status_code == 422
+    assert response.json()["error"]["fields"] == {"name": "Enter a name."}
+    assert client.get(f"/api/organizations/{org['id']}").json()["name"] == "Acme Ltd"
+
+
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("get", "/api/organizations/999"),
+        ("patch", "/api/organizations/999"),
+        ("delete", "/api/organizations/999"),
+        ("get", "/api/organizations/999/timeline"),
+        ("get", "/api/organizations/999/delete-impact"),
+    ],
+)
+def test_spec52_missing_organization_is_404(client: TestClient, method: str, path: str) -> None:
+    kwargs = {"json": {"name": "B"}} if method == "patch" else {}
+    response = getattr(client, method)(path, **kwargs)
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "not_found"
+
+
+def test_R10_delete_returns_204(client: TestClient) -> None:
+    org = _org(client)
+    response = client.delete(f"/api/organizations/{org['id']}")
+    assert response.status_code == 204 and response.content == b""
+    assert client.get(f"/api/organizations/{org['id']}").status_code == 404

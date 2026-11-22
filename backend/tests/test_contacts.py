@@ -1,9 +1,9 @@
-"""V-B04 (T1.6 part): contact request rules (R11, R21, R34) and the contact response shape.
-
-The endpoints are added in T2.1.
+"""V-B04: contact request rules (R11, R21, R34) and the response shape (T1.6), and the API (T2.1):
+organization required on create, status default, the cleared link kept on edit.
 """
 
 import pytest
+from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from app.errors import validation_fields
@@ -85,3 +85,103 @@ def test_spec53_contact_response_has_the_spec_fields() -> None:
         "created_at",
         "updated_at",
     ]
+
+
+# The API (T2.1) ------------------------------------------------------------------------------------
+
+
+def _org(client: TestClient, name: str = "Acme Ltd") -> int:
+    response = client.post("/api/organizations", json={"name": name})
+    assert response.status_code == 201
+    return response.json()["id"]
+
+
+def _create(client: TestClient, **fields) -> dict:
+    response = client.post("/api/contacts", json=fields)
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
+def test_R11_create_needs_an_organization_and_defaults_to_lead(client: TestClient) -> None:
+    org_id = _org(client)
+    response = client.post("/api/contacts", json={"name": "Jo Bloggs"})
+    assert response.status_code == 422
+    assert response.json()["error"]["fields"] == {"organization_id": "Choose an organization."}
+    contact = _create(client, name="Jo Bloggs", organization_id=org_id, email="jo@acme.example")
+    assert contact == {
+        "id": contact["id"],
+        "organization_id": org_id,
+        "organization_name": "Acme Ltd",
+        "name": "Jo Bloggs",
+        "email": "jo@acme.example",
+        "phone": None,
+        "job_title": None,
+        "status": "lead",
+        "created_at": "2026-11-21T14:30:00",
+        "updated_at": "2026-11-21T14:30:00",
+    }
+    assert client.get(f"/api/contacts/{contact['id']}").json() == contact
+
+
+def test_R11_an_organization_that_does_not_exist_is_refused(client: TestClient) -> None:
+    response = client.post("/api/contacts", json={"name": "Jo", "organization_id": 42})
+    assert response.status_code == 422
+    assert response.json()["error"]["fields"] == {"organization_id": "That organization doesn't exist. Choose another."}
+    assert client.get("/api/contacts").json() == []
+
+
+def test_R21_contact_field_rules_are_enforced_by_the_api(client: TestClient) -> None:
+    org_id = _org(client)
+    response = client.post(
+        "/api/contacts", json={"name": "Jo", "organization_id": org_id, "email": "jo@", "phone": "call me"}
+    )
+    assert response.status_code == 422
+    assert set(response.json()["error"]["fields"]) == {"email", "phone"}
+
+
+def test_R47_list_is_sorted_by_name_with_the_organization_name(client: TestClient) -> None:
+    acme, beta = _org(client), _org(client, "Beta Co")
+    _create(client, name="zoe", organization_id=acme)
+    _create(client, name="Adam", organization_id=beta, status="customer")
+    listed = client.get("/api/contacts").json()
+    assert [(c["name"], c["organization_name"], c["status"]) for c in listed] == [
+        ("Adam", "Beta Co", "customer"),
+        ("zoe", "Acme Ltd", "lead"),
+    ]
+
+
+def test_spec44_status_can_be_set_by_hand_to_any_other(client: TestClient) -> None:
+    contact = _create(client, name="Jo", organization_id=_org(client), status="customer")
+    for status in ("lead", "qualified", "customer"):
+        assert client.patch(f"/api/contacts/{contact['id']}", json={"status": status}).json()["status"] == status
+
+
+def test_R34_a_cleared_organization_is_kept_when_editing_other_fields(client: TestClient) -> None:
+    org_id = _org(client)
+    contact = _create(client, name="Jo", organization_id=org_id)
+    assert client.delete(f"/api/organizations/{org_id}").status_code == 204
+    cleared = client.get(f"/api/contacts/{contact['id']}").json()
+    assert (cleared["organization_id"], cleared["organization_name"]) == (None, None)
+    response = client.patch(f"/api/contacts/{contact['id']}", json={"job_title": "Buyer"})
+    assert response.status_code == 200
+    assert (response.json()["job_title"], response.json()["organization_id"]) == ("Buyer", None)
+    # Filling the link back in is checked, and it can't be set back to empty.
+    assert client.patch(f"/api/contacts/{contact['id']}", json={"organization_id": 999}).status_code == 422
+    assert client.patch(f"/api/contacts/{contact['id']}", json={"organization_id": None}).status_code == 422
+    new_org = _org(client, "New Co")
+    moved = client.patch(f"/api/contacts/{contact['id']}", json={"organization_id": new_org}).json()
+    assert (moved["organization_id"], moved["organization_name"]) == (new_org, "New Co")
+
+
+def test_spec53_patch_clears_optional_fields_and_sets_updated_at(client: TestClient, clock) -> None:
+    contact = _create(client, name="Jo", organization_id=_org(client), phone="+44 1234", email="jo@a.example")
+    clock.at = clock.at.replace(day=22)
+    changed = client.patch(f"/api/contacts/{contact['id']}", json={"phone": " ", "email": None}).json()
+    assert (changed["phone"], changed["email"], changed["name"]) == (None, None, "Jo")
+    assert changed["updated_at"] == "2026-11-22T14:30:00"
+
+
+@pytest.mark.parametrize("method", ["get", "patch", "delete"])
+def test_spec52_missing_contact_is_404(client: TestClient, method: str) -> None:
+    kwargs = {"json": {"name": "B"}} if method == "patch" else {}
+    assert getattr(client, method)("/api/contacts/77", **kwargs).status_code == 404

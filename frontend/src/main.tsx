@@ -10,20 +10,16 @@ import "@fontsource/jetbrains-mono/600.css";
 import "./styles/tokens.css";
 import "./styles/global.css";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";
 
+import { createQueryClient } from "./api/queries";
 import { App } from "./App";
 
-// Reads are retried once, changes never (REL-5).
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { retry: 1 },
-    mutations: { retry: 0 },
-  },
-});
+// Reads are retried once (not a 404), changes never (REL-5). It also tracks whether the backend answers (REL-7).
+const queryClient = createQueryClient();
 
 const root = document.getElementById("root");
 if (!root) throw new Error("The page is missing its #root element.");

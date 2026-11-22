@@ -11,19 +11,29 @@ import errno
 import socket
 import sys
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.config import APP_VERSION, BACKEND_DIR, ConfigError, Settings, load_settings
-from app.db import create_db_engine, upgrade_to_head
-from app.errors import UnexpectedErrorMiddleware, register_error_handlers
+from app.config import APP_VERSION, BACKEND_DIR, ConfigError, FixedClock, Settings, load_settings
+from app.db import create_db_engine, transaction, upgrade_to_head
+from app.errors import UnexpectedErrorMiddleware, error_response, register_error_handlers
 from app.logging import RequestContextMiddleware, configure_logging, log
-from app.routers import health
+from app.routers import activities, contacts, dashboard, deals, health, organizations
 from app.security import SecurityMiddleware
+from app.services import ServiceError
 
 HOST = "127.0.0.1"
-ROUTERS = [health.router]
+ROUTERS = [health.router, organizations.router, contacts.router, deals.router, activities.router, dashboard.router]
+
+# The status for each service refusal (spec 5.2).
+SERVICE_STATUS = {"not_found": 404, "validation_failed": 422, "stale_position": 409}
+
+
+async def _service_error(_: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, ServiceError)
+    return error_response(SERVICE_STATUS.get(exc.code, 500), exc.code, fields=exc.fields)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -42,6 +52,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     api_routes: list[APIRoute] = []
     app.add_middleware(RequestContextMiddleware, routes=api_routes)
     register_error_handlers(app)
+    app.add_exception_handler(ServiceError, _service_error)
 
     for router in ROUTERS:
         app.include_router(router)
@@ -66,11 +77,22 @@ def check_port_free(port: int) -> None:
             raise
 
 
-def prepare_database(settings: Settings) -> tuple[str | None, str | None]:
-    """Bring the database to the latest schema. Never deletes, resets or reseeds an existing file."""
+def prepare_database(settings: Settings) -> tuple[str | None, str | None, bool]:
+    """Bring the database to the latest schema, and fill a new one with the sample data (R4).
+
+    Returns the revision before and after, and whether sample data was loaded. Never deletes,
+    resets or reseeds an existing file (REL-9): only a database this call created is seeded.
+    """
+    from app.seed import load_sample_data
+
     engine = create_db_engine(settings.db_path)
     try:
-        return upgrade_to_head(engine)
+        before, after = upgrade_to_head(engine)
+        if before is not None:
+            return before, after, False
+        with transaction(engine) as conn:
+            load_sample_data(conn, settings.clock.now())
+        return before, after, True
     except SQLAlchemyError as exc:
         raise StartupError(
             f"Couldn't open or upgrade the database at {settings.db_path} ({type(exc).__name__}). "
@@ -85,7 +107,7 @@ def run() -> None:
         settings = load_settings()
         configure_logging(settings)
         check_port_free(settings.api_port)
-        before, after = prepare_database(settings)
+        before, after, seeded = prepare_database(settings)
     except ConfigError as exc:
         print(f"Accountable can't start: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -97,7 +119,9 @@ def run() -> None:
     new_database = before is None
     log.info("Accountable %s starting. Open %s", APP_VERSION, settings.web_address)
     log.info("database %s (schema %s%s)", settings.db_path, after, ", new" if new_database else "")
-    log.info("sample data loaded: no")  # Seeding a new database arrives with T2.6.
+    log.info("sample data loaded: %s", "yes" if seeded else "no")
+    if isinstance(settings.clock, FixedClock):
+        log.warning("clock fixed at %s by ACCOUNTABLE_FIXED_NOW (tests only)", settings.clock.now().isoformat())
     log.info("API on http://%s:%s%s", HOST, settings.api_port, " (reload on)" if settings.reload else "")
 
     import uvicorn
