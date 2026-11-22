@@ -9,6 +9,7 @@ Read `docs/spec.md` first. It describes the whole product as it stands today, an
 - `docs/spec.md`: the product (requirements, contracts, data, architecture, decisions, tests)
 - `docs/changes/<branch name>/`: one folder per change, named after its git branch, with the change's `intent.md` (why, and what success looks like) and `plan.md` (how it's built and verified)
 - `docs/TECH_STACK.md`: the stack
+- `docs/STANDARDS.md`: the coding standards; follow them in every change
 - `docs/STATUS.md`: what's done so far, how to run the app, and what's next
 - `docs/REVIEW.md`: how a change is reviewed before it merges
 

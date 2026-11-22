@@ -111,6 +111,7 @@ Check that:
 Check that:
 
 - code is clear, cohesive and named understandably, and follows the existing conventions
+- the changed code and tests follow the coding standards in `docs/STANDARDS.md`
 - duplication that would cost real maintenance is avoided
 - error messages help the user without leaking details (spec 3.9 Writing)
 - the docs are updated where the change needs it: `docs/STATUS.md`, the build log, and the runbook
