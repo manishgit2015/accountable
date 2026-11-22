@@ -9,7 +9,7 @@
 
 ## 1. Purpose and principles
 
-A review checks that a change is correct, matches the approved intent, spec and plan, is secure, keeps the architecture, is reliable, and is proven by tests that were actually run.
+A review checks that a change is correct, matches the spec and the change's approved intent and plan, is secure, keeps the architecture, is reliable, and is proven by tests that were actually run.
 
 - **Verify correctness, not just code quality.** The question is whether the change solves the approved problem correctly and safely. It isn't whether the reviewer would have written it differently.
 - **Report defects and real risks,** not personal preferences.
@@ -23,9 +23,9 @@ Read these before reviewing:
 
 | Input | What it gives |
 |---|---|
-| `docs/intent.md` | The approved scope, and acceptance and success criteria (AC1–AC9, SC1–SC5) |
-| `docs/spec.md` | Requirements (R, NFR, SEC, REL, OBS, DEP, ENG), contracts (section 5), the data design (section 6) and the decision log (ADRs, section 16.3) |
-| `docs/plan.md` | The approved tasks, files, risks and verification cases (V IDs) |
+| `docs/spec.md` | The whole product: acceptance and success criteria (AC1–AC9, SC1–SC5, section 1.4), requirements (R, NFR, SEC, REL, OBS, DEP, ENG), contracts (section 5), the data design (section 6) and the decision log (section 16.3) |
+| `docs/changes/<branch name>/intent.md` | The change's approved scope and its own acceptance criteria |
+| `docs/changes/<branch name>/plan.md` | The change's approved tasks, files, risks and verification cases (V IDs) |
 | `AGENTS.md` | The repository's rules and checks |
 | `docs/build_logs.log` and `docs/evidence/` | What was run, and its results |
 | `docs/mockups/1-spec-reference/` | The visual reference, for UI changes |
@@ -44,7 +44,8 @@ Check that:
 - requests and responses match spec 5 exactly (names, nullability, status codes, the error format)
 - edge cases are handled (spec 4.5): cleared links, reopened deals, stale drops, month boundaries, empty data
 - "today", "this month" and dates come from the one clock, in local time
-- nothing outside the approved scope was added (intent §5)
+- nothing outside the approved scope was added (the change's intent, and spec section 1.3)
+- every behavior in the code is described in `docs/spec.md`: flag code that the spec doesn't describe (behavior, endpoints, fields, settings, commands), whether the fix is to add it to the spec in this change or to remove the code
 
 **Blocking:**
 - wrong business behavior
@@ -71,7 +72,7 @@ Check that:
 
 ## 5. Pass 3: Security and data protection
 
-The MVP has no sign-in by design (intent §5, SEC-4). Its protection is staying on one computer, so check that:
+Accountable has no sign-in by design (spec section 1.3, SEC-4). Its protection is staying on one computer, so check that:
 
 - both servers listen on `127.0.0.1` only, and the Host and Origin checks, body limit and JSON-only rule are intact (SEC-1–SEC-3, SEC-7)
 - every input is validated on the server (R21), and unknown fields are refused
@@ -80,7 +81,7 @@ The MVP has no sign-in by design (intent §5, SEC-4). Its protection is staying 
 - no secrets are in the code, and no new outbound network calls are made at runtime (SEC-9, R2)
 - dependency changes pass `npm run audit` (SEC-11)
 
-Sign-in and permission checks aren't applicable until a later intent adds users. AI-specific checks aren't applicable, because the MVP has no AI features.
+Sign-in and permission checks aren't applicable until a change adds users. AI-specific checks aren't applicable until a change adds AI features.
 
 **Blocking:**
 - data exposure beyond the computer
@@ -145,7 +146,7 @@ Ask:
 
 Where the change touches lists, timelines, the dashboard or the board, check that:
 
-- it still meets NFR-1 to NFR-3 at the intent's volume (`npm run test:perf`)
+- it still meets NFR-1 to NFR-3 at the target volume in NFR-1 (`npm run test:perf`)
 - queries are bounded (no query per row), and aggregation happens in SQL
 - connections and other resources are closed
 

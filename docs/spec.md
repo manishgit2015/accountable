@@ -1,19 +1,42 @@
-# Spec: the Accountable MVP
+# Spec: Accountable
 
-## Area A: Context and traceability
+## Area A: Product and traceability
 
-## 1. Overview and references
+## 1. Overview
 
-### Purpose
+### 1.1 Purpose of this spec
 
-This spec turns the approved intent into a design to build from. It's meant to be precise enough that two engineers, or two coding agents, would build broadly the same thing. It says what the MVP does, how its parts fit together, how it behaves when things go wrong, and how each requirement is proven.
+This spec describes Accountable as it stands today: what it does, how its parts fit together, how it behaves when things go wrong, and how each requirement is proven. It's the single description of the product. Code that isn't described here, or that behaves differently from what's written here, is a defect in one or the other.
 
-### Scope
+Each change to Accountable has its own folder, `docs/changes/<branch name>/`, with the change's `intent.md` and `plan.md`. A change updates this spec on its branch, so that when it merges, this spec describes the product with the change in it (section 17). The change folders are the history of why things are as they are; this spec is how they are.
 
-The scope is exactly the approved intent's (`docs/intent.md`, section 5):
+### 1.2 Product context and problem
 
-- **In scope:** a sales CRM for one salesperson on their own computer. It has five sections (Dashboard, Organizations, Contacts, Deals, Pipeline), four kinds of record (organization, contact, deal, activity), sample data with reset and empty commands, and a light-mode desktop layout that follows the brand.
-- **Out of scope:**
+Accountable is a business management system for a small business. Today it's a sales CRM for one salesperson. It's meant to grow into a full Business OS, including ERP, with sign-in and several people sharing the same data (section 16.5).
+
+**The problem it solves.** A small business keeps track of its customers and sales in spreadsheets, inboxes and people's heads. Nobody can see at a glance which companies it deals with, who its contacts are, what's in the sales pipeline, what happened last with a customer or what needs doing next. So:
+
+- follow-ups are forgotten or done late, because nothing reminds anyone *[Assumption]*
+- how sales are going, and what's likely to close, can't be seen without piecing it together by hand *[Assumption]*
+- what happened with a customer depends on one person's memory or inbox *[Assumption]*
+
+No single place holds companies, people, deals and their history together, and no figures are worked out from that data. There are no baseline numbers, such as time spent on admin or follow-ups missed.
+
+**The outcome it aims for.** One salesperson manages all their companies, contacts, deals and follow-ups in one place on their own computer. They know at a glance how sales are going and what needs doing next, and they stop relying on spreadsheets, inboxes and memory. It should feel like a private Salesforce that does the everyday CRM essentials really well: sharp, modern, professional and a pleasure to use.
+
+**Users and stakeholders.**
+
+| Who | Role |
+|---|---|
+| One salesperson | The only user. They use it every day on their own computer with their own real data, starting from the sample data to look around, then clearing it and typing in their own records. |
+| The rest of the sales team | Affected later, when several users are added (not in the product today) |
+| The business's owner or managers | Benefit from seeing sales figures once the team uses it *[Assumption]* |
+| Product owner | The project owner. Owns every product decision, approves each change, and has the final say, including on how it looks. |
+
+### 1.3 Scope of the product today
+
+- **In:** a sales CRM for one salesperson on their own computer. It has five sections (Dashboard, Organizations, Contacts, Deals, Pipeline), four kinds of record (organization, contact, deal, activity), sample data with reset and empty commands, and a light-mode desktop layout that follows the brand.
+- **Not in the product today** (a change may add one, through its own intent):
   - sign-in, user accounts or several users
   - dark mode or a phone layout
   - AI features
@@ -24,66 +47,77 @@ The scope is exactly the approved intent's (`docs/intent.md`, section 5):
   - changing the pipeline stages
   - importing or exporting data, including backups made by the app
 
-Nothing in this spec widens that scope. Where the intent leaves a choice open, this spec makes one and marks it (see "Markers" below). The intent wins if the two ever disagree.
+### 1.4 Success measures and acceptance criteria
 
-### Version
+These were first set for the MVP (`docs/changes/mvp/intent.md`) and still describe what the product must do. Test names refer to them, so the IDs are stable.
 
-| | |
-|---|---|
-| Version | 2.0 (draft). Restructures 1.x into 18 sections and adds architecture, security, reliability, operations and governance. |
-| Date | 21 Nov 2026 |
-| Status | Approved 21 Nov 2026 (section 18) |
+**Success measures** (outcomes, checked in use):
 
-### References
+- **SC1** Someone new to Accountable, with only the sample data and no instructions, can find which companies we deal with, who our contacts are, what's in the pipeline, what happened last with a customer and what needs doing next, each within a couple of clicks of the dashboard.
+- **SC2** The salesperson uses Accountable as their only record of companies, contacts, deals and follow-ups for 2 weeks of normal work, without going back to a spreadsheet.
+- **SC3** In those 2 weeks, every follow-up the salesperson logs is either marked done or shown as overdue on the dashboard, so none is lost unnoticed.
+- **SC4** The salesperson can say how sales are going this month, and what's expected from the open pipeline, from the dashboard alone, in under a minute.
+- **SC5** The product owner rates every screen as sharp, modern, professional and on brand, and the dashboard as visually stunning.
+
+**Acceptance criteria** (must always hold):
+
+- **AC1** Someone non-technical can start Accountable with the one documented command, open it in a browser and land on the dashboard, with sample data on every screen.
+- **AC2** Organizations, contacts (leads, qualified contacts and customers) and deals can each be added, found by searching, sorted, edited and deleted from their tables. Every change is still there after a refresh and after a restart. Deleting asks first, and the linked records end up as the warning said. The reset command brings back the sample data, and the empty command leaves an empty app that still works on every screen.
+- **AC3** Contacts can be filtered by status, and each record's page shows the records it's linked to. An organization's page shows the combined timeline of its contacts and deals.
+- **AC4** Dragging a deal to another column on the pipeline changes its stage and its probability of close, and the deals list shows both. A card dropped anywhere in a column, including higher or lower in its own column, stays there after a refresh. The board's and the columns' totals and expected revenue change as soon as the card moves. A deal added in a column starts at that stage, and late deals stand out.
+- **AC5** An activity or follow-up logged on a contact or deal appears in its timeline, newest first, and so does an entry for each change of stage. Anything on a deal also appears on its main contact's timeline. Follow-ups show on the dashboard as upcoming or overdue until they're marked done.
+- **AC6** The dashboard's figures match the data, and they reflect a deal marked won or a new follow-up. A deal marked won counts in the month it was won, and its main contact becomes a customer.
+- **AC7** The dashboard has a line chart, a bar chart and a visual of the pipeline.
+- **AC8** Data survives a restart of the app and of the computer, including an unexpected shutdown.
+- **AC9** Before a change is called done, it has been used end to end in a real browser, the way a salesperson would, covering every section and action it touches, with each screen checked by eye and no errors in the console. Then the product owner uses it and has the final say, including on how it looks. Passing tests is necessary, but it isn't enough.
+
+### 1.5 References
 
 | Document | Role |
 |---|---|
-| `docs/intent.md` | The approved intent (approved 21 Nov 2026). Section numbers below are written as "intent §5", and its success and acceptance criteria as SC1–SC5 and AC1–AC9. |
-| `docs/TECH_STACK.md` | The stack. This is a constraint from the intent (§8). |
+| `docs/TECH_STACK.md` | The stack. A constraint on the product (ADR-001). |
 | `.claude/skills/brand` | Fonts, colors, surfaces and tone |
-| `docs/mockups/1-spec-reference/` | The approved visual reference for the dashboard and pipeline (mockup 1, approved 21 Nov 2026). It replaces mockup B, which set the layout and has been removed. |
-| `docs/plan.md` | The build plan. It needs refreshing to match this version (section 18). |
-| Architecture decisions | ADR-001 to ADR-017, in section 16.3. There are no separate ADR files yet. |
+| `docs/mockups/1-spec-reference/` | The visual reference for the dashboard and pipeline (mockup 1) |
+| `docs/REVIEW.md` | How a change is reviewed before it merges |
+| `docs/STATUS.md` | What's done, how to run and operate the app, and what's next |
+| `docs/changes/<branch name>/` | Each change's intent and plan. `docs/changes/mvp/` is the first release. |
+| Architecture decisions | ADR-001 to ADR-017 and E-1 to E-5, in section 16.3 |
 
-### Markers and IDs
+### 1.6 Markers and IDs
 
-- **Unmarked** statements are approved by the product owner, either through the intent or through a decision recorded in section 16.3.
-- *[Assumption]* means believed true but not confirmed.
-- *(threshold approved 21 Nov 2026)* means a number drafted by the architect and approved by the product owner on that date.
-- *(approved 21 Nov 2026)* means a design decision proposed by the architect and approved by the product owner on that date.
-- *[Unapproved]* means a design decision proposed here and not yet approved.
-- Requirement IDs are stable. R1–R84 keep the numbers they had in version 1.x, and new ones fill unused numbers. The other prefixes are NFR (nonfunctional), SEC (security), REL (reliability), OBS (observability), DEP (deployment), ENG (engineering standards), WF (workflows), V (verification cases) and ADR (decisions). An ID is never reused for something else.
+- Everything in this spec is approved behavior, unless it's marked *[Assumption]* (believed true but not confirmed).
+- Requirement IDs are stable, and an ID is never reused for something else. New requirements fill unused numbers. The prefixes are R (functional), NFR (nonfunctional), SEC (security), REL (reliability), OBS (observability), DEP (deployment), ENG (engineering standards), WF (workflows), V (verification cases), AC and SC (section 1.4), ADR and E (decisions), A (assumptions) and C (resolved ambiguities).
 
 ## 2. Requirements traceability
 
-Each row runs from the approved intent to the requirements here, then to the verification that proves them. The V IDs are defined in section 13.3.
+Each row runs from a product area to its requirements, the verification that proves them (section 13.3), and the criteria in section 1.4 they serve.
 
-| Intent | Requirements | Verification | Acceptance or success criterion |
+| Area | Requirements | Verification | Criteria |
 |---|---|---|---|
-| §6 Dashboard | R70–R79 | V-B10, V-F09, V-E07, V-E01 | AC6, AC7 |
-| §6 Organizations | R10, R44, R50 | V-B03, V-B09, V-E02, V-E05 | AC2, AC3 |
-| §6 Contacts | R11, R44, R51 | V-B04, V-B09, V-F06, V-E03, V-E05 | AC2, AC3 |
-| §6 Deals | R12, R19, R44, R52 | V-B05, V-F05, V-E04, V-E05 | AC2, AC4 |
-| §6 Pipeline | R60–R67 | V-B06, V-F07, V-F08, V-E06 | AC4 |
-| §6 Tables | R40–R48 | V-F03, V-E02–V-E04 | AC2 |
-| §6 Activities and follow-ups | R13, R53–R56, R76 | V-B08, V-F09, V-E08 | AC5 |
-| §6 The four kinds of record | R10–R13, R21, R22 | V-B02–V-B05, V-B08 | AC2 |
-| §6 Sample data | R80–R84 | V-B11, V-E01 | AC1 |
-| §9 Stages and probability | R14, R15 | V-B01, V-B06, V-F05 | AC4 |
-| §9 Winning and losing | R16, R17, R18 | V-B01, V-B06, V-E07 | AC6 |
-| §9 Required information | R11, R12, R34 | V-B04, V-B05, V-F05, V-F06 | AC2 |
-| §9 Deleting | R30–R35 | V-B07, V-F04, V-E02 | AC2 |
-| §9 Commands and data | R1, R4, DEP-1–DEP-6 | V-B12, V-E09, V-M02 | AC1, AC2 |
-| §7 Performance | R6, NFR-1–NFR-3 | V-P01 | (none) |
-| §7 Availability (offline) | R2, NFR-4 | V-E00 (every e2e test), V-M02 | AC1 |
-| §7 Reliability and persistence | R3, REL-1–REL-3 | V-B13, V-E10, V-M03 | AC2, AC8 |
-| §7 Security | SEC-1–SEC-12 | V-S01–V-S10 | (none) |
-| §7 Accessibility | NFR-7 | V-E11, V-M04 | (none) |
-| §7 Usability | NFR-8 | V-M05 | SC1 |
-| §7 Look and feel | NFR-9, section 3.9 | V-M04 | SC5 |
-| §7 Portability | R1, NFR-6 | V-M02 | AC1 |
-| §10 Business outcomes | (measured in use) | V-M06 | SC2, SC3, SC4 |
-| §11 End-to-end use | (all of the above) | V-M01 | AC9 |
+| Dashboard | R70–R79 | V-B10, V-F09, V-E07, V-E01 | AC6, AC7 |
+| Organizations | R10, R44, R50 | V-B03, V-B09, V-E02, V-E05 | AC2, AC3 |
+| Contacts | R11, R44, R51 | V-B04, V-B09, V-F06, V-E03, V-E05 | AC2, AC3 |
+| Deals | R12, R19, R44, R52 | V-B05, V-F05, V-E04, V-E05 | AC2, AC4 |
+| Pipeline | R60–R67 | V-B06, V-F07, V-F08, V-E06 | AC4 |
+| Tables | R40–R48 | V-F03, V-E02–V-E04 | AC2 |
+| Activities and follow-ups | R13, R53–R56, R76 | V-B08, V-F09, V-E08 | AC5 |
+| The four kinds of record | R10–R13, R21, R22 | V-B02–V-B05, V-B08 | AC2 |
+| Sample data | R80–R84 | V-B11, V-E01 | AC1 |
+| Stages and probability | R14, R15 | V-B01, V-B06, V-F05 | AC4 |
+| Winning and losing | R16, R17, R18 | V-B01, V-B06, V-E07 | AC6 |
+| Required information | R11, R12, R34 | V-B04, V-B05, V-F05, V-F06 | AC2 |
+| Deleting | R30–R36 | V-B07, V-F04, V-E02 | AC2 |
+| Commands and data | R1, R4, DEP-1–DEP-7 | V-B12, V-E09, V-M02 | AC1, AC2 |
+| Performance | R6, NFR-1–NFR-3, NFR-13 | V-P01 | (none) |
+| Availability (offline) | R2, NFR-4 | V-E00 (every e2e test), V-M02 | AC1 |
+| Reliability and persistence | R3, REL-1–REL-12 | V-B13, V-E10, V-M03 | AC2, AC8 |
+| Security | SEC-1–SEC-12 | V-S01–V-S10 | (none) |
+| Accessibility | NFR-7 | V-E11, V-M04 | (none) |
+| Usability | NFR-8 | V-M05 | SC1 |
+| Look and feel | NFR-9, section 3.9 | V-M04 | SC5 |
+| Portability | R1, NFR-6 | V-M02 | AC1 |
+| Business outcomes | (measured in use) | V-M06 | SC2, SC3, SC4 |
+| End-to-end use | (all of the above) | V-M01 | AC9 |
 
 ## Area B: Functional design
 
@@ -95,7 +129,7 @@ Each row runs from the approved intent to the requirements here, then to the ver
 - **R11 Contact:** name (required), organization (required on create, including for leads), email, phone, job title, and status (lead, qualified or customer; defaults to lead).
 - **R12 Deal:** name, organization, main contact, stage, value in US dollars (a whole number) and close date are all required on create. Probability of close is a whole-number percentage.
 - **R13 Activity:** type (note, call or email), and a contact *or* a deal (exactly one). Description is required. "When it happened" defaults to now and may be in the future, for planned activity. There's an optional follow-up date and a done flag, which starts as not done.
-- **R21 Field rules** *(threshold approved 21 Nov 2026)*. Text is trimmed before it's checked, and a value that's blank after trimming counts as empty.
+- **R21 Field rules**. Text is trimmed before it's checked, and a value that's blank after trimming counts as empty.
 
   | Field | Rule |
   |---|---|
@@ -109,7 +143,7 @@ Each row runs from the approved intent to the requirements here, then to the ver
   | Probability | 0 to 100 |
   | Dates | Real calendar dates in `YYYY-MM-DD` form |
 
-- **R22 Duplicates are allowed.** Two organizations or contacts may share a name, because the intent sets no rule against it *(approved 21 Nov 2026)*. The alternative is to warn when a new name matches an existing one: it catches typos, but adds a step to every add.
+- **R22 Duplicates are allowed.** Two organizations or contacts may share a name (ADR-016). The alternative is to warn when a new name matches an existing one: it catches typos, but adds a step to every add.
 
 ### 3.2 Deal rules
 
@@ -131,7 +165,7 @@ Each row runs from the approved intent to the requirements here, then to the ver
 - **R33** Deleting a deal deletes its activities and its stage changes.
 - **R34** A cleared link shows as "None". A record with a cleared link can be saved while the link stays empty, but a new record still needs every required link (R11, R12).
 - **R35** Won deals keep counting on the dashboard after their organization or contact is deleted.
-- **R36** Deleting is permanent. There's no undo or trash, because the intent asks for none and backups are the user's job.
+- **R36** Deleting is permanent. There's no undo or trash: backups are the user's job (A-3).
 
 ### 3.4 Tables (Organizations, Contacts, Deals)
 
@@ -145,7 +179,7 @@ Each row runs from the approved intent to the requirements here, then to the ver
   - **Deals:** Name, Organization, Main contact, Stage, Value, Probability, Expected revenue, Close date. Late deals show a Raspberry "Late" badge and their close date in Raspberry text.
 - **R45** Forms check fields before saving and say what's wrong next to each field. The contact form's organization picker includes "Add organization". The deal form's organization and contact pickers include "Add organization" and "Add contact", so a record can be added without leaving the form. The server checks the same rules (R21, R23) whatever the form does.
 - **R46** An empty table shows a short message and its Add button, for example "No contacts yet".
-- **R47** Default sort *(approved 21 Nov 2026)*: organizations and contacts by name A–Z, and deals by close date with the soonest first. Search and sort reset when the page is left.
+- **R47** Default sort: organizations and contacts by name A–Z, and deals by close date with the soonest first. Search and sort reset when the page is left.
 - **R48** A save that the server refuses keeps the form open with what was typed, and shows the server's messages next to the fields.
 
 ### 3.5 Record pages
@@ -160,7 +194,7 @@ Each row runs from the approved intent to the requirements here, then to the ver
 
 ### 3.6 Pipeline
 
-- **R60** Six columns, New to Lost, each with a header showing the stage name, the number of deals, their total value and their expected revenue. Won and Lost are narrower and show compact rows (name, organization, value, close date). They hold only deals closed this calendar month (by `closed_at`, local time). They list the 5 most recent, with "N more · Show all" to expand the column in place, and their count and value cover this month only. Deals closed in earlier months stay in the Deals table and on the dashboard, but leave the board (C-2, approved 21 Nov 2026).
+- **R60** Six columns, New to Lost, each with a header showing the stage name, the number of deals, their total value and their expected revenue. Won and Lost are narrower and show compact rows (name, organization, value, close date). They hold only deals closed this calendar month (by `closed_at`, local time). They list the 5 most recent, with "N more · Show all" to expand the column in place, and their count and value cover this month only. Deals closed in earlier months stay in the Deals table and on the dashboard, but leave the board (C-2).
 - **R61** Above the board: the total value and expected revenue of the open pipeline (Won and Lost excluded), and a panel with a stacked bar of open value by stage, showing each stage's deal count, value and expected revenue.
 - **R62** Open-stage cards show the organization's initials, the deal name, the organization and main contact, the value and close date, and a probability meter in the stage color with its percentage. Late deals show a Raspberry "Late" badge with the date in place of the plain date.
 - **R63** Dragging a card to another column changes its stage (R15–R18). Dragging it within a column, or into a gap between two cards in another column, puts it exactly where it was dropped. The order is saved and survives a refresh.
@@ -175,7 +209,7 @@ Each row runs from the approved intent to the requirements here, then to the ver
 - **R71 Line chart:** revenue won each month for the last 12 months, the current month included.
 - **R72 Bar chart:** deals won each month for the last 12 months, with deals lost shown beside them.
 - **R73 Pipeline visual:** open value by stage, as a donut in stage colors with the total open value in the middle and each stage's value listed beside it.
-- **R74 Funnel:** for each stage from New to Won, the value of the deals that reached it, with the percentage carried over from the stage before. It counts deals created in the last 12 months. A deal counts at every open stage up to the furthest one its history reached, and a won deal counts at every stage (C-1, approved 21 Nov 2026).
+- **R74 Funnel:** for each stage from New to Won, the value of the deals that reached it, with the percentage carried over from the stage before. It counts deals created in the last 12 months. A deal counts at every open stage up to the furthest one its history reached, and a won deal counts at every stage (C-1).
 - **R75 Recent activity:** the 10 latest activities and stage changes, each linking to its record.
 - **R76 Follow-ups:** open follow-ups grouped into Overdue (due before today), Today and Next 7 days, each with a checkbox to mark it done, plus a count of those due later. Marking one done removes it from the list straight away.
 - **R77** Every figure is worked out from the data each time the dashboard loads. A deal won today counts in this month. Months are calendar months in local time.
@@ -336,8 +370,8 @@ Lead, qualified and customer can each be set by hand to any other. The only auto
 ### 5.1 Conventions
 
 - **Base path:** `/api`, served by the backend on `127.0.0.1` (SEC-1). The frontend reaches it through the Vite proxy, so it sees one origin.
-- **Versioning:** the API is unversioned in the MVP, because the bundled frontend is its only client (ADR-009). A breaking change after the API gets other clients would be released as `/api/v2`.
-- **Format:** JSON in UTF-8. Requests with a body need `Content-Type: application/json`, or get 415. Bodies over 1 MB get 413 *(threshold approved 21 Nov 2026)*.
+- **Versioning:** the API is unversioned, because the bundled frontend is its only client (ADR-009). A breaking change after the API gets other clients would be released as `/api/v2`.
+- **Format:** JSON in UTF-8. Requests with a body need `Content-Type: application/json`, or get 415. Bodies over 1 MB get 413.
 - **Unknown fields** in a request body are refused with 422, so typos aren't silently dropped.
 - **IDs** are positive whole numbers.
 - **Dates and times:** dates are `YYYY-MM-DD`. Date-times are local times written like `2026-11-21T14:30:00`, with no time zone (ADR-013). Money is whole US dollars as a number.
@@ -479,7 +513,7 @@ Every connection sets:
 - `PRAGMA foreign_keys = ON`
 - `journal_mode = WAL`
 - `synchronous = FULL`, so committed writes survive a power cut (REL-1)
-- `busy_timeout = 5000` *(threshold approved 21 Nov 2026)*
+- `busy_timeout = 5000`
 
 ### 6.4 Positions
 
@@ -542,7 +576,7 @@ Contact names, emails and phones are personal data. They're stored only in the l
 
 ### 7.4 Runtime
 
-The MVP runs as the two development servers started by `npm run dev` (ADR-010). Uvicorn runs without reload for users and with reload for development *(approved 21 Nov 2026)*. The default user command is `npm run dev`, as `TECH_STACK.md` sets.
+Accountable runs as the two development servers started by `npm run dev` (ADR-010). Uvicorn runs without reload by default; `ACCOUNTABLE_RELOAD=1` turns reload on for development (E-2). The default user command is `npm run dev`, as `TECH_STACK.md` sets.
 
 ## 8. Integration design
 
@@ -550,8 +584,8 @@ The MVP runs as the two development servers started by `npm run dev` (ADR-010). 
 |---|---|---|---|
 | npm registry, PyPI | First run only (`npm install`, `uv sync`) | HTTPS | Versions are pinned by `package-lock.json` and `uv.lock`. Nothing is fetched at runtime (R2). |
 | Google Chrome | Tests only | Playwright | Uses the installed Chrome (`channel: "chrome"`) |
-| Supabase, Render | Not in the MVP | (none) | Named in `TECH_STACK.md` for later. Keeping database access behind `db.py` and the services keeps that move contained. |
-| Email, calendar, phone | Never in the MVP | (none) | Out of scope (intent §5) |
+| Supabase, Render | Not used today | (none) | Named in `TECH_STACK.md` for later. Keeping database access behind `db.py` and the services keeps that move contained. |
+| Email, calendar, phone | Not used today | (none) | Out of scope (section 1.3) |
 
 There are no other external systems, no webhooks and no telemetry. The app makes no outbound calls at runtime, which V-E00 checks on every end-to-end test.
 
@@ -559,38 +593,38 @@ There are no other external systems, no webhooks and no telemetry. The app makes
 
 | ID | Requirement | Measure |
 |---|---|---|
-| R6 / NFR-1 | Pages are quick at the intent's data volume | With 1,000 contacts, 500 deals and 5,000 activities, each page is usable within 500 ms of navigation on the test machine, at the 95th percentile of 20 loads *(threshold approved 21 Nov 2026)* |
-| NFR-2 | API speed | Lists and the dashboard answer within 300 ms, and other calls within 100 ms, at the 95th percentile at that volume *(threshold approved 21 Nov 2026)* |
-| NFR-3 | Searching and sorting keep up | A key press in search, or a click on a heading, updates the table within 100 ms *(threshold approved 21 Nov 2026)* |
+| R6 / NFR-1 | Pages are quick at the target data volume | With 1,000 contacts, 500 deals and 5,000 activities, each page is usable within 500 ms of navigation on the test machine, at the 95th percentile of 20 loads. Measured as in-app navigation after the first load; the cold first load is recorded without a threshold (E-3). |
+| NFR-2 | API speed | Lists and the dashboard answer within 300 ms, and other calls within 100 ms, at the 95th percentile at that volume |
+| NFR-3 | Searching and sorting keep up | A key press in search, or a click on a heading, updates the table within 100 ms |
 | NFR-4 / R2 | Offline after the first run | No request leaves `127.0.0.1` or `localhost` at runtime, and fonts and icons are bundled |
-| NFR-5 | Start-up | After the first run, the address is printed within 15 seconds on the test machine *(threshold approved 21 Nov 2026)* |
+| NFR-5 | Start-up | After the first run, the address is printed within 15 seconds on the test machine |
 | NFR-6 / R1 | Portability | The same commands work on current Windows 11, macOS and Ubuntu LTS *[Assumption: these versions]* |
-| NFR-7 | Accessibility, best effort (intent §7) | Every action can be done with the keyboard, including pipeline drags (R66). Focus is always visible. Form fields have labels. Text meets the color rules in section 3.9. There's no formal standard. |
-| NFR-8 | Usability | SC1: someone new answers the intent's five questions within a couple of clicks of the dashboard |
+| NFR-7 | Accessibility, best effort | Every action can be done with the keyboard, including pipeline drags (R66). Focus is always visible. Form fields have labels. Text meets the color rules in section 3.9. There's no formal standard. |
+| NFR-8 | Usability | SC1: someone new answers the five questions in section 1.4 within a couple of clicks of the dashboard |
 | NFR-9 | Look and feel | Section 3.9 and mockup 1. The product owner approves it (SC5). |
 | R5 / NFR-10 | Screen sizes | Designed for 1280px and wider, and usable at 1024px with no horizontal page scroll |
 | R7 / NFR-11 | Clean console | No errors in the browser console on any screen |
 | NFR-12 | Browsers | Current Chrome, Edge, Firefox and Safari *[Assumption]*. Automated tests use Chrome. |
-| NFR-13 | Scalability | No design limit below 10 × the intent's volume. The performance test runs at 2 × as a safety margin *(threshold approved 21 Nov 2026)*. |
+| NFR-13 | Scalability | No design limit below 10 × the target volume. The performance test runs at 2 × as a safety margin. |
 
 ## 10. Security and privacy
 
-The MVP has no sign-in by design (intent §5), so its protection is to stay on one computer.
+Accountable has no sign-in by design (section 1.3), so its protection is to stay on one computer.
 
 | ID | Requirement |
 |---|---|
 | SEC-1 | Both servers listen on `127.0.0.1` only, never `0.0.0.0` (ADR-002). The Vite proxy targets `http://127.0.0.1:8000` by address, not by `localhost`. |
 | SEC-2 | The backend refuses any request whose `Host` header isn't `127.0.0.1` or `localhost` on the API or web port, with 403. This guards against DNS rebinding. Vite's own allowed-hosts check stays at its local-only default. |
 | SEC-3 | A changing request (POST, PATCH, DELETE) whose `Origin` header isn't the app's own (`http://127.0.0.1:5173` or `http://localhost:5173`, or the test ports) is refused with 403. No CORS headers are sent, so other websites can't read responses. |
-| SEC-4 | There's no authentication or authorization, by intent. *[Assumption from intent §12: only the salesperson can use the computer.]* |
-| SEC-5 | Every query goes through SQLAlchemy Core with bound parameters. There's no raw SQL or string-built queries. |
+| SEC-4 | There's no authentication or authorization, by design. *[Assumption A-1: only the salesperson can use the computer.]* |
+| SEC-5 | Every query goes through SQLAlchemy Core with bound parameters. There's no raw SQL or string-built queries; the only text SQL is the connection `PRAGMA` statements in `db.py` (E-1). |
 | SEC-6 | User text is always shown as text. React escaping is used, with no `dangerouslySetInnerHTML`. Websites become links only for `http` and `https`, open in a new tab with `rel="noopener noreferrer"`, and any other scheme is refused on save (R21). |
 | SEC-7 | Inputs are checked on the server (R21), and unknown fields and oversized bodies are refused (section 5.1) |
 | SEC-8 | Logs never contain request or response bodies, or any field value. Paths are logged as templates with IDs, such as `/api/contacts/{id}` (ADR-005). |
-| SEC-9 | The MVP has no secrets. `.env` files are already ignored by git, and none are needed. |
+| SEC-9 | Accountable has no secrets. `.env` files are already ignored by git, and none are needed. |
 | SEC-10 | Data at rest is the plain SQLite file, protected only by the computer's user account *[Assumption]*. Encrypting it isn't in scope. |
-| SEC-11 | Dependencies are pinned by lockfiles. `npm audit --audit-level=high` and `pip-audit` run before a release, and high or critical findings block it *(approved 21 Nov 2026)*. |
-| SEC-12 | Deleting removes the data from the database at once (R36). The space is reclaimed on the next checkpoint. Which privacy rules apply for real business use is an open question in the intent (§13), and isn't decided here. |
+| SEC-11 | Dependencies are pinned by lockfiles. `npm audit --audit-level=high` and `pip-audit` run before a release, and high or critical findings block it. |
+| SEC-12 | Deleting removes the data from the database at once (R36). The space is reclaimed on the next checkpoint. Which privacy rules apply for real business use is an open question (section 16.5). |
 
 ### Negative security cases
 
@@ -613,10 +647,10 @@ The MVP has no sign-in by design (intent §5), so its protection is to stay on o
 | REL-1 | **Durability:** with WAL and `synchronous = FULL`, every change the API reported as saved survives a crash or power cut (AC8) |
 | REL-2 | **Atomic requests:** each request runs in one transaction, so a move, delete, seed or clear either happens fully or not at all |
 | REL-3 | **Persistence:** data is still there after a refresh and a restart (R3) |
-| REL-4 | **Timeouts:** the frontend gives up on a request after 10 s and shows the error message *(threshold approved 21 Nov 2026)* |
+| REL-4 | **Timeouts:** the frontend gives up on a request after 10 s and shows the error message |
 | REL-5 | **Retries and idempotency:** reads are retried once automatically, and changes are never retried automatically. Save buttons are disabled while saving, so double-clicks don't create twice. PATCH and the move endpoint are safe to repeat (section 5.4). A DELETE of something already gone returns 404, and the frontend treats that as done. |
 | REL-6 | **Busy database:** if the database stays locked past `busy_timeout`, the API answers 503 `busy` and the UI says "Accountable is busy. Try again." |
-| REL-7 | **Backend not reachable:** a banner says "Can't reach Accountable. Check it's still running in the terminal." Data already on screen stays visible, but saving is blocked until it's back *(approved 21 Nov 2026)*. |
+| REL-7 | **Backend not reachable:** a banner says "Can't reach Accountable. Check it's still running in the terminal." Data already on screen stays visible, but saving is blocked until it's back. |
 | REL-8 | **Optimistic moves:** a failed move puts the card and the totals back (R64) |
 | REL-9 | **Start-up failures** stop the start-up with one clear line and a non-zero exit, and are never fixed silently: a port in use ("Port 8000 is already in use…"), an unreadable or damaged database file, or a failed migration. A failed migration leaves the database as it was. The app never resets or reseeds an existing database by itself. |
 | REL-10 | **Seed and clear while the app runs** both work. Running tabs show the new data on their next refetch or refresh. |
@@ -630,11 +664,11 @@ The MVP has no sign-in by design (intent §5), so its protection is to stay on o
 | ID | Requirement |
 |---|---|
 | OBS-1 | One log line per request, with time, request ID, method, path template, status and duration in milliseconds. Errors add the exception and stack trace. There's never any body or field value (SEC-8). |
-| OBS-2 | Logs go to the terminal and to `backend/logs/accountable.log`, which rotates at 5 MB and keeps 3 files *(threshold approved 21 Nov 2026)*. The `logs/` folder is already ignored by git. The level is set by `ACCOUNTABLE_LOG_LEVEL` (default `INFO`). |
+| OBS-2 | Logs go to the terminal and to `backend/logs/accountable.log`, which rotates at 5 MB and keeps 3 files. The `logs/` folder is already ignored by git. The level is set by `ACCOUNTABLE_LOG_LEVEL` (default `INFO`). |
 | OBS-3 | Every response has an `X-Request-ID`. The frontend's error messages show it as "Reference: 9f2c" so the log line can be found. |
 | OBS-4 | Start-up logs the address, the database path, the schema version, and whether sample data was loaded |
 | OBS-5 | `GET /api/health` (section 5.5) |
-| OBS-6 | There are no metrics, traces or alerts in the MVP, because it's a single-user local app with no one on call (ADR-014) |
+| OBS-6 | There are no metrics, traces or alerts, because it's a single-user local app with no one on call (ADR-014) |
 
 ### Runbook
 
@@ -663,7 +697,7 @@ These steps go in `docs/STATUS.md` when the app is built.
 | Unit and component (frontend) | Vitest and Testing Library | Formatting, deal logic, the data table, forms, dialogs and dashboard lists |
 | End to end | Playwright with installed Chrome | Whole journeys against real servers on test ports with a test database |
 | Security | pytest and Playwright | Section 10's negative cases |
-| Performance | A generator script and Playwright timing | NFR-1 to NFR-3 at 2 × the intent's volume |
+| Performance | A generator script and Playwright timing | NFR-1 to NFR-3 at 2 × the target volume |
 | Accessibility | Playwright keyboard-only runs, best effort | NFR-7 |
 | Manual | People | Looks, first-time use, and the walkthrough |
 
@@ -671,10 +705,10 @@ These steps go in `docs/STATUS.md` when the app is built.
 
 - `npm test` runs pytest, Vitest and Playwright, and fails if any test fails.
 - Tests never use the real database. `ACCOUNTABLE_DB` must point at a temporary file, and a test fails if it's the default path.
-- Time is fixed in tests: an injectable clock in the backend, fake timers in Vitest, and `page.clock` in Playwright.
+- Time is fixed in tests: an injectable clock in the backend, fake timers in Vitest, and `page.clock` in Playwright. The end-to-end and performance runs fix the backend at the browser's time, 2026-11-21 14:30, through `ACCOUNTABLE_FIXED_NOW` (`scripts/run-tests.mjs`), so "today" agrees on any day.
 - Every end-to-end test fails on a browser console error or on any request outside localhost (V-E00).
 - Each test's name starts with the requirement it proves, for example `R16 moving to Won sets the close date to today`.
-- Coverage of `rules.py` and `services/` is at least 90% of lines *(threshold approved 21 Nov 2026)*.
+- Coverage of `rules.py` and `services/` is at least 90% of lines.
 
 ### 13.3 Verification cases
 
@@ -730,12 +764,12 @@ These steps go in `docs/STATUS.md` when the app is built.
 
 | ID | Requirement |
 |---|---|
-| DEP-1 | **Environments.** *Local* is the user's or a developer's computer, using `npm run dev`, ports 8000 and 5173, and `backend/data/accountable.db`. *Test* is automated, using ports 8001 and 5174 and a temporary database. There's no shared or hosted environment in the MVP. |
-| DEP-2 | **Configuration**, all optional with defaults: `ACCOUNTABLE_DB` (the database path), `ACCOUNTABLE_API_PORT` (8000), `ACCOUNTABLE_WEB_PORT` (5173) and `ACCOUNTABLE_LOG_LEVEL` (INFO). There are no secrets. |
+| DEP-1 | **Environments.** *Local* is the user's or a developer's computer, using `npm run dev`, ports 8000 and 5173, and `backend/data/accountable.db`. *Test* is automated, using ports 8001 and 5174 and a temporary database. There's no shared or hosted environment. |
+| DEP-2 | **Configuration**, all optional with defaults: `ACCOUNTABLE_DB` (the database path), `ACCOUNTABLE_API_PORT` (8000), `ACCOUNTABLE_WEB_PORT` (5173), `ACCOUNTABLE_LOG_LEVEL` (INFO) and `ACCOUNTABLE_RELOAD` (off, E-2). The test runs alone also set `ACCOUNTABLE_FIXED_NOW`, which fixes the backend clock; `npm run dev` never sets it, and start-up logs a warning when it is set. There are no secrets. |
 | DEP-3 | **First run.** `predev` runs `scripts/ensure-installed.mjs`, which checks for Node 24+ and uv with a clear message if either is missing, then runs `npm install` and `uv sync` only if they haven't been run. Then both servers start. |
-| DEP-4 | **Migrations.** Alembic runs `upgrade head` on start-up, before serving requests. A new database is created by the migrations, then seeded. Migrations are forward-only in the MVP, and every one is tested on a database holding data (V-B13). |
-| DEP-5 | **Release.** The version is kept the same in `package.json` and `pyproject.toml` (starting at 0.1.0). A release is a git tag `v0.1.0` with notes in `docs/STATUS.md`, made only when the Definition of Done is met. |
-| DEP-6 | **Rollback.** For code, check out the previous tag. For data, migrations don't run backwards, so the runbook tells users to copy `backend/data/` before upgrading and to restore that copy to go back (section 12). The app doesn't make backups itself (intent §5). |
+| DEP-4 | **Migrations.** Alembic runs `upgrade head` on start-up, before serving requests. A new database is created by the migrations, then seeded. Migrations are forward-only, and every one is tested on a database holding data (V-B13). |
+| DEP-5 | **Release.** The version is kept the same in `package.json`, `pyproject.toml` and `backend/app/config.py` (`APP_VERSION`, shown by health). A release is a git tag such as `v0.1.0` with notes in `docs/STATUS.md`, made only when the releasing change's definition of done (in its plan) is met and the product owner approves. The current release is `v0.1.0`. |
+| DEP-6 | **Rollback.** For code, check out the previous tag. For data, migrations don't run backwards, so the runbook tells users to copy `backend/data/` before upgrading and to restore that copy to go back (section 12). The app doesn't make backups itself (section 1.3). |
 | DEP-7 | **Upgrading** is pulling the new version and running `npm run dev`. Dependencies and migrations update by themselves. |
 
 ## 15. Engineering standards
@@ -745,15 +779,15 @@ These steps go in `docs/STATUS.md` when the app is built.
 | ENG-1 | **Module boundaries** as in section 7.1. In the frontend, only `src/api/` calls `fetch`. Pages use components and hooks, and colors come only from tokens. In the backend, routers don't touch the database, and services don't import FastAPI. |
 | ENG-2 | **TypeScript** in strict mode, with no `any` except at typed boundaries (with a comment). ESLint and Prettier must pass. |
 | ENG-3 | **Python 3.12** with type hints on every public function. Ruff lint and format must pass. |
-| ENG-4 | **SQLAlchemy Core** only, with no raw SQL and no ORM, as `TECH_STACK.md` sets. Schema changes only through Alembic. |
+| ENG-4 | **SQLAlchemy Core** only, with no raw SQL and no ORM, as `TECH_STACK.md` sets. The one exception is the connection `PRAGMA` statements in `db.py` (E-1), which a test checks are the only text SQL. Schema changes only through Alembic. |
 | ENG-5 | **Libraries:** the ones in section 7.1 and `TECH_STACK.md`. A new dependency needs a reason in the change description, and popular, maintained libraries come before custom code. |
 | ENG-6 | **Naming:** API fields in `snake_case`, TypeScript in `camelCase`, with one translation in `src/api/`. Stage keys are lowercase (`new` … `lost`). |
 | ENG-7 | **Tests** go with every change, named by requirement ID (section 13.2). `npm test` must pass before every commit to the main branch. |
 | ENG-8 | **UI copy** follows section 3.9 Writing. There's no text in code that a user sees and that breaks the tone rules. |
-| ENG-9 | **Changes** are small, focused commits. `docs/STATUS.md` is updated when a piece of work is finished (`AGENTS.md`). |
-| ENG-10 | **Decision boundary:** a coding agent doesn't invent business rules, permissions, security policies or architecture. Anything this spec doesn't settle is raised with the product owner first, and recorded in section 16. |
+| ENG-9 | **Changes** are small, focused commits. `docs/STATUS.md` is updated when a piece of work is finished, and this spec is updated in the same change as the behavior it describes (section 17). |
+| ENG-10 | **Decision boundary:** a coding agent doesn't invent business rules, permissions, security policies or architecture. Anything this spec doesn't settle is raised with the product owner first, recorded in the change's intent or plan, and then written into this spec. |
 
-## Area E: Governance and readiness
+## Area E: Governance
 
 ## 16. Assumptions, risks and decisions
 
@@ -761,104 +795,99 @@ These steps go in `docs/STATUS.md` when the app is built.
 
 | ID | Assumption | If it's wrong |
 |---|---|---|
-| A-1 | Only the salesperson uses the computer (intent §12) | Anyone at the computer has full access. Sign-in would be needed. |
-| A-2 | No privacy rule changes the MVP while the data stays on one computer (intent §9) | Deleting or exporting on request may be needed |
+| A-1 | Only the salesperson uses the computer, so no sign-in is needed | Anyone at the computer can read and change sales data. Sign-in would be needed. |
+| A-2 | No privacy or regulatory rule applies while the data stays on one computer used by one person | Rules such as GDPR could require deleting or exporting a person's data on request |
 | A-3 | The user backs up `backend/data/` themselves | Losing the computer loses the data |
 | A-4 | Node 24+ and uv can be installed by the user, following the documentation | A non-technical user may need help with setup |
 | A-5 | The target platforms and browsers in NFR-6 and NFR-12 | More testing would be needed |
 | A-6 | The test machine for performance is a typical recent laptop | The thresholds may need adjusting |
+| A-7 | One salesperson's needs are close enough to the wider team's | The data model may need changes when the team joins |
+| A-8 | The problem's impacts are as described in section 1.2 | The success measures may target the wrong thing |
 
 ### 16.2 Risks
 
-The delivery risks, with how each is handled, are in `docs/plan.md` ("Risks"). These are the architectural ones:
+Each change's delivery risks are in its plan. These are the product's architectural and product risks:
 
 | Risk | Handling |
 |---|---|
 | Local time, rather than UTC, makes a later move to hosting harder | ADR-013. Moving would need a migration that converts stored times. |
-| Last write wins is wrong once there are several users | ADR-003 is for the MVP only. The multi-user intent must revisit it. |
-| The two development servers aren't a production runtime | ADR-010. Hosting (later) will need a build-and-serve setup. |
+| Last write wins is wrong once there are several users | ADR-003 holds only while there's one user. A change that adds users must revisit it. |
+| The two development servers aren't a production runtime | ADR-010. Hosting will need a build-and-serve setup. |
 | Forward-only migrations make data rollback depend on the user's copy | DEP-6 and the runbook |
+| Requiring an organization for every contact, including leads, adds a step for individual buyers | Accepted by the product owner |
+| There are no baselines for the business outcomes | SC2–SC4 are judged against their targets, not against an improvement on before |
+| "Visually stunning" and "a pleasure to use" are judgement calls | The product owner reviews the look (V-M04, SC5), against the mockups |
 
-### 16.3 Decisions (ADR log)
+### 16.3 Decisions
 
-| ADR | Decision | Status |
+Architecture decisions (ADR) and engineering decisions (E) that shape the product today.
+
+| ID | Decision | Notes |
 |---|---|---|
-| ADR-001 | The stack is as set by `docs/TECH_STACK.md` | Approved (an intent constraint) |
-| ADR-002 | Both servers listen on `127.0.0.1` only, with Host and Origin checks (SEC-1–SEC-3) | Approved 21 Nov 2026 |
-| ADR-003 | Last write wins on concurrent edits | Approved 21 Nov 2026 |
-| ADR-004 | Alembic versioned migrations, run on start-up. This adds Alembic alongside SQLAlchemy Core: real data must survive future versions. | Approved 21 Nov 2026 |
-| ADR-005 | No personal data in logs. Logs go to the terminal and a rotating local file. | Approved 21 Nov 2026 |
-| ADR-006 | Stage changes are a separate, read-only table | Approved 20 Nov 2026 |
-| ADR-007 | Lists load in full, and search, sort and paging happen in the browser | Approved 21 Nov 2026. It's simple and fast at 1,000 rows. The trade-off is that it would need server paging at about 10 × the volume. |
-| ADR-008 | Fractional positions with renumbering | Approved 21 Nov 2026. One row changes per drop. The alternative, renumbering the whole column every time, is simpler but writes more. |
-| ADR-009 | An unversioned `/api` | Approved 21 Nov 2026. The frontend is the only client. The alternative, `/api/v1` now, costs little and is clearer for future clients. |
-| ADR-010 | The development servers are the runtime for users | Approved 21 Nov 2026. It's what `TECH_STACK.md` sets. The alternative, a built frontend served by FastAPI, starts faster and runs one process, but adds a build step. |
-| ADR-011 | Stage colors, contrast rules, funnel from stage history, the contact must match the organization, reopening keeps the date, follow-up groups, timelines follow the current contact (concerns 1–10 in version 1.x) | Approved 20 Nov 2026 |
-| ADR-012 | Mockup B set the layout (approved 20 Nov 2026). Mockup 1 (`docs/mockups/1-spec-reference/`), which follows that layout and spec 2.0, is the visual reference. | Approved 21 Nov 2026 |
-| ADR-013 | Times are stored and compared in the computer's local time | Approved 21 Nov 2026. It matches "today" in the intent. The alternative, UTC plus a stored time zone, is safer for hosting later. |
-| ADR-014 | No metrics, tracing or alerting in the MVP | Approved 21 Nov 2026 |
-| ADR-015 | The `closed_at` column drives the month figures | Approved 21 Nov 2026. See challenge C-3. |
-| ADR-016 | Duplicate names are allowed | Approved 21 Nov 2026. See R22. |
-| ADR-017 | Small text with a white color uses darker fills: badges stay at 12px, and their Cerulean and Raspberry fills become `--cerulean-text` and `--raspberry-text`. This resolves a contradiction between the badge style and the contrast rule in 3.9. | Approved 21 Nov 2026 |
+| ADR-001 | The stack is as set by `docs/TECH_STACK.md` | A constraint on the product |
+| ADR-002 | Both servers listen on `127.0.0.1` only, with Host and Origin checks (SEC-1–SEC-3) | |
+| ADR-003 | Last write wins on concurrent edits | |
+| ADR-004 | Alembic versioned migrations, run on start-up | Adds Alembic alongside SQLAlchemy Core, because real data must survive future versions |
+| ADR-005 | No personal data in logs. Logs go to the terminal and a rotating local file. | |
+| ADR-006 | Stage changes are a separate, read-only table | |
+| ADR-007 | Lists load in full, and search, sort and paging happen in the browser | Simple and fast at 1,000 rows. It would need server paging at about 10 × the volume. |
+| ADR-008 | Fractional positions with renumbering | One row changes per drop. The alternative, renumbering the whole column every time, is simpler but writes more. |
+| ADR-009 | An unversioned `/api` | The frontend is the only client. A breaking change for other clients would be `/api/v2`. |
+| ADR-010 | The development servers are the runtime for users | It's what `TECH_STACK.md` sets. The alternative, a built frontend served by FastAPI, starts faster and runs one process, but adds a build step. |
+| ADR-011 | Stage colors, contrast rules, funnel from stage history, the contact must match the organization, reopening keeps the date, follow-up groups, timelines follow the current contact | |
+| ADR-012 | Mockup 1 (`docs/mockups/1-spec-reference/`) is the visual reference | It follows the layout set earlier by mockup B, which was removed |
+| ADR-013 | Times are stored and compared in the computer's local time | Matches "today" as the user sees it. The alternative, UTC plus a stored time zone, is safer for hosting later. |
+| ADR-014 | No metrics, tracing or alerting | A single-user local app with no one on call |
+| ADR-015 | The `closed_at` column drives the month figures | See C-3 |
+| ADR-016 | Duplicate names are allowed | See R22 |
+| ADR-017 | Small text with a white color uses darker fills: badges stay at 12px, and their Cerulean and Raspberry fills become `--cerulean-text` and `--raspberry-text` | Resolves a contradiction between the badge style and the contrast rule in 3.9 |
+| E-1 | The connection `PRAGMA` statements in `db.py` are the only text SQL | SQLite's settings in section 6.3 can only be set that way. A test checks it's the only text SQL (V-B02). |
+| E-2 | Uvicorn runs without reload by default, and `ACCOUNTABLE_RELOAD=1` turns reload on for development | One command, `npm run dev`, serves both users and developers |
+| E-3 | NFR-1 is measured as in-app navigation after the first load; the cold first load is recorded without a threshold | Under ADR-010 the first load compiles modules on demand |
+| E-4 | V-S10 is automated as "the servers are bound to 127.0.0.1", by inspecting the listening sockets; the LAN address is checked by hand in V-M02 | The LAN address isn't stable in automated runs |
+| E-5 | Evidence for each task is recorded in `docs/build_logs.log` | `docs/STATUS.md` still gets a short line per finished piece of work |
+| D-2 | A dashboard follow-up item is the activity's fields plus `source` `{kind, id, name}`; a recent item is the timeline entry shape | Section 5.5 |
+| D-3 | A deal created directly at Won or Lost gets `closed_at` set to its creation time, and its contact's status doesn't change | Section 4.2, "Created at a stage" |
 
-### 16.4 Challenges to ambiguous requirements
+### 16.4 Resolved ambiguities
 
-| ID | Ambiguity | Options and trade-offs | Proposed |
+| ID | Question | Options and trade-offs | Chosen |
 |---|---|---|---|
-| C-1 | The funnel "value reaching each stage" has no time window in the intent | (a) **All time:** simple, but old deals weigh on it more and more. (b) **Deals created in the last 12 months:** matches the other charts, but a deal created 13 months ago and won last month drops out. (c) **Deals that were open at some point in the last 12 months:** most accurate, but harder to explain. | (b), approved 21 Nov 2026 |
-| C-2 | Won and Lost columns would grow forever | (a) **Last 12 months**, latest 5 with "Show all" (current R60). (b) **This month only:** the board stays short, but it hides recent wins. (c) **Everything:** a column hundreds of cards long. | (b), approved 21 Nov 2026 |
-| C-3 | Which date puts a won deal in a month: when it was moved, or its editable close date? | (a) **`closed_at`** (when moved): stable, and matches "counts in the month it was won" (AC6). But editing the close date doesn't move it. (b) **`close_date`:** the user can correct the month, but a typo moves revenue between months. | (a), approved 21 Nov 2026 |
-| C-4 | "Stays quick" isn't measured in the intent | Thresholds in NFR-1–NFR-3 | Approved 21 Nov 2026 |
-| C-5 | Field limits aren't in the intent | Limits in R21 | Approved 21 Nov 2026 |
+| C-1 | What time window does the funnel's "value reaching each stage" use? | (a) **All time:** simple, but old deals weigh on it more and more. (b) **Deals created in the last 12 months:** matches the other charts, but a deal created 13 months ago and won last month drops out. (c) **Deals that were open at some point in the last 12 months:** most accurate, but harder to explain. | (b) |
+| C-2 | Won and Lost columns would grow forever | (a) **Last 12 months**, latest 5 with "Show all". (b) **This month only:** the board stays short, but it hides recent wins. (c) **Everything:** a column hundreds of cards long. | (b) |
+| C-3 | Which date puts a won deal in a month: when it was moved, or its editable close date? | (a) **`closed_at`** (when moved): stable, and matches "counts in the month it was won" (AC6). But editing the close date doesn't move it. (b) **`close_date`:** the user can correct the month, but a typo moves revenue between months. | (a) |
+| C-4 | How quick is "quick"? | Thresholds in NFR-1–NFR-3 | As written there |
+| C-5 | What are the field limits? | Limits in R21 | As written there |
 
-## 17. Definition of Done
+### 16.5 Open questions
 
-The MVP is done when all of these are true:
+- Sign-in, several people sharing the same data, and a record of who did what.
+- Making Accountable available beyond the computer it runs on (hosting).
+- Which privacy rules apply once a real business uses it, and what they require (A-2, SEC-12).
+- Whether SC2–SC4 are the right measures, and who checks them over the two weeks.
+- Which real business will use it, and whether its needs differ.
 
-1. Every requirement with an ID in sections 3 and 9–15 is built, or recorded as a deliberate change approved by the product owner.
-2. Every verification case in section 13.3 from V-B01 to V-P01 passes. `npm test` passes on a clean checkout, and the performance run meets the approved thresholds.
-3. Lint, formatting and type checks pass, and coverage of `rules.py` and `services/` meets the threshold.
-4. No high or critical dependency findings are open (SEC-11).
-5. V-M02 (fresh clone on Windows, macOS and Linux) and V-M03 (crash test) are done, with results in `docs/STATUS.md`.
-6. The V-M01 walkthrough is done, with every screen checked by eye, no console errors, and every issue found fixed.
-7. `docs/STATUS.md` says how to install, run, seed, clear, back up and restore, and includes the runbook.
-8. No *[Unapproved]* item is left in this spec, and any later change to an approved item has the product owner's approval.
-9. The product owner has used the app and approved it, including how it looks (AC9, SC5).
-10. The release is tagged `v0.1.0` (DEP-5).
+## 17. Changing this spec
 
-SC2–SC4 (two weeks of use) are checked after release, and aren't part of done.
+- **Each change** to Accountable is made on its own branch and has a folder `docs/changes/<branch name>/` holding its `intent.md` (why, and what success looks like) and its `plan.md` (how it's built and verified). A change's review report can go there too.
+- **The change updates this spec** on its branch: new or changed requirements, contracts, data design, decisions and verification cases, written as the product will be once the change merges. When the change merges into `main`, this spec describes the product with it.
+- **This spec is the authority** on how the product behaves. A change's intent and plan explain why it changed, and don't override this spec once the change has merged.
+- **IDs stay stable** (section 1.6). A removed requirement keeps its ID retired, with a one-line note of the change that removed it.
+- **Code this spec doesn't describe** is raised in review (`docs/REVIEW.md`): either the spec gains the missing description, or the code is removed.
+- **Release.** Each release is tagged and has notes in `docs/STATUS.md` (DEP-5). The current release is `v0.1.0` (22 Nov 2026), from the change `mvp`.
 
-## 18. Review and approval
+### 17.1 Known gaps
+
+Places where the product today falls short of this spec. Each is tracked in `docs/STATUS.md` until a change fixes it.
+
+- **REL-7:** saving is blocked while the backend can't be reached in the forms, dialogs, the deal page and timelines, but not on the pipeline board (drops) or the dashboard's follow-up checkboxes. Those fail and roll back with a message instead (review finding REV-001, `docs/reviews/review-report.md`).
+- **Section 13.2 coverage threshold:** met (99–100% on `rules.py` and `services/`), but no command enforces it (REV-003).
+- **V-M02** has been run on Windows only, and **V-M05** hasn't been run.
+
+## 18. Ownership
 
 | | |
 |---|---|
 | **Owner** | The product owner (the project owner) |
-| **Author** | The coding agent, acting as architect |
-| **Status** | Version 2.0, approved |
-| **Approved inputs** | Intent (21 Nov 2026), concerns 1–10 and mockup B's layout (20 Nov 2026), mockup 1 as the visual reference (21 Nov 2026), and the network, concurrency, migration and logging decisions (21 Nov 2026) |
-| **Approval decision** | Approved by the product owner on 21 Nov 2026: the funnel window (C-1), the won month (C-3), every proposed threshold and every proposed decision. C-2 followed the same day: the Won and Lost columns show this month only (R60). |
-
-### Self-review
-
-| Area | Finding | Action taken |
-|---|---|---|
-| Completeness | Version 1.x had no failure, security, operations, deployment or governance sections | Added sections 5.2, 10, 11, 12, 14, 15 and 16 |
-| Consistency | The intent's criteria were renumbered (SC1–SC5, AC1–AC9), and `plan.md` still uses the old numbers | Traced to the new numbers here. `plan.md` needs refreshing later (not done, as asked). |
-| Consistency | Month figures could have used either `close_date` or a "moved to Won" date | Added `closed_at`, raised as C-3 |
-| Security | No sign-in plus a reachable port would expose all data | SEC-1 to SEC-3, with negative cases and tests |
-| Testability | Version 1.x said "quick" with no way to measure it | NFR-1 to NFR-3 thresholds (proposed) and V-P01 |
-| Testability | Every functional requirement needs a test | Each R ID maps to a V case in sections 2 and 13.3. Look and feel rules are verified by eye (V-M04). |
-| Maintainability | Module rules were implicit | ENG-1, plus the boundaries in section 7.1 |
-| Operational readiness | There was no runbook, health check or upgrade path | Section 12's runbook, OBS-5, DEP-4, DEP-6 and DEP-7 |
-| Residual | The MVP can't recover data without the user's own copy | Accepted by intent §5. Recorded as A-3 and DEP-6. |
-
-### Blocking questions
-
-All four blocking questions were answered on 21 Nov 2026:
-
-1. The funnel's time window (C-1): deals created in the last 12 months.
-2. Which date puts a won deal in a month (C-3): `closed_at`, when it was moved.
-3. The proposed thresholds: all accepted.
-4. The proposed decisions: all accepted.
-
-C-2 was answered the same day: the Won and Lost columns show this calendar month only (R60). Nothing is open.
+| **Describes** | Accountable `v0.1.0` |
+| **Last changed by** | The change `mvp` (`docs/changes/mvp/`), and the docs reorganization that made this spec the description of the whole product |

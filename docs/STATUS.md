@@ -1,4 +1,4 @@
-The MVP is released as `v0.1.0` (22 Nov 2026), built from `docs/plan.md`, phases 0 to 5. A few verification runs are still open (see "Next").
+The MVP is released as `v0.1.0` (22 Nov 2026), built from `docs/changes/mvp/plan.md`, phases 0 to 5. `docs/spec.md` describes the whole product, and each change has its own folder in `docs/changes/`. A few verification runs are still open (see "Next").
 
 ## Using Accountable
 
@@ -108,6 +108,8 @@ Your data is in the `backend/data/` folder: `accountable.db`, and while the app 
 
 - 2026-11-22: The engineer used and approved the app (AC9, SC5). Phases 2 to 5 were committed together as "Build: phases 2-5" (b8442d5, since their changes overlap in the same files), and tagged `v0.1.0` (annotated, local, not pushed).
 - 2026-11-22: Rewrote the review policy as `docs/REVIEW.md` (it was the untracked `docs/Review.md`) in the 14-section structure, keeping only what applies to Accountable. It has eight review passes, P0–P3 severity, a report format and merge criteria. The engineer approved it the same day, and asked for an independent review of `build-mvp` against `main`. Also re-ran the checks on 22 Nov: `npm test` (388 backend, 106 frontend, 48 e2e), `npm run lint` and `npm run audit` all pass.
+
+- 2026-11-22: Reorganized the docs for future changes (no code changed). `docs/intent.md` and `docs/plan.md` moved, unchanged, to `docs/changes/mvp/`. `docs/spec.md` now describes the whole product as it stands: it takes in the problem, users and scope from the intent, holds AC1–AC9 and SC1–SC5 (section 1.4), records the plan's engineering decisions E-1 to E-5 and D-2, D-3 (section 16.3), lists known gaps (section 17.1), and no longer defers to the intent; its MVP Definition of Done stays in the plan. `AGENTS.md` now says to read the spec first and only the current change's folder, `docs/changes/<branch name>/`. `docs/REVIEW.md` now asks reviewers to flag code the spec doesn't describe, and points at the change folder.
 
 ## Release notes: v0.1.0 (22 Nov 2026)
 
