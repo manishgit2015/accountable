@@ -30,4 +30,4 @@ Testing will cover:
 
 The tests use a database of their own, so running them never changes your data.
 
-Quality tools: Prettier, ESLint (typescript-eslint, React Hooks, jsx-a11y via `eslint-plugin-jsx-a11y-x`) and tsc for the frontend; ruff and ty for the backend; Vitest's v8 coverage and pytest-cov; and gitleaks for secrets, installed on the machine (`winget install Gitleaks.Gitleaks` on Windows, `brew install gitleaks` on macOS).
+Quality tools: Prettier, ESLint (typescript-eslint, React Hooks, jsx-a11y via `eslint-plugin-jsx-a11y-x`) and tsc for the frontend; ruff and ty for the backend; Vitest's v8 coverage and pytest-cov; lefthook for the git pre-commit hook; and gitleaks for secrets, installed on the machine (`winget install Gitleaks.Gitleaks` on Windows, `brew install gitleaks` on macOS).

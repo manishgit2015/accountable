@@ -11,6 +11,7 @@
     "frontend"
   ],
   "scripts": {
+    "prepare": "lefthook install",
     "predev": "node scripts/ensure-installed.mjs",
     "dev": "concurrently --kill-others --names api,web --prefix-colors cyan,green \"uv run --no-sync --directory backend python -m app.main\" \"npm run dev --workspace frontend\"",
     "test": "node scripts/run-tests.mjs",
@@ -25,7 +26,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.65.1",
-    "concurrently": "^10.0.7"
+    "concurrently": "^10.0.7",
+    "lefthook": "^2.2.2"
   },
   "overrides": {
     "eslint-plugin-jsx-a11y-x": {

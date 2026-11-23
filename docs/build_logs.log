@@ -1368,3 +1368,38 @@ Notes from the test work (not fixed, no behaviour change made):
     keyboard tests pass in Chrome; worth a look.
   - lib/format.ts branches 71%: the remaining branches are ?? fallbacks for malformed dates.
 Open issues: the 90% target on rules.py and services/ (spec 13.2) is met but not enforced separately.
+
+----------------------------------------------------------------------
+build-mvp-harness H8  Hooks: lefthook pre-commit, Claude Code Stop and .env guard
+Date: 2026-11-23
+Files: lefthook.yml, package.json (lefthook dev dependency, "prepare": "lefthook install"),
+  .claude/settings.json (hooks), scripts/hooks/stop-check.mjs, scripts/hooks/protect-env.mjs.
+lefthook pre-commit (piped: format, then checks in parallel; each job runs only when files it covers are staged):
+  Test 1: staged scripts/_hooktest.mjs and backend/app/_hooktest.py, both badly formatted, then
+    `npx lefthook run pre-commit`. First run: the prettier glob ("scripts/**/*") matched nothing -> fixed to
+    "scripts/**". Second run: both files reformatted and re-staged (git show :path showed the formatted
+    content); ruff check failed on the test file's missing type hints (ANN), as it should.
+  Test 2: staged a frontend file with `let count: number = "three"`, ran a real `git commit` -> refused
+    (eslint prefer-const, tsc TS2322); HEAD unchanged.
+  Test 3: staged a harmless canary string; GITLEAKS_CONFIG pointed at a temporary one-rule config that
+    matches it -> `git commit` refused ("leaks found: 1"); HEAD unchanged. (A realistic fake key was not
+    used: planting one was refused earlier in the session.) Test files removed and unstaged afterwards.
+Claude Code Stop hook (stop-check.mjs, timeout 600 s):
+  Pipe test A: {"stop_hook_active":true} -> exit 0 in 1 s, no output (lets the stop through, no check run).
+  Pipe test B: an unformatted scripts/_stoptest.mjs -> {"decision":"block","reason":...} with the summary
+    and the failing check's output ("[warn] scripts/_stoptest.mjs"). Found and fixed: stderr was appended
+    after stdout, so the failure detail sat outside its section; the check now runs with 2>&1.
+  Pipe test C: clean tree -> exit 0, no output, 50-54 s. (Its first run caught stop-check.mjs itself not
+    being Prettier-formatted; fixed with npm run format.)
+Claude Code PreToolUse hook (protect-env.mjs, matcher Edit|Write|MultiEdit|NotebookEdit|Bash|PowerShell,
+  onFailure block):
+  16 sample inputs (scratchpad script): Write/Edit on .env, backend/.env, .ENV, Windows backslash paths ->
+    blocked; .env.example and other files -> allowed; shell redirects into .env, rm, sed -i, tee, Set-Content,
+    Out-File on .env -> blocked; git check-ignore .env, cp .env.example, text that only mentions .env ->
+    allowed. Unreadable input -> blocked (fails closed). A byte-order mark is tolerated.
+  Live: a real shell append to backend/.env was blocked by the hook; no file was created. A real Write to
+    .env and backend/.env was refused first by the existing Read(./.env) deny rule, so the hook's file-tool
+    branch is proven by the pipe tests. Found and fixed: the first version blocked any command that named
+    .env and contained ">" anywhere (it blocked a docs update); it now checks each command segment.
+    Still a heuristic: a heredoc whose text quotes a redirect into .env is blocked too.
+Results: npm run lint -> "All 11 checks passed".

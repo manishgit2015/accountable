@@ -63,6 +63,7 @@ Your data is in the `backend/data/` folder: `accountable.db`, and while the app 
 
 - `npm test` runs every test (pytest, Vitest, Playwright in the installed Chrome) on a temporary database and the test ports 8001 and 5174. It never touches `backend/data/accountable.db`. `npm test -- backend`, `-- frontend` or `-- e2e` runs one suite.
 - `npm run check` runs every check (formatting, lint, complexity, types, gitleaks, and `npm test` with 80% unit coverage) and fails if any fails. `npm run check:quick` skips the end-to-end tests, and `npm run lint` skips all tests. `npm run format` fixes formatting. gitleaks must be installed (`winget install Gitleaks.Gitleaks`, or `brew install gitleaks`).
+- Git's pre-commit hook (lefthook, installed by `npm install`) formats the staged files, then runs lint, types and gitleaks; skip it once with `LEFTHOOK=0 git commit`. Claude Code's hooks are in `.claude/settings.json`: `npm run check:quick` when the agent finishes a turn (blocks once on failure), and no edits to `.env`.
 - `npm run audit` checks the npm and Python dependencies for known vulnerabilities.
 - `npm run test:perf` times the app at 2× the expected data volume (V-P01).
 - `node scripts/run-tests.mjs visual` saves 1440px screenshots of the dashboard and pipeline to `docs/evidence/2026-11-22-visual/`, for comparing with mockup 1 (V-M04).

@@ -28,3 +28,9 @@ Read `docs/spec.md` first. It describes the whole product as it stands today, an
 - `npm run check:quick` runs the same without the end-to-end tests, for quick feedback while working. `npm run lint` runs only the checks that aren't tests.
 - `npm run format` fixes the formatting.
 - Record evidence for each task of the current change's `plan.md` in `docs/build_logs.log`.
+
+## Hooks
+
+- **git pre-commit** (lefthook, `lefthook.yml`, installed by `npm install`): formats the staged files (Prettier, ruff format), then runs ESLint, tsc, ruff check, ty and gitleaks on what's staged. No tests, so it stays quick.
+- **Stop** (`.claude/settings.json`, `scripts/hooks/stop-check.mjs`): when you finish a turn, `npm run check:quick` runs. If it fails, the stop is blocked once and the failures come back to you to fix; the next stop goes through.
+- **PreToolUse** (`scripts/hooks/protect-env.mjs`): edits to any `.env` file are blocked, through the file tools or a shell command. Ask the engineer to change `.env`.

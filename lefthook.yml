@@ -1,0 +1,42 @@
+# Git hooks (lefthook). `npm install` installs them; skip once with `LEFTHOOK=0 git commit ...`.
+# pre-commit formats the staged files, then runs lint, types and a secrets scan of what's staged.
+# Each check runs when files it covers are staged. No tests here, so a commit stays quick: `npm run check` runs them.
+pre-commit:
+  piped: true # format first, so the checks see the formatted files
+  jobs:
+    - name: format
+      group:
+        parallel: true
+        jobs:
+          - name: prettier
+            glob:
+              - "frontend/**"
+              - "e2e/**"
+              - "scripts/**"
+              - "playwright.config.ts"
+            run: node node_modules/prettier/bin/prettier.cjs --config frontend/.prettierrc --ignore-unknown --write {staged_files}
+            stage_fixed: true
+          - name: ruff format
+            glob: "backend/**/*.py"
+            run: uv run ruff format {staged_files}
+            stage_fixed: true
+    - name: check
+      group:
+        parallel: true
+        jobs:
+          - name: eslint
+            root: frontend/
+            glob: "*.{ts,tsx,js}"
+            run: node ../node_modules/eslint/bin/eslint.js --max-warnings=0 .
+          - name: tsc
+            root: frontend/
+            glob: "*.{ts,tsx,js,json}"
+            run: node ../node_modules/typescript/bin/tsc -p tsconfig.json && node ../node_modules/typescript/bin/tsc -p tsconfig.node.json
+          - name: ruff check
+            glob: "backend/**/*.py"
+            run: uv run ruff check backend
+          - name: ty
+            glob: ["backend/**/*.py", "pyproject.toml"]
+            run: uv run ty check
+          - name: gitleaks
+            run: git check-ignore --quiet .env && gitleaks git --pre-commit --staged --no-banner --redact .

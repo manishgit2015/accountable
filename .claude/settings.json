@@ -12,5 +12,32 @@
   },
   "enabledPlugins": {
     "frontend-design@anthropic-plugin-directory": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/hooks/protect-env.mjs\"",
+            "timeout": 10,
+            "onFailure": "block"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/hooks/stop-check.mjs\"",
+            "timeout": 600,
+            "statusMessage": "Running npm run check:quick..."
+          }
+        ]
+      }
+    ]
   }
 }
