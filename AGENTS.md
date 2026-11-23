@@ -24,5 +24,7 @@ Read `docs/spec.md` first. It describes the whole product as it stands today, an
 
 - `npm test` runs every test: the backend unit and integration tests (pytest), the frontend unit tests (Vitest), and the end-to-end tests in the installed Google Chrome (Playwright). It starts the servers itself on test ports with a temporary database, so nothing else needs to be running, and it never touches `backend/data/accountable.db`. It exits nonzero if any test fails. Run it before you say a change works, and don't claim it passed unless you ran it.
 - `npm test -- backend`, `npm test -- frontend` or `npm test -- e2e` runs one suite.
-- `npm run lint` checks lint, formatting and types for the backend, frontend and scripts.
+- `npm run check` is the quality gate: formatting (Prettier, ruff format), lint (ESLint with the TypeScript, React Hooks and accessibility rules; ruff), a complexity limit of 15 per function, types (tsc, ty), a secrets scan (gitleaks), and `npm test` with at least 80% unit test coverage. It runs every check, prints a summary and exits nonzero if any failed. Run it before you say a change is done, and fix what it finds without weakening a rule; if a rule doesn't suit the project, ask the engineer first.
+- `npm run check:quick` runs the same without the end-to-end tests, for quick feedback while working. `npm run lint` runs only the checks that aren't tests.
+- `npm run format` fixes the formatting.
 - Record evidence for each task of the current change's `plan.md` in `docs/build_logs.log`.

@@ -4,11 +4,19 @@ import { z } from "zod";
 
 import { useCreateContact, useOffline, useOrganizations, useUpdateContact } from "../api/queries";
 import type { Contact, ContactInput } from "../api/types";
-import { Button } from "../components/Button";
 import { Picker } from "../components/Picker";
 import { SidePanel } from "../components/SidePanel";
 import { CONTACT_STATUSES, type ContactStatus } from "../lib/deals";
-import { FieldShell, FormError, TextField, applyServerErrors, optional, rules, zodResolver } from "./fields";
+import {
+  FieldShell,
+  FormActions,
+  FormError,
+  TextField,
+  applyServerErrors,
+  optional,
+  rules,
+  zodResolver,
+} from "./fields";
 import { OrganizationForm } from "./OrganizationForm";
 
 const base = z.object({
@@ -26,6 +34,17 @@ const createSchema = base.refine((v) => v.organizationId !== null, {
   path: ["organizationId"],
 });
 const FIELDS = ["name", "organizationId", "email", "phone", "jobTitle", "status"] as const;
+
+function initialValues(contact: Contact | undefined, defaultOrganizationId: number | null): Values {
+  return {
+    name: contact?.name ?? "",
+    organizationId: contact ? contact.organizationId : defaultOrganizationId,
+    email: contact?.email ?? "",
+    phone: contact?.phone ?? "",
+    jobTitle: contact?.jobTitle ?? "",
+    status: contact?.status ?? "lead",
+  };
+}
 
 interface Props {
   contact?: Contact;
@@ -52,14 +71,7 @@ export function ContactForm({ contact, defaultOrganizationId = null, onSaved, on
     formState: { errors, isSubmitting, dirtyFields },
   } = useForm<Values>({
     resolver: zodResolver(contact ? base : createSchema),
-    defaultValues: {
-      name: contact?.name ?? "",
-      organizationId: contact ? contact.organizationId : defaultOrganizationId,
-      email: contact?.email ?? "",
-      phone: contact?.phone ?? "",
-      jobTitle: contact?.jobTitle ?? "",
-      status: contact?.status ?? "lead",
-    },
+    defaultValues: initialValues(contact, defaultOrganizationId),
   });
 
   const options = useMemo(
@@ -125,12 +137,12 @@ export function ContactForm({ contact, defaultOrganizationId = null, onSaved, on
             </select>
           )}
         </FieldShell>
-        <div className="form-actions">
-          <Button onClick={onCancel}>Cancel</Button>
-          <Button type="submit" variant="primary" disabled={saving || offline}>
-            {saving ? "Saving..." : contact ? "Save changes" : "Add contact"}
-          </Button>
-        </div>
+        <FormActions
+          saving={saving}
+          offline={offline}
+          saveLabel={contact ? "Save changes" : "Add contact"}
+          onCancel={onCancel}
+        />
       </form>
       <SidePanel open={addingOrganization} onOpenChange={setAddingOrganization} title="Add organization">
         <OrganizationForm

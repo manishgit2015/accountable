@@ -62,7 +62,7 @@ Your data is in the `backend/data/` folder: `accountable.db`, and while the app 
 ### For developers
 
 - `npm test` runs every test (pytest, Vitest, Playwright in the installed Chrome) on a temporary database and the test ports 8001 and 5174. It never touches `backend/data/accountable.db`. `npm test -- backend`, `-- frontend` or `-- e2e` runs one suite.
-- `npm run lint` checks lint, formatting and types. `npm run format` fixes formatting.
+- `npm run check` runs every check (formatting, lint, complexity, types, gitleaks, and `npm test` with 80% unit coverage) and fails if any fails. `npm run check:quick` skips the end-to-end tests, and `npm run lint` skips all tests. `npm run format` fixes formatting. gitleaks must be installed (`winget install Gitleaks.Gitleaks`, or `brew install gitleaks`).
 - `npm run audit` checks the npm and Python dependencies for known vulnerabilities.
 - `npm run test:perf` times the app at 2× the expected data volume (V-P01).
 - `node scripts/run-tests.mjs visual` saves 1440px screenshots of the dashboard and pipeline to `docs/evidence/2026-11-22-visual/`, for comparing with mockup 1 (V-M04).
@@ -110,6 +110,7 @@ Your data is in the `backend/data/` folder: `accountable.db`, and while the app 
 - 2026-11-22: Rewrote the review policy as `docs/REVIEW.md` (it was the untracked `docs/Review.md`) in the 14-section structure, keeping only what applies to Accountable. It has eight review passes, P0–P3 severity, a report format and merge criteria. The engineer approved it the same day, and asked for an independent review of `build-mvp` against `main`. Also re-ran the checks on 22 Nov: `npm test` (388 backend, 106 frontend, 48 e2e), `npm run lint` and `npm run audit` all pass.
 
 - 2026-11-22: Reorganized the docs for future changes (no code changed). `docs/intent.md` and `docs/plan.md` moved, unchanged, to `docs/changes/mvp/`. `docs/spec.md` now describes the whole product as it stands: it takes in the problem, users and scope from the intent, holds AC1–AC9 and SC1–SC5 (section 1.4), records the plan's engineering decisions E-1 to E-5 and D-2, D-3 (section 16.3), lists known gaps (section 17.1), and no longer defers to the intent; its MVP Definition of Done stays in the plan. `AGENTS.md` now says to read the spec first and only the current change's folder, `docs/changes/<branch name>/`. `docs/REVIEW.md` now asks reviewers to flag code the spec doesn't describe, and points at the change folder.
+- 2026-11-23: Change `build-mvp-harness`: `npm run check` is the quality gate. It runs Prettier, ESLint (TypeScript strict, React Hooks, jsx-a11y), complexity 15 (ESLint and ruff C901), tsc, ruff, ty, gitleaks (history and working tree, `.env` allowed while git-ignored) and `npm test` with 80% unit coverage; `npm run check:quick` skips e2e. Fixes with no behaviour change: ty's 13 type errors, four React components split below complexity 15, and the pipeline card's role stated for the a11y rules. New frontend unit tests take coverage over all of `src/` from 52% to 98% of lines. `npm run check` passes (388 backend, 226 frontend, 48 e2e). Evidence in `docs/build_logs.log` and `docs/evidence/2026-11-23-check/`.
 
 ## Release notes: v0.1.0 (22 Nov 2026)
 

@@ -20,7 +20,7 @@ def _snapshot(engine: Engine) -> dict[str, object]:
     return {
         table: (
             sorted((c["name"], str(c["type"]), c["nullable"]) for c in inspector.get_columns(table)),
-            sorted(ix["name"] for ix in inspector.get_indexes(table)),
+            sorted((ix["name"] or "") for ix in inspector.get_indexes(table)),
             sorted((ck["name"] or "") for ck in inspector.get_check_constraints(table)),
             sorted(
                 (fk["name"] or "", fk["referred_table"], fk["options"].get("ondelete"))

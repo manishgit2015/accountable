@@ -13,6 +13,8 @@ Commands are npm scripts in a `package.json` at the repo root, with `frontend/` 
 
 - `npm run dev` starts the backend and the frontend together
 - `npm test` runs all the tests and fails if any test fails
+- `npm run check` runs every quality check (formatting, lint, complexity, types, secrets, and the tests with coverage) and fails if any fails; `npm run check:quick` skips the end-to-end tests
+- `npm run format` fixes the formatting
 - `npm run seed` resets the database to the sample data
 - `npm run clear` empties the database, to start with real data
 
@@ -27,3 +29,5 @@ Testing will cover:
 3. End-to-end tests of the whole app in a browser, in `e2e/`, using Playwright Test (`@playwright/test`) with the installed Google Chrome. They start the app themselves, so `npm test` needs nothing else running.
 
 The tests use a database of their own, so running them never changes your data.
+
+Quality tools: Prettier, ESLint (typescript-eslint, React Hooks, jsx-a11y via `eslint-plugin-jsx-a11y-x`) and tsc for the frontend; ruff and ty for the backend; Vitest's v8 coverage and pytest-cov; and gitleaks for secrets, installed on the machine (`winget install Gitleaks.Gitleaks` on Windows, `brew install gitleaks` on macOS).

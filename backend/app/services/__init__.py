@@ -6,7 +6,7 @@ FastAPI. They raise the errors below, which the app answers in the spec 5.2 form
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 
 from sqlalchemy import Connection, Engine
@@ -43,7 +43,7 @@ class StalePosition(ServiceError):
 
 
 @contextmanager
-def unit_of_work(engine: Engine) -> Iterator[Connection]:
+def unit_of_work(engine: Engine) -> Generator[Connection]:
     """One transaction for one request (REL-2): committed if it finishes, rolled back if it raises.
 
     Routers open it here, so they never reach into the data layer themselves.

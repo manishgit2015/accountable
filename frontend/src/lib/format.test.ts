@@ -8,6 +8,7 @@ import {
   formatDateTime,
   formatMoney,
   formatMoneyShort,
+  formatPercent,
   formatMonth,
   formatRelativeDate,
   parseDate,
@@ -67,5 +68,12 @@ describe("dates", () => {
     expect(formatDateLong(new Date(2026, 10, 21))).toBe("Saturday 21 November 2026");
     expect(formatMonth("2025-12")).toBe("Dec");
     expect(formatMonth("2026-11")).toBe("Nov");
+  });
+});
+
+describe("formatPercent", () => {
+  it("rounds to a whole percentage", () => {
+    expect(formatPercent(40)).toBe("40%");
+    expect(formatPercent(66.6)).toBe("67%");
   });
 });

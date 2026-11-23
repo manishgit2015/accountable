@@ -8,6 +8,7 @@ trace only in the log.
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 from fastapi import FastAPI, Request
@@ -68,7 +69,7 @@ def _field_name(loc: tuple[Any, ...]) -> str:
     return ".".join(parts) if parts else "_"
 
 
-def validation_fields(errors: list[dict[str, Any]]) -> dict[str, str]:
+def validation_fields(errors: Sequence[Mapping[str, Any]]) -> dict[str, str]:
     """Turn Pydantic errors into one plain message per field."""
     fields: dict[str, str] = {}
     for err in errors:

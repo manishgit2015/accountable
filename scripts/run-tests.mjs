@@ -7,6 +7,9 @@
 //   npm test                     all three suites
 //   npm test -- backend          pytest only
 //   npm test -- e2e smoke        Playwright, with "smoke" passed on as a filter
+//   npm test -- unit             pytest and Vitest, without Playwright
+//   npm test -- --coverage       also measure unit test coverage, failing under 80% (pytest-cov and
+//                                Vitest's v8 coverage; thresholds in pyproject.toml and vitest.config.ts)
 //   npm run test:perf            (= run-tests.mjs perf) V-P01 only: fills the temporary database with
 //                                2 x the intent's volume (app.perfdata), then runs e2e/perf/ (T4.2).
 //                                Not part of `npm test`.
@@ -23,12 +26,18 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_DB = resolve(root, "backend", "data", "accountable.db");
 const SUITES = ["backend", "frontend", "e2e"];
+const GROUPS = { unit: ["backend", "frontend"] };
 
-const args = process.argv.slice(2);
+const allArgs = process.argv.slice(2);
+const coverage = allArgs.includes("--coverage");
+const args = allArgs.filter((arg) => arg !== "--coverage");
 const perf = args[0] === "perf";
 const visual = args[0] === "visual";
-const chosen = perf ? ["perfdata", "perf"] : visual ? ["visual"] : SUITES.includes(args[0]) ? [args[0]] : SUITES;
-const extra = perf || visual || SUITES.includes(args[0]) ? args.slice(1) : args;
+const named = SUITES.includes(args[0]) ? [args[0]] : GROUPS[args[0]];
+const chosen = perf ? ["perfdata", "perf"] : visual ? ["visual"] : (named ?? SUITES);
+const extra = perf || visual || named ? args.slice(1) : args;
+const backendCoverage = coverage ? ["--cov"] : [];
+const frontendCoverage = coverage ? ["--coverage"] : [];
 
 const tempDir = mkdtempSync(join(tmpdir(), "accountable-test-"));
 const testDb = resolve(process.env.ACCOUNTABLE_TEST_DB || join(tempDir, "test.db"));
@@ -55,8 +64,12 @@ const browserSuites = new Set(["e2e", "perfdata", "perf", "visual"]);
 
 const node = process.execPath;
 const commands = {
-  backend: ["uv", ["run", "pytest", ...extra], root],
-  frontend: [node, [join(root, "node_modules", "vitest", "vitest.mjs"), "run", ...extra], join(root, "frontend")],
+  backend: ["uv", ["run", "pytest", ...backendCoverage, ...extra], root],
+  frontend: [
+    node,
+    [join(root, "node_modules", "vitest", "vitest.mjs"), "run", ...frontendCoverage, ...extra],
+    join(root, "frontend"),
+  ],
   e2e: [node, [join(root, "node_modules", "@playwright", "test", "cli.js"), "test", ...extra], root],
   perfdata: ["uv", ["run", "--no-sync", "--directory", "backend", "python", "-m", "app.perfdata"], root],
   perf: [node, [join(root, "node_modules", "@playwright", "test", "cli.js"), "test", ...extra], root],

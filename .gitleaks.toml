@@ -1,0 +1,12 @@
+# Secrets scan for `npm run check`: gitleaks' default rules over the git history and the working tree.
+[extend]
+useDefault = true
+
+# Git-ignored files that aren't the project's own: the local .env (secrets belong there, and
+# scripts/check.mjs fails if it ever stops being git-ignored), and installed or generated folders.
+[[allowlists]]
+description = "The git-ignored .env, and installed or generated folders"
+paths = [
+  '''(^|[\\/])\.env$''',
+  '''(^|[\\/])(\.venv|node_modules|\.ruff_cache|\.pytest_cache|test-results|playwright-report|coverage|htmlcov|dist)[\\/]''',
+]

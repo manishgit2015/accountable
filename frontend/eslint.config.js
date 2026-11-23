@@ -1,4 +1,6 @@
-// Lint rules for the frontend (ENG-1, ENG-2).
+// Lint rules for the frontend (ENG-1, ENG-2): TypeScript strict (which includes recommended),
+// React Hooks recommended, accessibility recommended, and a complexity limit.
+import jsxA11y from "eslint-plugin-jsx-a11y-x";
 import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
@@ -19,6 +21,9 @@ const noFetchOutsideApi = {
 export default tseslint.config(
   { ignores: ["dist/**", "node_modules/**"] },
   ...tseslint.configs.strict,
+  { ...jsxA11y.configs.recommended, files: ["**/*.tsx"] },
+  // Keeps every function small enough to follow and test (STANDARDS.md: short functions).
+  { rules: { complexity: ["error", 15] } },
   {
     files: ["**/*.{ts,tsx}"],
     plugins: { "react-hooks": reactHooks },

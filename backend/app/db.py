@@ -8,7 +8,7 @@ in the connection hook below (decision E-1, checked by test_db.py).
 from __future__ import annotations
 
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -158,7 +158,7 @@ def create_db_engine(db_path: Path) -> Engine:
 
 
 @contextmanager
-def transaction(engine: Engine) -> Iterator[Connection]:
+def transaction(engine: Engine) -> Generator[Connection]:
     """One transaction: committed if the block finishes, rolled back if it raises (REL-2)."""
     with engine.begin() as conn:
         yield conn

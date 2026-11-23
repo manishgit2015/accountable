@@ -4,8 +4,16 @@ import { z } from "zod";
 
 import { useCreateOrganization, useOffline, useUpdateOrganization } from "../api/queries";
 import type { Organization } from "../api/types";
-import { Button } from "../components/Button";
-import { FormError, TextAreaField, TextField, applyServerErrors, optional, rules, zodResolver } from "./fields";
+import {
+  FormActions,
+  FormError,
+  TextAreaField,
+  TextField,
+  applyServerErrors,
+  optional,
+  rules,
+  zodResolver,
+} from "./fields";
 
 const schema = z.object({
   name: rules.name,
@@ -15,6 +23,15 @@ const schema = z.object({
 });
 type Values = z.infer<typeof schema>;
 const FIELDS = ["name", "website", "industry", "notes"] as const;
+
+function initialValues(organization: Organization | undefined): Values {
+  return {
+    name: organization?.name ?? "",
+    website: organization?.website ?? "",
+    industry: organization?.industry ?? "",
+    notes: organization?.notes ?? "",
+  };
+}
 
 interface Props {
   /** Edit this organization, or add a new one when left out. */
@@ -36,12 +53,7 @@ export function OrganizationForm({ organization, onSaved, onCancel }: Props) {
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      name: organization?.name ?? "",
-      website: organization?.website ?? "",
-      industry: organization?.industry ?? "",
-      notes: organization?.notes ?? "",
-    },
+    defaultValues: initialValues(organization),
   });
 
   async function onSubmit(values: Values) {
@@ -70,12 +82,12 @@ export function OrganizationForm({ organization, onSaved, onCancel }: Props) {
       <TextField label="Website" error={errors.website?.message} placeholder="example.com" {...register("website")} />
       <TextField label="Industry" error={errors.industry?.message} {...register("industry")} />
       <TextAreaField label="Notes" error={errors.notes?.message} {...register("notes")} />
-      <div className="form-actions">
-        <Button onClick={onCancel}>Cancel</Button>
-        <Button type="submit" variant="primary" disabled={saving || offline}>
-          {saving ? "Saving..." : organization ? "Save changes" : "Add organization"}
-        </Button>
-      </div>
+      <FormActions
+        saving={saving}
+        offline={offline}
+        saveLabel={organization ? "Save changes" : "Add organization"}
+        onCancel={onCancel}
+      />
     </form>
   );
 }

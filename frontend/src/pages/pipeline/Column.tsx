@@ -68,12 +68,9 @@ interface ColumnProps {
 export function Column({ stage, deals, dropIndex = null, activeId = null, onAddDeal, onOpenDeal, now }: ColumnProps) {
   const [showAll, setShowAll] = useState(false);
   const members = columnDeals(stage, deals, now);
-  const totals = columnTotals(members);
-  const ordered = members;
-  const hidden = stage.open || showAll ? 0 : Math.max(0, ordered.length - CLOSED_LIMIT);
-  const visible = hidden > 0 ? ordered.slice(0, CLOSED_LIMIT) : ordered;
+  const hidden = stage.open || showAll ? 0 : Math.max(0, members.length - CLOSED_LIMIT);
+  const visible = hidden > 0 ? members.slice(0, CLOSED_LIMIT) : members;
   const { setNodeRef, isOver } = useDroppable({ id: columnId(stage.key), data: { stage: stage.key } });
-  const month = MONTH_NAMES[(now ?? new Date()).getMonth()];
 
   return (
     <section
@@ -81,30 +78,7 @@ export function Column({ stage, deals, dropIndex = null, activeId = null, onAddD
       aria-label={`${stage.label} column`}
       data-stage={stage.key}
     >
-      <div className="col-head">
-        <span className="dot" style={{ background: stage.color }} aria-hidden="true" />
-        <span className="name">{stage.label}</span>
-        <span className="count" aria-label={`${totals.count} deals`}>
-          {totals.count}
-        </span>
-        <span className="val">
-          <span className="num" data-testid="column-value">
-            {formatMoneyShort(totals.value)}
-          </span>
-          <span className="e">
-            {stage.open ? (
-              <>
-                <span className="num" data-testid="column-expected">
-                  {formatMoneyShort(totals.expected)}
-                </span>{" "}
-                expected
-              </>
-            ) : (
-              "this month"
-            )}
-          </span>
-        </span>
-      </div>
+      <ColumnHeader stage={stage} totals={columnTotals(members)} />
       <div ref={setNodeRef} className={isOver ? "stack over" : "stack"}>
         {stage.open && onAddDeal && (
           <button type="button" className="add" onClick={() => onAddDeal(stage)}>
@@ -126,19 +100,79 @@ export function Column({ stage, deals, dropIndex = null, activeId = null, onAddD
             />
           ),
         )}
-        {!stage.open && hidden > 0 && (
-          <button type="button" className="link-button show-all" onClick={() => setShowAll(true)}>
-            {hidden} more · Show all
-          </button>
+        {!stage.open && (
+          <ClosedFooter
+            hidden={hidden}
+            canCollapse={showAll && members.length > CLOSED_LIMIT}
+            onShowAll={setShowAll}
+            now={now ?? new Date()}
+          />
         )}
-        {!stage.open && showAll && ordered.length > CLOSED_LIMIT && (
-          <button type="button" className="link-button show-all" onClick={() => setShowAll(false)}>
-            Show the latest {CLOSED_LIMIT}
-          </button>
-        )}
-        {!stage.open && <div className="month-note">Closed in {month}</div>}
       </div>
     </section>
+  );
+}
+
+interface ColumnHeaderProps {
+  stage: StageInfo;
+  totals: ReturnType<typeof columnTotals>;
+}
+
+/** The stage's name, count and value; open stages also show expected revenue (R60). */
+function ColumnHeader({ stage, totals }: ColumnHeaderProps) {
+  return (
+    <div className="col-head">
+      <span className="dot" style={{ background: stage.color }} aria-hidden="true" />
+      <span className="name">{stage.label}</span>
+      <span className="count" aria-label={`${totals.count} deals`}>
+        {totals.count}
+      </span>
+      <span className="val">
+        <span className="num" data-testid="column-value">
+          {formatMoneyShort(totals.value)}
+        </span>
+        <span className="e">
+          {stage.open ? (
+            <>
+              <span className="num" data-testid="column-expected">
+                {formatMoneyShort(totals.expected)}
+              </span>{" "}
+              expected
+            </>
+          ) : (
+            "this month"
+          )}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+interface ClosedFooterProps {
+  /** How many closed deals are folded away. */
+  hidden: number;
+  /** Every deal is shown and there are more than the limit, so they can be folded again. */
+  canCollapse: boolean;
+  onShowAll: (showAll: boolean) => void;
+  now: Date;
+}
+
+/** Won and Lost: "N more · Show all" or "Show the latest 5", and the month they cover (R60). */
+function ClosedFooter({ hidden, canCollapse, onShowAll, now }: ClosedFooterProps) {
+  return (
+    <>
+      {hidden > 0 && (
+        <button type="button" className="link-button show-all" onClick={() => onShowAll(true)}>
+          {hidden} more · Show all
+        </button>
+      )}
+      {canCollapse && (
+        <button type="button" className="link-button show-all" onClick={() => onShowAll(false)}>
+          Show the latest {CLOSED_LIMIT}
+        </button>
+      )}
+      <div className="month-note">Closed in {MONTH_NAMES[now.getMonth()]}</div>
+    </>
   );
 }
 
@@ -176,6 +210,9 @@ function DraggableDeal({ deal, closed, dragging, onOpen }: DraggableDealProps) {
       data-deal-id={deal.id}
       {...attributes}
       {...listeners}
+      // The same role and tabIndex dnd-kit's attributes set, stated so the a11y rules can see them (R66).
+      role="button"
+      tabIndex={0}
       aria-roledescription="Draggable deal"
       aria-label={`${deal.name}, ${deal.organizationName ?? "no organization"}. Press Space to move it, or Enter to open it.`}
       onClick={() => onOpen(deal)}

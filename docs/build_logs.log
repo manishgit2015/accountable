@@ -1330,3 +1330,41 @@ After the tag: docs/STATUS.md got the release notes and the updated Next list, a
   are uncommitted, for the engineer's next commit.
 DoD at release: items 1-4 and 6-10 met; item 5 (V-M02 on macOS, Linux and Windows with Wi-Fi off) and V-M05
   are still open, and the engineer chose to release with them open.
+
+----------------------------------------------------------------------
+build-mvp-harness H1-H7  One quality gate: npm run check
+Date: 2026-11-23
+Plan: docs/changes/build-mvp-harness/plan.md
+H1 Tools: npm install -D -w frontend eslint-plugin-jsx-a11y-x @vitest/coverage-v8 (eslint-plugin-jsx-a11y 6.10.2
+  refuses ESLint 10 as a peer, so the maintained es-tooling fork is used); root package.json overrides the fork's
+  minimatch to ^11.0.1 (GHSA-g3hv-75wg-m249, moderate) -> npm audit: 0 vulnerabilities. uv add --dev ty -> ty 0.0.108.
+  gitleaks 8.30.1 already installed (winget).
+H2 Rules: jsx-a11y recommended on .tsx and complexity 15 (frontend/eslint.config.js); C901, max-complexity 15
+  (pyproject.toml); ty over backend/; .gitleaks.toml (default rules; .env and installed/generated folders allowed).
+H3 Findings fixed, no rule loosened, no disable/ignore comments:
+  ty: 13 diagnostics -> 0 (Generator return type on two context managers, Select[*tuple[Any, ...]] in records.py,
+    validation_fields takes Sequence[Mapping], test helpers typed type[BaseModel], index names "or ''").
+  ESLint: ContactForm 24, DealForm 26, OrganizationForm 18, Column 18 over complexity 15 -> starting values moved
+    to initialValues(), shared FormActions in forms/fields.tsx, Column split into ColumnHeader and ClosedFooter.
+    jsx-a11y no-static-element-interactions + interactive-supports-focus on the draggable deal -> role="button" and
+    tabIndex={0} stated after dnd-kit's attributes (same values dnd-kit sets).
+  ruff C901: no findings. gitleaks: history clean; working-tree findings were all in .venv (third-party).
+H4 Coverage: [tool.coverage] (branch, fail_under 80) in pyproject.toml; Vitest v8 over all of src/ except tests,
+  src/test/ and main.tsx, thresholds 80 on lines, statements, functions and branches. npm test -- --coverage
+  turns it on; npm test -- unit runs pytest and Vitest.
+H5 Frontend unit tests: before, 52.16% lines over all source (pages had no unit tests). Added 17 test files and the
+  shared helper src/test/app.tsx (fakeApi, renderPage). After: 226 tests; lines 98.41%, statements 97.26%,
+  functions 96.55%, branches 91.21%. Backend: 388 tests, 97.33% with branches.
+H6 scripts/check.mjs; npm scripts check, check:quick, lint (static only); format unchanged.
+H7 AGENTS.md, docs/spec.md (13.2, ENG-2, ENG-3, ENG-7, ENG-11, 17.1), docs/TECH_STACK.md, docs/STATUS.md.
+Results:
+  npm run check -> exit 0, "All 12 checks passed" (backend 388, frontend 226, e2e 48).
+    Full output: docs/evidence/2026-11-23-check/npm-run-check.txt
+  npm run check:quick -> exit 0, 12 checks passed.
+  Negative probe: a 16-branch function in backend/app -> npm run lint exit 1 (C901 16 > 15); probe removed.
+Notes from the test work (not fixed, no behaviour change made):
+  - Pipeline keyboard reorder: the keyboard step (card height + 10px) equals the CSS stack gap, so in jsdom one
+    ArrowDown lands exactly on the next card's middle and placeIn's strict < can treat it as no change. The e2e
+    keyboard tests pass in Chrome; worth a look.
+  - lib/format.ts branches 71%: the remaining branches are ?? fallbacks for malformed dates.
+Open issues: the 90% target on rules.py and services/ (spec 13.2) is met but not enforced separately.

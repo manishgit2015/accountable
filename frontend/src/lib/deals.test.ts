@@ -8,6 +8,8 @@ import {
   greeting,
   initials,
   isLate,
+  stageInfo,
+  statusLabel,
   summaryLine,
   usualProbability,
 } from "./deals";
@@ -89,5 +91,16 @@ describe("closed this month", () => {
     expect(closedThisMonth({ closedAt: "2026-11-01T00:00:00" }, today)).toBe(true);
     expect(closedThisMonth({ closedAt: "2026-10-31T23:59:59" }, today)).toBe(false);
     expect(closedThisMonth({ closedAt: null }, today)).toBe(false);
+  });
+});
+
+describe("labels", () => {
+  it("names contact statuses (R11)", () => {
+    expect(statusLabel("lead")).toBe("Lead");
+    expect(statusLabel("customer")).toBe("Customer");
+  });
+
+  it("refuses a stage that doesn't exist", () => {
+    expect(() => stageInfo("archived" as never)).toThrow("Unknown stage: archived");
   });
 });

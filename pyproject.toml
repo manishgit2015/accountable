@@ -18,6 +18,7 @@ dev = [
     "httpx>=0.28",
     "ruff>=0.17.6",
     "pip-audit>=2.10",
+    "ty>=0.0.108",
 ]
 
 [tool.uv]
@@ -34,11 +35,14 @@ target-version = "py312"
 src = ["backend"]
 
 [tool.ruff.lint]
-# Errors, pyflakes, warnings, import order, upgrades, bugbear, simplify, and type hints on
-# every public function in the app (ENG-3).
-select = ["E", "F", "W", "I", "UP", "B", "SIM", "ANN"]
+# Errors, pyflakes, warnings, import order, upgrades, bugbear, simplify, type hints on
+# every public function in the app (ENG-3), and a complexity limit per function (C901).
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "ANN", "C901"]
 # Any is allowed at typed boundaries, such as validators that receive raw JSON (ENG-2, ENG-3).
 ignore = ["ANN401"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
 
 [tool.ruff.lint.per-file-ignores]
 "backend/tests/**" = ["ANN"]
@@ -46,3 +50,20 @@ ignore = ["ANN401"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
+
+[tool.ty.environment]
+python-version = "3.12"
+extra-paths = ["backend"]
+
+[tool.ty.src]
+include = ["backend"]
+
+# `npm run check` measures backend coverage with branches, and fails under 80% (ENG-7).
+[tool.coverage.run]
+source = ["backend/app"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = true

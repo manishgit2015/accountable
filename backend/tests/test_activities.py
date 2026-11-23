@@ -7,13 +7,13 @@ from datetime import date, datetime
 
 import pytest
 from fastapi.testclient import TestClient
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from app.errors import validation_fields
 from app.schemas import Activity, ActivityCreate, ActivityUpdate, Dashboard, FollowUp, TimelineEntry
 
 
-def problems(model: type, data: dict) -> dict[str, str]:
+def problems(model: type[BaseModel], data: dict) -> dict[str, str]:
     with pytest.raises(ValidationError) as caught:
         model.model_validate(data)
     return validation_fields(caught.value.errors())

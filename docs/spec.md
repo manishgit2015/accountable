@@ -709,6 +709,7 @@ These steps go in `docs/STATUS.md` when the app is built.
 - Every end-to-end test fails on a browser console error or on any request outside localhost (V-E00).
 - Each test's name starts with the requirement it proves, for example `R16 moving to Won sets the close date to today`.
 - Coverage of `rules.py` and `services/` is at least 90% of lines.
+- Unit test coverage is at least 80% of lines, statements, functions and branches, for the backend (pytest-cov, `backend/app/`) and the frontend (Vitest, every file in `frontend/src/` except tests and `main.tsx`). `npm run check` enforces it (`npm test -- --coverage`).
 
 ### 13.3 Verification cases
 
@@ -777,12 +778,13 @@ These steps go in `docs/STATUS.md` when the app is built.
 | ID | Standard |
 |---|---|
 | ENG-1 | **Module boundaries** as in section 7.1. In the frontend, only `src/api/` calls `fetch`. Pages use components and hooks, and colors come only from tokens. In the backend, routers don't touch the database, and services don't import FastAPI. |
-| ENG-2 | **TypeScript** in strict mode, with no `any` except at typed boundaries (with a comment). ESLint and Prettier must pass. |
-| ENG-3 | **Python 3.12** with type hints on every public function. Ruff lint and format must pass. |
+| ENG-2 | **TypeScript** in strict mode, with no `any` except at typed boundaries (with a comment). Prettier, tsc and ESLint must pass, with typescript-eslint's strict rules (which include the recommended ones), React Hooks' recommended rules and the jsx-a11y recommended accessibility rules. |
+| ENG-3 | **Python 3.12** with type hints on every public function. Ruff lint and format, and the ty type checker, must pass. |
 | ENG-4 | **SQLAlchemy Core** only, with no raw SQL and no ORM, as `TECH_STACK.md` sets. The one exception is the connection `PRAGMA` statements in `db.py` (E-1), which a test checks are the only text SQL. Schema changes only through Alembic. |
 | ENG-5 | **Libraries:** the ones in section 7.1 and `TECH_STACK.md`. A new dependency needs a reason in the change description, and popular, maintained libraries come before custom code. |
 | ENG-6 | **Naming:** API fields in `snake_case`, TypeScript in `camelCase`, with one translation in `src/api/`. Stage keys are lowercase (`new` … `lost`). |
-| ENG-7 | **Tests** go with every change, named by requirement ID (section 13.2). `npm test` must pass before every commit to the main branch. |
+| ENG-7 | **Tests** go with every change, named by requirement ID (section 13.2). `npm run check` must pass before every commit to the main branch. |
+| ENG-11 | **Quality gate:** `npm run check` runs formatting, lint, a cyclomatic complexity limit of 15 per function (ESLint `complexity`, ruff `C901`), types, a gitleaks secrets scan of the git history and working tree (the git-ignored `.env` is allowed), and `npm test` with 80% unit coverage. It fails if any check fails. `npm run check:quick` leaves out the end-to-end tests, and `npm run format` fixes formatting. |
 | ENG-8 | **UI copy** follows section 3.9 Writing. There's no text in code that a user sees and that breaks the tone rules. |
 | ENG-9 | **Changes** are small, focused commits. `docs/STATUS.md` is updated when a piece of work is finished, and this spec is updated in the same change as the behavior it describes (section 17). |
 | ENG-10 | **Decision boundary:** a coding agent doesn't invent business rules, permissions, security policies or architecture. Anything this spec doesn't settle is raised with the product owner first, recorded in the change's intent or plan, and then written into this spec. |
@@ -881,7 +883,7 @@ Architecture decisions (ADR) and engineering decisions (E) that shape the produc
 Places where the product today falls short of this spec. Each is tracked in `docs/STATUS.md` until a change fixes it.
 
 - **REL-7:** saving is blocked while the backend can't be reached in the forms, dialogs, the deal page and timelines, but not on the pipeline board (drops) or the dashboard's follow-up checkboxes. Those fail and roll back with a message instead (review finding REV-001, `docs/reviews/review-report.md`).
-- **Section 13.2 coverage threshold:** met (99–100% on `rules.py` and `services/`), but no command enforces it (REV-003).
+- **Section 13.2 coverage threshold:** the 90% on `rules.py` and `services/` is met (99–100%), but only the 80% overall threshold is enforced, by `npm run check` (REV-003).
 - **V-M02** has been run on Windows only, and **V-M05** hasn't been run.
 
 ## 18. Ownership

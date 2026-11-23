@@ -57,7 +57,7 @@ def _changes(body: Any) -> dict[str, Any]:
 _open = deals.c.stage.in_(rules.OPEN_STAGES)
 
 
-def _organization_query() -> Select[Any]:
+def _organization_query() -> Select[*tuple[Any, ...]]:
     contact_count = (
         select(func.count(contacts.c.id)).where(contacts.c.organization_id == organizations.c.id).scalar_subquery()
     )
@@ -112,7 +112,7 @@ def update_organization(
 # Contacts (R11, R34) -------------------------------------------------------------------------------
 
 
-def _contact_query() -> Select[Any]:
+def _contact_query() -> Select[*tuple[Any, ...]]:
     return select(contacts, organizations.c.name.label("organization_name")).outerjoin(
         organizations, contacts.c.organization_id == organizations.c.id
     )
@@ -159,7 +159,7 @@ def update_contact(conn: Connection, contact_id: int, body: ContactUpdate, now: 
 # Deals (R12, R15, R23, R67) ------------------------------------------------------------------------
 
 
-def _deal_query() -> Select[Any]:
+def _deal_query() -> Select[*tuple[Any, ...]]:
     return (
         select(
             deals,

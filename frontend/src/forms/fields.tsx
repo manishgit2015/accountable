@@ -5,6 +5,7 @@ import type { FieldValues, Path, Resolver, UseFormSetError } from "react-hook-fo
 import { z } from "zod";
 
 import { ApiError } from "../api/client";
+import { Button } from "../components/Button";
 
 // R21 field rules, mirrored from backend/app/schemas.py for fast feedback. The server checks them again.
 
@@ -176,6 +177,25 @@ export function TextAreaField({
     <FieldShell label={label} error={error}>
       {(props) => <textarea rows={4} {...input} {...props} />}
     </FieldShell>
+  );
+}
+
+interface FormActionsProps {
+  saving: boolean;
+  offline: boolean;
+  saveLabel: string;
+  onCancel: () => void;
+}
+
+/** Cancel, and the save button, which is off while saving or offline. */
+export function FormActions({ saving, offline, saveLabel, onCancel }: FormActionsProps) {
+  return (
+    <div className="form-actions">
+      <Button onClick={onCancel}>Cancel</Button>
+      <Button type="submit" variant="primary" disabled={saving || offline}>
+        {saving ? "Saving..." : saveLabel}
+      </Button>
+    </div>
   );
 }
 

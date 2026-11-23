@@ -4,13 +4,13 @@ organization required on create, status default, the cleared link kept on edit.
 
 import pytest
 from fastapi.testclient import TestClient
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from app.errors import validation_fields
 from app.schemas import Contact, ContactCreate, ContactUpdate
 
 
-def problems(model: type, data: dict) -> dict[str, str]:
+def problems(model: type[BaseModel], data: dict) -> dict[str, str]:
     with pytest.raises(ValidationError) as caught:
         model.model_validate(data)
     return validation_fields(caught.value.errors())

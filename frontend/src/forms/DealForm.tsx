@@ -4,12 +4,11 @@ import { z } from "zod";
 
 import { useContacts, useCreateDeal, useOffline, useOrganizations, useUpdateDeal } from "../api/queries";
 import type { Deal, DealInput, Stage } from "../api/types";
-import { Button } from "../components/Button";
 import { Picker } from "../components/Picker";
 import { SidePanel } from "../components/SidePanel";
 import { STAGES, usualProbability } from "../lib/deals";
 import { ContactForm } from "./ContactForm";
-import { FieldShell, FormError, TextField, applyServerErrors, rules, zodResolver } from "./fields";
+import { FieldShell, FormActions, FormError, TextField, applyServerErrors, rules, zodResolver } from "./fields";
 import { OrganizationForm } from "./OrganizationForm";
 
 const STAGE_KEYS = ["new", "qualified", "proposal", "negotiation", "won", "lost"] as const;
@@ -29,6 +28,35 @@ const createSchema = base
   .refine((v) => v.organizationId !== null, { message: "Choose an organization.", path: ["organizationId"] })
   .refine((v) => v.contactId !== null, { message: "Choose a contact.", path: ["contactId"] });
 const FIELDS = ["name", "organizationId", "contactId", "stage", "value", "probability", "closeDate"] as const;
+
+interface NewDealDefaults {
+  stage: Stage;
+  organizationId: number | null;
+  contactId: number | null;
+}
+
+function initialValues(deal: Deal | undefined, defaults: NewDealDefaults): Values {
+  if (deal) {
+    return {
+      name: deal.name,
+      organizationId: deal.organizationId,
+      contactId: deal.contactId,
+      stage: deal.stage,
+      value: String(deal.value),
+      probability: String(deal.probability),
+      closeDate: deal.closeDate,
+    };
+  }
+  return {
+    name: "",
+    organizationId: defaults.organizationId,
+    contactId: defaults.contactId,
+    stage: defaults.stage,
+    value: "",
+    probability: String(usualProbability(defaults.stage)),
+    closeDate: "",
+  };
+}
 
 interface Props {
   deal?: Deal;
@@ -66,15 +94,11 @@ export function DealForm({
     formState: { errors, isSubmitting, dirtyFields },
   } = useForm<Values>({
     resolver: zodResolver(deal ? base : createSchema),
-    defaultValues: {
-      name: deal?.name ?? "",
-      organizationId: deal ? deal.organizationId : defaultOrganizationId,
-      contactId: deal ? deal.contactId : defaultContactId,
-      stage: deal?.stage ?? defaultStage,
-      value: deal ? String(deal.value) : "",
-      probability: String(deal?.probability ?? usualProbability(defaultStage)),
-      closeDate: deal?.closeDate ?? "",
-    },
+    defaultValues: initialValues(deal, {
+      stage: defaultStage,
+      organizationId: defaultOrganizationId,
+      contactId: defaultContactId,
+    }),
   });
 
   const organizationId = useWatch({ control, name: "organizationId" });
@@ -193,12 +217,12 @@ export function DealForm({
           <TextField label="Value (USD)" inputMode="numeric" error={errors.value?.message} {...register("value")} />
           <TextField label="Close date" type="date" error={errors.closeDate?.message} {...register("closeDate")} />
         </div>
-        <div className="form-actions">
-          <Button onClick={onCancel}>Cancel</Button>
-          <Button type="submit" variant="primary" disabled={saving || offline}>
-            {saving ? "Saving..." : deal ? "Save changes" : "Add deal"}
-          </Button>
-        </div>
+        <FormActions
+          saving={saving}
+          offline={offline}
+          saveLabel={deal ? "Save changes" : "Add deal"}
+          onCancel={onCancel}
+        />
       </form>
       <SidePanel
         open={adding === "organization"}
