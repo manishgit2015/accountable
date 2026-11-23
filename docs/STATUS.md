@@ -129,4 +129,5 @@ The first release of Accountable: a local sales CRM for one salesperson.
 - Run V-M02 on macOS and Linux, and on Windows with Wi-Fi off (commands in `docs/build_logs.log`, T5.1), and record the results here.
 - Have someone new try the SC1 questions (V-M05, questions in T5.4).
 - Two weeks of real use to check SC2 to SC4 (V-M06).
+- Open review findings (`docs/reviews/review-report.md`), each a small product change of its own: REV-001, block board drops and follow-up ticks while offline (REL-7, spec 17.1), with a Vitest case each; REV-002, remove the unused `@dnd-kit/sortable` from `frontend/package.json` and Vite's `optimizeDeps`. REV-003 (coverage gate) and REV-004 (governance docs committed) are done.
 - Possible later changes from Phase 5: two source names on dashboard rows (needs a contract change), Cerulean follow-up links, a richer won/lost history in the sample data, the Deals table's default sort, and distinct names for the pipeline's "Add deal" buttons.

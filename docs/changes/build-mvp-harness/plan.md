@@ -14,6 +14,7 @@ Intent: `intent.md` in this folder. Evidence for each task goes in `docs/build_l
 | H6 | `scripts/check.mjs` and the npm scripts `check`, `check:quick` and `lint` (static checks only). Every check runs even after a failure, then a summary prints and the exit code is 1 if any failed. | `npm run check` output |
 | H7 | Docs: `AGENTS.md`, `docs/spec.md` (13.2, 15, 17.1), `docs/TECH_STACK.md`, `docs/STATUS.md`. | Read through |
 | H8 | Hooks: lefthook pre-commit (`lefthook.yml`: format staged files, then ESLint, tsc, ruff check, ty, gitleaks on staged changes; no tests); Claude Code Stop hook running `npm run check:quick` that blocks once (`stop_hook_active`); Claude Code PreToolUse hook blocking `.env` edits by file tools and shell commands. | Commits refused on bad input; pipe tests of both scripts; live blocked shell write to `.env` |
+| H9 | Harness improvement from the review and build evidence: enforce spec 13.2's 90% of lines on `rules.py` and `services/` (`scripts/core-coverage.mjs`, REV-003); `docs/REVIEW.md` requires `npm run check` and asks about rules with several entry points; `AGENTS.md` de-duplicated, with Windows notes; open findings tracked in `docs/STATUS.md`; `docs/IMPROVE.md` added. | A probe module below 90% fails the gate; `npm run check` passes |
 
 ## Decisions
 

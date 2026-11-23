@@ -117,7 +117,7 @@ Check that:
 - the docs are updated where the change needs it: `docs/STATUS.md`, the build log, and the runbook
 - there's no dead code
 
-Style and formatting are enforced by `npm run lint` (Ruff, ESLint, Prettier, TypeScript), so don't comment on them unless lint fails.
+Style, formatting, types and the complexity limit are enforced by `npm run check` (Prettier, ESLint, tsc, Ruff, ty), so don't comment on them unless it fails. Do review whether a change got under the limit by splitting code sensibly, not by moving logic somewhere harder to follow.
 
 ## 8. Pass 6: Testing and verification
 
@@ -135,6 +135,7 @@ Ask:
 - Do the tests check behavior, or only implementation details?
 - Could the code be wrong while every test passes?
 - Are important negative cases missing?
+- When a rule applies at several entry points (every save path while offline, REL-7; deleting from a table row and from the record's own page, R30), is each entry point implemented and tested, not just the first one? Both earlier escapes were this shape (REV-001, and the R30 defect in the Phase 5 walkthrough).
 - Were any assertions or acceptance criteria weakened?
 - Are new tests named by requirement ID (ENG-7)?
 
@@ -219,8 +220,7 @@ Run each command and give its real result: passed, failed, not run, or couldn't 
 
 | Check | Command |
 |---|---|
-| Lint, formatting and types | `npm run lint` |
-| Unit, integration and end-to-end tests | `npm test` (or `npm test -- backend`, `frontend` or `e2e`) |
+| The quality gate: formatting, lint, complexity, types, secrets (gitleaks), all tests, and the coverage thresholds (80% overall, 90% of lines in `rules.py` and `services/`) | `npm run check` (its summary names each check) |
 | Security | `npm run audit`, plus the V-S cases inside `npm test` |
 | Performance | `npm run test:perf`, when the change touches lists, timelines, the dashboard or the board |
 
@@ -244,7 +244,7 @@ A change can go to the engineer for approval when:
 
 - no P0 or P1 is open, unless the engineer accepted it in writing
 - the acceptance criteria it touches hold
-- `npm test`, `npm run lint` and `npm run audit` pass, and were run
+- `npm run check` and `npm run audit` pass, and were run on the commit being merged
 - the contracts and ADRs are kept, or their changes were approved
 - the evidence is recorded in `docs/build_logs.log`
 

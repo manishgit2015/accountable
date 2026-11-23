@@ -9,7 +9,8 @@
 //   npm test -- e2e smoke        Playwright, with "smoke" passed on as a filter
 //   npm test -- unit             pytest and Vitest, without Playwright
 //   npm test -- --coverage       also measure unit test coverage, failing under 80% (pytest-cov and
-//                                Vitest's v8 coverage; thresholds in pyproject.toml and vitest.config.ts)
+//                                Vitest's v8 coverage; thresholds in pyproject.toml and vitest.config.ts),
+//                                and under 90% for backend/app/rules.py and services/ (spec 13.2)
 //   npm run test:perf            (= run-tests.mjs perf) V-P01 only: fills the temporary database with
 //                                2 x the intent's volume (app.perfdata), then runs e2e/perf/ (T4.2).
 //                                Not part of `npm test`.
@@ -34,7 +35,11 @@ const args = allArgs.filter((arg) => arg !== "--coverage");
 const perf = args[0] === "perf";
 const visual = args[0] === "visual";
 const named = SUITES.includes(args[0]) ? [args[0]] : GROUPS[args[0]];
-const chosen = perf ? ["perfdata", "perf"] : visual ? ["visual"] : (named ?? SUITES);
+const suites = perf ? ["perfdata", "perf"] : visual ? ["visual"] : (named ?? SUITES);
+// With coverage, the backend run is followed by spec 13.2's stricter gate on the business rules.
+const chosen = coverage
+  ? suites.flatMap((s) => (s === "backend" ? ["backend", "backend-core-coverage"] : [s]))
+  : suites;
 const extra = perf || visual || named ? args.slice(1) : args;
 const backendCoverage = coverage ? ["--cov"] : [];
 const frontendCoverage = coverage ? ["--coverage"] : [];
@@ -65,6 +70,8 @@ const browserSuites = new Set(["e2e", "perfdata", "perf", "visual"]);
 const node = process.execPath;
 const commands = {
   backend: ["uv", ["run", "pytest", ...backendCoverage, ...extra], root],
+  // Spec 13.2: rules.py and services/ at least 90% of lines, from the data the backend run just wrote.
+  "backend-core-coverage": [node, [join(root, "scripts", "core-coverage.mjs")], root],
   frontend: [
     node,
     [join(root, "node_modules", "vitest", "vitest.mjs"), "run", ...frontendCoverage, ...extra],

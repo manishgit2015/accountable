@@ -708,7 +708,7 @@ These steps go in `docs/STATUS.md` when the app is built.
 - Time is fixed in tests: an injectable clock in the backend, fake timers in Vitest, and `page.clock` in Playwright. The end-to-end and performance runs fix the backend at the browser's time, 2026-11-21 14:30, through `ACCOUNTABLE_FIXED_NOW` (`scripts/run-tests.mjs`), so "today" agrees on any day.
 - Every end-to-end test fails on a browser console error or on any request outside localhost (V-E00).
 - Each test's name starts with the requirement it proves, for example `R16 moving to Won sets the close date to today`.
-- Coverage of `rules.py` and `services/` is at least 90% of lines.
+- Coverage of `rules.py` and `services/` is at least 90% of lines. `npm test -- --coverage` (part of `npm run check`) enforces it with `scripts/core-coverage.mjs`, which counts lines only.
 - Unit test coverage is at least 80% of lines, statements, functions and branches, for the backend (pytest-cov, `backend/app/`) and the frontend (Vitest, every file in `frontend/src/` except tests and `main.tsx`). `npm run check` enforces it (`npm test -- --coverage`).
 
 ### 13.3 Verification cases
@@ -883,7 +883,6 @@ Architecture decisions (ADR) and engineering decisions (E) that shape the produc
 Places where the product today falls short of this spec. Each is tracked in `docs/STATUS.md` until a change fixes it.
 
 - **REL-7:** saving is blocked while the backend can't be reached in the forms, dialogs, the deal page and timelines, but not on the pipeline board (drops) or the dashboard's follow-up checkboxes. Those fail and roll back with a message instead (review finding REV-001, `docs/reviews/review-report.md`).
-- **Section 13.2 coverage threshold:** the 90% on `rules.py` and `services/` is met (99–100%), but only the 80% overall threshold is enforced, by `npm run check` (REV-003).
 - **V-M02** has been run on Windows only, and **V-M05** hasn't been run.
 
 ## 18. Ownership

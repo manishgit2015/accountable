@@ -12,6 +12,7 @@ Read `docs/spec.md` first. It describes the whole product as it stands today, an
 - `docs/STANDARDS.md`: the coding standards; follow them in every change
 - `docs/STATUS.md`: what's done so far, how to run the app, and what's next
 - `docs/REVIEW.md`: how a change is reviewed before it merges
+- `docs/IMPROVE.md`: how the harness is improved from evidence, including the harness notes to log when a check or review catches your mistake
 
 ## Working on a change
 
@@ -22,12 +23,17 @@ Read `docs/spec.md` first. It describes the whole product as it stands today, an
 
 ## Checking your work
 
-- `npm test` runs every test: the backend unit and integration tests (pytest), the frontend unit tests (Vitest), and the end-to-end tests in the installed Google Chrome (Playwright). It starts the servers itself on test ports with a temporary database, so nothing else needs to be running, and it never touches `backend/data/accountable.db`. It exits nonzero if any test fails. Run it before you say a change works, and don't claim it passed unless you ran it.
-- `npm test -- backend`, `npm test -- frontend` or `npm test -- e2e` runs one suite.
-- `npm run check` is the quality gate: formatting (Prettier, ruff format), lint (ESLint with the TypeScript, React Hooks and accessibility rules; ruff), a complexity limit of 15 per function, types (tsc, ty), a secrets scan (gitleaks), and `npm test` with at least 80% unit test coverage. It runs every check, prints a summary and exits nonzero if any failed. Run it before you say a change is done, and fix what it finds without weakening a rule; if a rule doesn't suit the project, ask the engineer first.
+- `npm test` runs every test: the backend unit and integration tests (pytest), the frontend unit tests (Vitest), and the end-to-end tests in the installed Google Chrome (Playwright). It starts the servers itself on test ports with a temporary database, so nothing else needs to be running, and it never touches `backend/data/accountable.db`. It exits nonzero if any test fails.
+- `npm test -- backend`, `npm test -- frontend` or `npm test -- e2e` runs one suite; `npm test -- unit` runs pytest and Vitest.
+- `npm run check` is the quality gate: formatting (Prettier, ruff format), lint (ESLint with the TypeScript, React Hooks and accessibility rules; ruff), a complexity limit of 15 per function, types (tsc, ty), a secrets scan (gitleaks), and `npm test` with unit test coverage of at least 80%, and 90% of the lines in `backend/app/rules.py` and `services/`. It runs every check, prints a summary and exits nonzero if any failed. Run it before you say a change is done, don't claim it passed unless you ran it, and fix what it finds without weakening a rule; if a rule doesn't suit the project, ask the engineer first.
 - `npm run check:quick` runs the same without the end-to-end tests, for quick feedback while working. `npm run lint` runs only the checks that aren't tests.
 - `npm run format` fixes the formatting.
 - Record evidence for each task of the current change's `plan.md` in `docs/build_logs.log`.
+
+## On Windows
+
+- Windows Application Control on this machine blocks some Python tools' `.exe` launchers (`pip-audit.exe`, `coverage.exe`): run them as `uv run python -m <tool>`. PowerShell blocks `npm.ps1`: use `npm.cmd`.
+- Git Bash and Node disagree about paths (`/tmp` isn't the same folder for both), and inline shell strings lose backslashes. Put test inputs with Windows paths, and scripts longer than a few lines, in files in a temporary folder outside the repository, and pass paths as arguments.
 
 ## Hooks
 

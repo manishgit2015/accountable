@@ -48,8 +48,8 @@ const staticChecks = [
 const runTests = join(root, "scripts", "run-tests.mjs");
 const testChecks = {
   static: [],
-  quick: [["Unit tests, 80% coverage", node, [runTests, "unit", "--coverage"], root]],
-  full: [["All tests, 80% unit coverage", node, [runTests, "--coverage"], root]],
+  quick: [["Unit tests, coverage gates", node, [runTests, "unit", "--coverage"], root]],
+  full: [["All tests, coverage gates", node, [runTests, "--coverage"], root]],
 };
 const INSTALL_HINTS = {
   uv: "Install uv (see docs/STATUS.md), then run `uv sync`.",

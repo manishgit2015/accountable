@@ -1436,3 +1436,38 @@ Hook 3, PreToolUse .env guard (protect-env.mjs changed): file paths are now reso
   unchanged (6fe0226b...). Fixture removed afterwards.
 Not verified: Cursor's hook format (its docs could not be fetched: the fetch was refused for cursor.com).
 Results: npm run lint -> "All 11 checks passed".
+
+----------------------------------------------------------------------
+build-mvp-harness H9  Harness improvement from this cycle's evidence
+Date: 2026-11-23
+Evidence read: docs/reviews/review-report.md (REV-001 to REV-004), docs/REVIEW.md, AGENTS.md,
+  docs/STANDARDS.md, docs/STATUS.md, this build log (T5.5 defect, H1-H8), the session's own failed attempts.
+  docs/IMPROVE.md did not exist. There is no CI (no .github/), so there are no CI results to read.
+Finding status on this branch: REV-001 open (no useOffline in pages/pipeline or pages/dashboard);
+  REV-002 open (@dnd-kit/sortable in frontend/package.json and vite.config.ts, no import in src);
+  REV-003 half done (80% overall enforced since H4, the spec's 90% on rules.py and services/ not);
+  REV-004 done (docs/REVIEW.md and the report are tracked).
+Applied:
+  1. REV-003: scripts/core-coverage.mjs, run by `npm test -- --coverage` right after pytest
+     (step "backend-core-coverage"), fails under 90% of LINES in backend/app/rules.py and services/.
+     First version used `coverage report --fail-under=90`: a probe (backend/app/services/_probe.py, 60
+     untested lines) left lines at 88.5% but the combined line+branch figure at 90.1%, so it PASSED. Replaced
+     by a lines-only check from `coverage json` (percent_statements_covered). Probe again -> "88.5% (479/541),
+     minimum 90%. Too low.", exit 1, while the 80% overall gate still passed (94.59%). Probe removed ->
+     "99.8% (479/480)", exit 0. `coverage.exe` is blocked by Windows Application Control, so it runs as
+     `python -m coverage`.
+  2. docs/REVIEW.md: the mandatory checks (13C) and merge criteria (14) named `npm run lint` and `npm test`,
+     which miss ty, complexity, gitleaks and the coverage gates; both now require `npm run check` (and audit).
+     Pass 6 gains one question for the escape pattern seen twice: a rule with several entry points enforced
+     and tested at only one (REV-001: offline saving; T5.5's R30 defect: delete from the record page).
+  3. AGENTS.md: one "don't claim it passed unless you ran it" rule under `npm run check` instead of two
+     overlapping ones; the 90% gate and `npm test -- unit` documented; an "On Windows" section for the
+     blocked .exe launchers and the Git Bash/Node path and backslash problems hit three times in H8.
+  4. docs/STATUS.md "Next" now tracks REV-001 and REV-002 (spec 17.1 says known gaps are tracked there; they
+     weren't). docs/spec.md 13.2 names the enforcement; the REV-003 gap is removed from 17.1.
+  5. scripts/check.mjs: the test step is labelled "coverage gates", since it now runs two.
+Not applied (for the engineer): REV-001 and REV-002 fixes (product changes), CI running `npm run check`
+  (an external service), an Edit deny rule and sandbox write-deny for .env (permission settings).
+Verification: npm run check -> exit 0, "All 12 checks passed" (388 backend, 226 frontend, 48 e2e; core
+  coverage 99.8%). Output: docs/evidence/2026-11-23-check/npm-run-check-improve.txt. npm run lint after the
+  label change -> "All 11 checks passed".
