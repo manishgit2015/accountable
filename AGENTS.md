@@ -32,5 +32,5 @@ Read `docs/spec.md` first. It describes the whole product as it stands today, an
 ## Hooks
 
 - **git pre-commit** (lefthook, `lefthook.yml`, installed by `npm install`): formats the staged files (Prettier, ruff format), then runs ESLint, tsc, ruff check, ty and gitleaks on what's staged. No tests, so it stays quick.
-- **Stop** (`.claude/settings.json`, `scripts/hooks/stop-check.mjs`): when you finish a turn, `npm run check:quick` runs. If it fails, the stop is blocked once and the failures come back to you to fix; the next stop goes through.
-- **PreToolUse** (`scripts/hooks/protect-env.mjs`): edits to any `.env` file are blocked, through the file tools or a shell command. Ask the engineer to change `.env`.
+- **Stop** (`.claude/settings.json`, `scripts/hooks/stop-check.mjs`): when you finish a turn, `npm run check:quick` runs. If it fails, the stop is blocked once and the failures come back to you to fix. On the next stop the checks run again: if they still fail you may stop, but say plainly what still fails (the engineer is shown the failures too). Never say the checks pass unless they did.
+- **PreToolUse** (`scripts/hooks/protect-env.mjs`): edits to `.env` are blocked before they run: the file tools on any file named `.env` (after resolving relative paths and links) or hard-linked to the project's `.env`, and shell commands that redirect into `.env` or write, move, link or delete it. Ask the engineer to change `.env`. The shell check is best effort, so don't work around it with scripts.

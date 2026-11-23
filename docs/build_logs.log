@@ -1403,3 +1403,36 @@ Claude Code PreToolUse hook (protect-env.mjs, matcher Edit|Write|MultiEdit|Noteb
     .env and contained ">" anywhere (it blocked a docs update); it now checks each command segment.
     Still a heuristic: a heredoc whose text quotes a redirect into .env is blocked too.
 Results: npm run lint -> "All 11 checks passed".
+
+----------------------------------------------------------------------
+build-mvp-harness H8 (follow-up)  Hooks hardened and re-verified against the full hook spec
+Date: 2026-11-23
+Inspected first: no core.hooksPath, only lefthook's own stubs in .git/hooks, no hooks in
+  .claude/settings.local.json or ~/.claude/settings.json; existing permission rules kept as they are.
+Hook 1, lefthook pre-commit (unchanged config), on a throwaway branch hooktest-tmp (deleted afterwards):
+  Passing commit: a formatted fixture committed (prettier and gitleaks ran) -> commit created.
+  Partial staging: staged an unformatted line, left a second edit to the same file unstaged, and an unrelated
+    unstaged edit to docs/STATUS.md -> the commit held the formatted staged line only; the unstaged line and
+    the unrelated edit stayed unstaged and unchanged (lefthook hides unstaged changes while it formats).
+  Lint/type error -> refused (eslint prefer-const, tsc TS2322); secret canary (GITLEAKS_CONFIG pointing at a
+    one-rule test config) -> refused ("leaks found: 1"); HEAD unchanged both times, unstaged edits intact.
+Hook 2, Stop (stop-check.mjs changed): the stop after the one correction attempt now re-runs check:quick.
+  Still failing -> the agent may stop, and a systemMessage shows the remaining failures to the engineer
+  (previously this case exited silently). Pipe tests: (1) passing, first stop -> no output, stop allowed;
+  (2) failing, first stop -> decision "block" with the summary and the failing check's output;
+  (3) still failing after the attempt -> systemMessage with the failures, stop allowed (no loop);
+  (4) fixed after the attempt -> no output, stop allowed. Live (earlier today): a planted unformatted file
+  made the real hook block once with that file named; after removing it, the next stop went through.
+Hook 3, PreToolUse .env guard (protect-env.mjs changed): file paths are now resolved against the hook's cwd
+  and through symlinks and junctions, and a hard link to the project's .env is caught by inode.
+  12 path cases (scratchpad script, fixture tmp/hooktest/ with its own .env and a hard link; a copy of the
+  hook treated that .env as the project's): relative, dot-dot, backslash and ./ paths -> blocked; hard link
+  under another name, relative and absolute -> blocked; ordinary file, Read, read-only shell -> allowed;
+  `ln` to .env -> blocked; path in a shell variable and a python one-liner -> allowed (known gaps).
+  The earlier 16 cases still pass. Symlinks could not be tested: Windows refused to create a file symlink
+  (EPERM; needs Developer Mode or admin).
+  Live: shell append to tmp/hooktest/.env -> denied by the hook before running; Write tool on it -> refused
+  by the existing Read(./.env) deny rule; Edit of tmp/hooktest/other.txt -> succeeded; fixture .env sha256
+  unchanged (6fe0226b...). Fixture removed afterwards.
+Not verified: Cursor's hook format (its docs could not be fetched: the fetch was refused for cursor.com).
+Results: npm run lint -> "All 11 checks passed".
