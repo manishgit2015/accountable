@@ -1471,3 +1471,19 @@ Not applied (for the engineer): REV-001 and REV-002 fixes (product changes), CI 
 Verification: npm run check -> exit 0, "All 12 checks passed" (388 backend, 226 frontend, 48 e2e; core
   coverage 99.8%). Output: docs/evidence/2026-11-23-check/npm-run-check-improve.txt. npm run lint after the
   label change -> "All 11 checks passed".
+----------------------------------------------------------------------
+dark-mode T0  Light-mode baselines before any code change
+Date: 2026-11-25
+Base: 0d0a1ff (intent) plus the uncommitted spec and plan; no frontend code changed yet.
+Commands:
+  node scripts/run-tests.mjs visual dark-mode --update-snapshots -> 6 passed (12.7s), 6 baselines written
+  node scripts/run-tests.mjs visual dark-mode (twice)             -> 6 passed, 6 passed (stable)
+Baselines (1440px, light mode, fixed clock, seeded test database, .topbar-right masked because the
+  toggle goes there in T3): docs/changes/dark-mode/baseline/dashboard.png, pipeline.png, deals.png,
+  deal-page.png, side-panel.png (Add deal), delete-dialog.png. Checked by eye: each shows the right screen,
+  fully loaded, with sample data.
+Files: e2e/visual/dark-mode.spec.ts (new), playwright.config.ts (snapshotPathTemplate
+  "docs/changes/{arg}{ext}"; only the visual suite uses snapshots), docs/changes/dark-mode/plan.md
+  (status approved; files table lists playwright.config.ts).
+Requirements covered: R94 (the comparison used from T1 on), V-M04.
+Open: none.
