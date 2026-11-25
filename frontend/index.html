@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="data:," />
     <title>Accountable</title>
+    <script>
+      // Apply the saved light or dark mode before the first paint, so dark mode never flashes light (R92).
+      // The same rules as readTheme and applyTheme in src/lib/theme.ts: keep the two in step.
+      try {
+        if (localStorage.getItem("accountable.theme") === "dark") document.documentElement.dataset.theme = "dark";
+      } catch {
+        // Storage blocked: light mode (R93).
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

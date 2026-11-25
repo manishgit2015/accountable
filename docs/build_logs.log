@@ -1529,3 +1529,27 @@ T1 (continued) Test reworked after the first check:quick run, which failed Prett
   npm run check:quick -> All 12 checks passed. Visual comparison after the rework -> 6 passed.
 Harness note: tokens.test.ts used Node APIs the app's tsconfig doesn't type - caught by tsc in npm run check:quick - typed with a per-file node reference.
 Harness note: a ?raw CSS import is an empty string under Vitest, which would have made a file scan pass vacuously - caught by nothing (found by a probe assertion before relying on it) - switched to node:fs and added a non-empty assertion.
+----------------------------------------------------------------------
+dark-mode T2  Dark values, theme logic and the before-paint script
+Date: 2026-11-25
+Files: frontend/src/styles/tokens.css (`color-scheme: light` on :root; new :root[data-theme="dark"] block
+  with the 16 values in spec 3.9's "change with the mode" table and `color-scheme: dark`),
+  frontend/src/lib/theme.ts (new: THEME_KEY "accountable.theme", readTheme, saveTheme, applyTheme,
+  currentTheme), frontend/src/lib/theme.test.ts (new, V-F11), frontend/index.html (inline script in <head>).
+Commands and results:
+  vitest src/styles/tokens.test.ts -> 7 passed (the two dark checks now run: every dark text pair >= 4.5:1,
+    and the dark block only redefines tokens light mode has)
+  vitest src/lib/theme.test.ts -> 11 passed (R91 nothing saved / other values -> light; R92 "dark" -> dark,
+    saved under accountable.theme, data-theme set and removed; R93 storage that throws or is missing ->
+    light, write ignored)
+  tsc, ESLint, Prettier on the new files -> clean
+  node scripts/run-tests.mjs visual dark-mode -> 6 passed (light mode, threshold 0: `color-scheme: light`
+    and the inline script change nothing)
+By hand: a throwaway visual test (deleted afterwards) set accountable.theme to "dark" and reloaded. At
+  domcontentloaded data-theme was already "dark". Screenshots of the dashboard, pipeline, delete dialog,
+  Add deal side panel and a contact page, checked by eye: page #04232E, black panels, Sea Mist text,
+  lighter -text colors, fills and badges unchanged with Midnight or white text, Midnight hero and active
+  tab, dark native selects and date pickers. No console errors (V-E00).
+  Finding for T4: form fields' 1px outline uses --sea-mist (a fixed fill token), which is too bright on
+  black. Fix in T4 with its own token (light value unchanged).
+Requirements covered: R91, R92 (apply and before-paint), R93, NFR-7 (dark), V-F11 (part).
