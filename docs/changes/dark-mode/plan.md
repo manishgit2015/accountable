@@ -1,156 +1,204 @@
 # Plan: dark mode
 
-Status: approved by the engineer on 25 Nov 2026.
+Status: approved by the engineer on 25 Nov 2026, and restructured the same day into four sections with the same content. Phases 1 to 3 (T0–T2) are built and committed (`ead0cb4`, `31de085`, `15e1f61`). Phase 4 (T3) is next.
 
-## 1. What this change builds
+This plan builds what `intent.md` sets out and `docs/spec.md` describes:
 
-A dark mode with a toggle in the top bar, as `intent.md` sets out and `docs/spec.md` now describes: R90–R95 (section 3.10), the light and dark tokens and the "Dark mode" rules in section 3.9, NFR-7 and R7 in both modes, ENG-1 (colors only from tokens), ADR-017 to ADR-019, the edge cases in section 4.5, and the verification cases V-F11, V-E13 and V-M04.
+- R90–R95 (section 3.10)
+- the light and dark tokens and the "Dark mode" rules in section 3.9
+- NFR-7 and R7 in both modes, and ENG-1 (colors only from tokens)
+- ADR-017 to ADR-019, and the edge cases in section 4.5
+- V-F11, V-E13 and V-M04
 
-The work happens in the frontend only. There's no backend, API, database or migration change (ADR-018), and no new dependency: the moon and sun icons come from `lucide-react`, which the app already uses.
+The work is frontend only: there's no backend, API, database or migration change (ADR-018). It adds no dependency. The moon and sun icons come from `lucide-react`, and the token test's Node types from `@types/node`, both already frontend dependencies.
 
-## 2. Approach
+## 1. Files that change
 
-### 2.1 Split the tokens first, with no visible change
-
-Today some tokens do two jobs, and dark mode needs them apart:
-
-- `--ink` is the main text color, and it's also used for Midnight fills (the hero, the active tab and the wordmark square: 4 `background: var(--ink)` rules) and for Midnight text on light fills (badges, stage icons and the primary button).
-- `--cerulean-text` and `--raspberry-text` are text colors, and they're also the fills under small white text (5 `background:` rules, ADR-017).
-- The overlay is a literal `rgba(7, 59, 76, 0.28)` in `global.css`.
-- The revenue chart's dots use `var(--ink)` to mean Midnight.
-
-Task T1 adds `--midnight`, `--cerulean-strong`, `--raspberry-strong` and `--overlay`, each with the same value as the color it replaces, and moves every second-job use onto them. There are 36 uses of `--ink`, `--cerulean-text` and `--raspberry-text` in `global.css`, and 19 token uses in the dashboard charts. Each is checked by hand: is it text on a panel or the page (keep it), or a fill or text on a fill (move it)? Because the values don't change, light mode is pixel for pixel the same after T1, and the baseline screenshots from T0 prove it.
-
-### 2.2 Dark values in the same file
-
-`tokens.css` keeps the light values on `:root` with `color-scheme: light`, and adds a `:root[data-theme="dark"]` block that redefines only the tokens in spec 3.9's "change with the mode" table, plus `color-scheme: dark`. No component or stylesheet has a dark-mode rule of its own (ENG-1). Charts already take their colors from `var(--…)` props, so they follow the mode as soon as the tokens change.
-
-### 2.3 Choosing, applying and remembering the mode
-
-- **`frontend/src/lib/theme.ts`** holds the logic: the storage key `accountable.theme`, `readTheme()` (returns `"light"` unless `localStorage` holds exactly `"dark"`, and returns `"light"` if reading throws), `applyTheme(theme)` (sets or removes `data-theme="dark"` on `<html>`), and `saveTheme(theme)` (writes, and ignores a write that throws). It's pure enough to unit test with a fake storage (R91–R93).
-- **Before the first paint:** a short inline classic script in the `<head>` of `frontend/index.html` reads the key and sets `data-theme` before the body is parsed. A module script in `main.tsx` would run too late to rule out a flash of light mode, because the Vite dev server loads modules on demand (ADR-010). The inline script does the same as `readTheme` and `applyTheme`, wrapped in `try`. It's kept to a few lines, with a comment pointing at `theme.ts`, and V-E13 tests the behavior they share, so the two can't drift unnoticed.
-- **`frontend/src/components/ThemeToggle.tsx`:** a button styled like the secondary icon button, with the accessible name "Dark mode", `aria-pressed`, and a `Moon` or `Sun` icon. Its state starts from `document.documentElement.dataset.theme`, so it agrees with what the inline script did. A click applies and saves the new mode. It doesn't remount the app or change the route, so open forms and what's typed in them are kept (R90).
-- **`TopBar.tsx`** puts the toggle in `topbar-right`, before "Add deal" (spec 3.9 Layout).
-- Other tabs aren't kept in sync (spec 4.5, *[Assumption]*). A `storage` event listener would do it, and can be added if the product owner wants it.
-
-### 2.4 Proving light mode is unchanged (R94)
-
-T0 saves baseline screenshots of light mode before any code changes. After T1, the light screenshots must match them exactly. After the toggle is added (T3), they must match with the top bar's right-hand group masked, since that's the only intended difference. These are Playwright screenshot comparisons in the `visual` suite (`node scripts/run-tests.mjs visual`), not in `npm test`, because font rendering differs between machines. The baselines are for this change only and live in `docs/changes/dark-mode/baseline/`.
-
-## 3. Files
-
-| File | Change |
-|---|---|
-| `frontend/src/styles/tokens.css` | New tokens `--midnight`, `--cerulean-strong`, `--raspberry-strong`, `--overlay`. `color-scheme`. The `:root[data-theme="dark"]` block. |
-| `frontend/src/styles/global.css` | Fills and text on fills move to the new tokens. The overlay uses `--overlay`. The toggle's style. No dark-mode rules. |
-| `frontend/src/pages/dashboard/RevenueChart.tsx` | Dots use `--midnight`. Other chart files are checked, and change only where a token is doing a second job. |
-| `frontend/index.html` | The inline script that applies the saved mode before the first paint |
-| `frontend/src/lib/theme.ts` | New: read, apply and save the mode |
-| `frontend/src/components/ThemeToggle.tsx` | New: the toggle |
-| `frontend/src/components/TopBar.tsx` | Shows the toggle |
-| `frontend/src/lib/theme.test.ts` | New (V-F11) |
-| `frontend/src/components/ThemeToggle.test.tsx` | New (V-F11) |
-| `frontend/src/styles/tokens.test.ts` | New (V-F11): contrast pairs, and colors only in `tokens.css` |
-| `e2e/theme.spec.ts` | New (V-E13) |
-| `e2e/visual/dark-mode.spec.ts` | New (V-M04): the baselines, the light comparison, and the screenshots in both modes |
-| `playwright.config.ts` | `snapshotPathTemplate: "docs/changes/{arg}{ext}"`, so a visual test's baselines live in the change folder it names |
-| `docs/changes/dark-mode/` | `baseline/`, and `dashboard-light.png`, `dashboard-dark.png`, `pipeline-light.png`, `pipeline-dark.png` (intent success criterion 3) |
-| `docs/spec.md` | Already updated on this branch. Updated again if the build turns up something it doesn't describe. |
-| `docs/STATUS.md`, `docs/build_logs.log` | Progress and evidence |
-
-## 4. Verification
-
-### 4.1 Unit tests (Vitest), V-F11
-
-- `lib/theme.test.ts`: no saved value means light; `"dark"` means dark; any other value means light; reading or writing that throws means light with no error; `applyTheme` sets and removes `data-theme`; `saveTheme` writes the key (R91–R93).
-- `components/ThemeToggle.test.tsx`: it starts from the `data-theme` already on `<html>`; a click switches mode, saves it, and flips `aria-pressed` and the icon; Enter and Space work; with storage that throws, it still switches and nothing is logged (R90, R93).
-- `styles/tokens.test.ts`:
-  - It parses `tokens.css` and checks spec 3.9's contrast rules in both modes. Every text token must reach at least 4.5:1 against `--panel`, and against `--page` too, except `--ink-muted` in light mode, which is for white only. Midnight on Sea Mist and the light fills, and white on Midnight and the strong fills, must reach 4.5:1 too. A dark value that slips below 4.5:1 fails the test (NFR-7).
-  - It fails if any `.css`, `.ts` or `.tsx` file in `frontend/src` other than `tokens.css` and the tests contains a hex, `rgb()`, `rgba()` or `hsl()` color, or a named color (such as `white`) as a CSS value or in a `fill`, `stroke`, `color` or `background` prop (ENG-1, the intent's "no scattered overrides"). Named colors are checked only in those places, so words like "white" in comments and copy don't trip it.
-  - It fails if the dark block sets a token the light block doesn't have.
-
-The contrast check is about 15 lines of luminance arithmetic, with no new dependency. The spec's V-F11 row is updated to name `styles/tokens.test.ts`.
-
-### 4.2 End to end (Playwright), V-E13 `e2e/theme.spec.ts`
-
-Every test goes through `e2e/fixtures.ts`, so a console error or a request outside localhost fails it (V-E00).
-
-1. **R91, R94:** on first load, `<html>` has no `data-theme`, and the page and panel background colors are `#F0F4F5` and `#FFFFFF`.
-2. **R90:** the toggle is in the top bar on each of the five sections and on a record page.
-3. **R90, R95:** clicking it gives `data-theme="dark"`, `aria-pressed="true"`, a `#04232E` page and `#000000` panels. That's checked on the dashboard (including a chart tooltip's panel), the pipeline (a card), a table, a deal's page, the Add deal side panel and a delete dialog.
-4. **R90:** with the Add deal form open and a name typed in, switching mode keeps the panel open and the name in the field.
-5. **R92:** after a reload, dark mode is still on. It's already set when the page reaches `domcontentloaded`, before React has rendered, which shows the inline script ran first. Switching back to light and reloading keeps light.
-6. **R90, NFR-7:** the toggle can be reached with Tab and switched with Space, with its focus ring visible.
-
-This is the "new end-to-end test" of intent success criterion 2.
-
-### 4.3 Screenshots and the light-mode comparison, V-M04 `e2e/visual/dark-mode.spec.ts`
-
-- Baselines at 1440px, light mode, taken in T0 before any code changes: the dashboard, the pipeline, the deals table, a deal's page, the Add deal side panel and a delete dialog.
-- The comparison of the same screens with the baselines: an exact match after T1, and after T3 an exact match with the top bar's right-hand group masked (R94).
-- `dashboard-light.png`, `dashboard-dark.png`, `pipeline-light.png` and `pipeline-dark.png`, full page, saved in `docs/changes/dark-mode/` (intent success criterion 3).
-
-### 4.4 By hand (AC9, V-M01, V-M04)
-
-- A walkthrough in a real browser, in both modes, of every section and every action the change touches:
-  - every page, the pipeline (including a drag), each form's side panel and its pickers
-  - the delete dialog, the row menu, a date picker, the timeline and its activity form
-  - the empty states (after `npm run clear` on a test database), the offline banner (with the backend stopped), and the board's error message
-  - chart tooltips on all three charts
-
-  Each screen is checked by eye against spec 3.9's dark mode rules, with no console errors. Findings and screenshots go in `docs/build_logs.log`.
-- The product owner reviews the dark palette from the screenshots and approves it, or asks for changes (ADR-019). Two things to look at in particular: the black panels on the darker teal page, and the Midnight active tab on the black top bar.
-
-### 4.5 Checks
-
-`npm run check` passes (intent success criterion 1), with the output saved under `docs/evidence/`.
-
-### 4.6 Requirement to code and test
-
-| Requirement | Code | Test |
+| File | Change | Phase |
 |---|---|---|
-| R90 Toggle | `ThemeToggle.tsx`, `TopBar.tsx` | V-F11 (`ThemeToggle.test.tsx`), V-E13 steps 2–4 and 6 |
-| R91 Default light | `theme.ts`, `index.html` | V-F11 (`theme.test.ts`), V-E13 step 1 |
-| R92 Remembered | `theme.ts`, `index.html` | V-F11, V-E13 step 5 |
-| R93 Storage not available | `theme.ts`, `index.html`, `ThemeToggle.tsx` | V-F11 |
-| R94 Light mode unchanged | `tokens.css`, `global.css` (token split) | V-M04 baseline comparison, V-E13 step 1 |
-| R95 Everything follows | `tokens.css`, `global.css`, chart files | V-E13 step 3, V-M04, walkthrough |
-| NFR-7 Contrast in both modes | `tokens.css` | V-F11 (`tokens.test.ts`), walkthrough |
-| ENG-1 Colors only from tokens | all styles and chart files | V-F11 (`tokens.test.ts`) |
-| R7 Clean console in both modes | (all) | V-E00 in V-E13, walkthrough |
+| `frontend/src/styles/tokens.css` | Fixed tokens `--midnight`, `--cerulean-strong`, `--raspberry-strong` and `--overlay`, each with the value of the color it replaced. `color-scheme: light` on `:root`. A `:root[data-theme="dark"]` block holding only the tokens that change with the mode, plus `color-scheme: dark`. Phase 5 adds `--field-line`. | 2, 3, 5 |
+| `frontend/src/styles/global.css` | Fills and text on fills move to the fixed tokens (16 rules). The overlay uses `--overlay`. Field outlines use `--field-line`. The toggle's style. No dark-mode rules. | 2, 4, 5 |
+| `frontend/src/pages/dashboard/RevenueChart.tsx` | The dots use `--midnight` | 2 |
+| Other chart files (`WonLostChart.tsx`, `StageDonut.tsx`, `FunnelPanel.tsx`) | Change only if phase 5 finds a Recharts default color that isn't a token | 5 |
+| `frontend/index.html` | An inline script in `<head>` that applies the saved mode before the first paint | 3 |
+| `frontend/src/lib/theme.ts` | New: `THEME_KEY`, `readTheme`, `saveTheme`, `applyTheme`, `currentTheme` | 3 |
+| `frontend/src/components/ThemeToggle.tsx` | New: the toggle | 4 |
+| `frontend/src/components/TopBar.tsx` | Shows the toggle in `topbar-right`, before "Add deal" | 4 |
+| `frontend/src/styles/tokens.test.ts` | New (V-F11): contrast pairs, and no literal colors outside `tokens.css` | 2, 3 |
+| `frontend/src/lib/theme.test.ts` | New (V-F11) | 3 |
+| `frontend/src/components/ThemeToggle.test.tsx` | New (V-F11) | 4 |
+| `e2e/theme.spec.ts` | New (V-E13) | 6 |
+| `e2e/visual/dark-mode.spec.ts` | New (V-M04): the light-mode comparison with the baselines (zero tolerance, top bar's right-hand group masked). Phase 7 adds the screenshots in both modes. | 1, 7 |
+| `playwright.config.ts` | `snapshotPathTemplate: "docs/changes/{arg}{ext}"`, so a visual test's baselines live in the change folder it names | 1 |
+| `docs/changes/dark-mode/baseline/` | Six light-mode baselines: the dashboard, pipeline, deals table, a deal's page, the Add deal side panel and a delete dialog | 1 |
+| `docs/changes/dark-mode/*.png` | `dashboard-light.png`, `dashboard-dark.png`, `pipeline-light.png`, `pipeline-dark.png` (intent success criterion 3) | 7 |
+| `docs/spec.md` | Already describes dark mode. Phase 5 adds `--field-line` to section 3.9. Updated again if the build turns up anything else it doesn't describe. | 5, 8 |
+| `docs/STATUS.md`, `docs/build_logs.log` | Progress, and evidence for each task | Every phase |
 
-## 5. Tasks
+## 2. Order of work
 
-Each task ends with its evidence in `docs/build_logs.log`, and `npm run check:quick` passing.
+Each phase ends with its evidence in `docs/build_logs.log`, `npm run check:quick` passing, and a commit. From phase 2 on, the light-mode comparison must pass too: `node scripts/run-tests.mjs visual dark-mode`.
 
-| Task | Work | Done when |
-|---|---|---|
-| T0 | Write `e2e/visual/dark-mode.spec.ts` and take the light baselines on the current code, before anything else changes | Six baselines saved in `docs/changes/dark-mode/baseline/` |
-| T1 | Split the tokens (section 2.1), and add `styles/tokens.test.ts`'s literal-color and contrast checks for light mode | Light screenshots match the baselines exactly. The token test passes. |
-| T2 | Add the dark block to `tokens.css`, `lib/theme.ts` and its tests, and the inline script | `tokens.test.ts` passes for dark mode too. Setting the key by hand and reloading shows dark mode with no flash. |
-| T3 | Add `ThemeToggle` to the top bar, with its tests | The toggle works. Light screenshots match the baselines with the toggle area masked. |
-| T4 | Walk every screen in dark mode (section 4.4) and fix what's wrong, by changing which token a rule uses, never with a dark-only rule | Every item in section 4.4 has been checked in both modes, with no console errors |
-| T5 | `e2e/theme.spec.ts` (V-E13) | It passes, and fails when the toggle's save is commented out (checked once, then restored) |
-| T6 | Take the four screenshots into `docs/changes/dark-mode/` | The files are there, and checked by eye |
-| T7 | `npm run check`. Update `docs/STATUS.md`, and the spec if anything has drifted. The product owner reviews the palette. | `npm run check` passes and the product owner approves |
+### Phase 1 (T0): light-mode baselines. Done.
 
-## 6. Risks
+- Write `e2e/visual/dark-mode.spec.ts`.
+- Take the six light-mode baselines on the code as it was, before any change.
+
+Done when: the six baselines are in `docs/changes/dark-mode/baseline/`, and two more runs match them.
+
+### Phase 2 (T1): split the tokens, with no visible change. Done.
+
+Some tokens did two jobs:
+
+- `--ink` was the main text color and also the Midnight fill, and Midnight text on light fills.
+- `--cerulean-text` and `--raspberry-text` were text colors and also the fills under small white text.
+
+Dark mode needs these apart. So:
+
+- Every use of `--ink`, `--cerulean-text`, `--raspberry-text` and `--on-fill` is checked by hand: text on a panel or the page stays, and a fill or text on a fill moves to a fixed token. The same goes for the chart colors and the inline styles.
+- The overlay's literal `rgba()` becomes `--overlay`.
+- `styles/tokens.test.ts` is added.
+
+The values don't change, so light mode is the same down to the pixel.
+
+Done when: light mode matches the baselines with zero tolerance, and a one-step color change makes all six fail (a probe, undone afterwards). The token test passes, apart from the one light-mode gap listed in spec 17.1.
+
+### Phase 3 (T2): dark values, theme logic and the before-paint script. Done.
+
+- The dark block in `tokens.css`.
+- `lib/theme.ts` and its tests.
+- The inline script in `index.html`. A module script would run too late to rule out a flash of light mode, because the dev server loads modules on demand (ADR-010). The script follows the same rules as `readTheme` and `applyTheme`, wrapped in `try`, with a comment linking the two.
+
+Done when: the dark contrast checks pass, and setting `accountable.theme` to `dark` by hand and reloading shows dark mode with `data-theme` already set at `domcontentloaded`. Light mode still matches the baselines.
+
+### Phase 4 (T3): the toggle
+
+- `ThemeToggle.tsx` is a 36px icon button styled like a secondary button, with the accessible name "Dark mode", `aria-pressed`, and a `Moon` or `Sun` icon.
+- Its state starts from `<html data-theme>`, so it agrees with what the inline script did.
+- A click applies and saves the new mode, without remounting the app or changing the route, so open forms keep what's typed in them (R90).
+- `TopBar.tsx` shows it before "Add deal".
+- Other tabs aren't kept in sync (spec 4.5, *[Assumption]*). A `storage` event listener would do it, if the product owner wants it.
+
+Done when: the toggle's tests pass, and light mode matches the baselines with the toggle's area masked. If the toggle moves the tabs, that's an R94 question for the product owner before going on.
+
+### Phase 5 (T4): walk every screen in dark mode and fix what's wrong
+
+Fixes change which token a rule uses, or add a token. They never add a dark-only rule. Known so far: form field outlines use `--sea-mist`, a fill token, which is too bright on black. They get a new `--field-line` token, Sea Mist in light mode and a quieter line in dark mode, added to spec 3.9.
+
+The walkthrough covers, in both modes:
+
+- every page, and the pipeline with a drag
+- each form's side panel and its pickers, the delete dialog, the row menu and a date picker
+- the timeline and its activity form
+- the empty states (after `npm run clear` on a test database)
+- the offline banner (with the backend stopped) and the board's error message
+- the tooltips on all three charts
+
+Each screen is checked by eye against spec 3.9's dark mode rules, with no console errors.
+
+Done when: every item above has been checked in both modes, and its findings are fixed or recorded.
+
+### Phase 6 (T5): the end-to-end test
+
+- `e2e/theme.spec.ts` (V-E13): see section 4.2.
+
+Done when: it passes, and fails when the toggle's save is commented out (checked once, then restored).
+
+### Phase 7 (T6): the screenshots
+
+- `e2e/visual/dark-mode.spec.ts` saves the dashboard and the pipeline, full page at 1440px, in both modes, into `docs/changes/dark-mode/`.
+
+Done when: the four files are there and have been checked by eye.
+
+### Phase 8 (T7): check and approve
+
+- `npm run check`, with its output saved under `docs/evidence/`.
+- Update `docs/STATUS.md`, and the spec if anything has drifted.
+- The product owner reviews the dark palette from the screenshots (ADR-019). Two things to look at in particular: the black panels on the darker teal page, and the Midnight hero and active tab on the dark page and black top bar.
+
+Done when: `npm run check` passes and the product owner approves.
+
+## 3. Risks
 
 | Risk | Handling |
 |---|---|
-| A `var(--ink)` used as Midnight on a fill is missed, so a badge or button shows Sea Mist text on a bright fill in dark mode | T1 checks each of the 36 uses by hand. T4's walkthrough covers every badge and stage color. The light screenshots can't catch this, because the values are the same in light mode. |
-| The light-mode comparison fails on pixels that didn't really change (font hinting, chart animation) | Charts render with animation off, as they do today (`isAnimationActive={false}`). The comparison runs on one machine, against baselines taken on that same machine in T0. If needed, a tiny `maxDiffPixels` is allowed, with the reason recorded. Real shifts still fail. |
-| The inline script and `theme.ts` drift apart | Both are a few lines, with a comment linking them, and V-E13 step 5 tests the inline script's result |
-| A flash of light mode on reload in dark mode | The inline script runs before the body is parsed (section 2.3). V-E13 step 5 checks `data-theme` at `domcontentloaded`. |
-| Native controls (date inputs, scrollbars, selects) stay light | `color-scheme: dark` on the dark root, checked in T4 |
-| Recharts sets a color of its own that isn't a token (a default cursor, tooltip or label color) | T4 checks every chart's hover and tooltip in dark mode. Any default found is set to a token in its props. |
-| The Midnight hero and active tab are hard to see against the dark page and the black top bar | The product owner decides at review. The alternative for the active tab (a Sea Mist pill with Midnight text, 8.3:1) is ready if they want it. |
-| The literal-color test flags something legitimate, such as `transparent` or `currentColor` | Those two keywords are allowed, and the test lists them. Nothing else is. |
+| A `var(--ink)` used as Midnight on a fill is missed, so a badge or button shows Sea Mist text on a bright fill in dark mode | Phase 2 checked every use by hand (listed in the build log). Phase 5's walkthrough covers every badge and stage color. The light screenshots can't catch this, because the values are the same in light mode. |
+| A fill token is used as a line or text color, and is too bright in dark mode | Phase 5 looks for these. Form field outlines are one, fixed with `--field-line`. |
+| The light-mode comparison fails on pixels that didn't really change (font hinting, chart animation) | Charts render with animation off, and Playwright waits for two identical screenshots. The baselines and later runs are on the same machine. So far, every run has matched at zero tolerance. |
+| The light-mode comparison passes when it shouldn't | It uses threshold 0, and a probe showed a one-step change in `--midnight` fails all six screens |
+| The toggle moves the tabs, so light mode changes beyond the toggle | Phase 4's comparison with the masked baselines shows it. The product owner decides before going on. |
+| The inline script and `theme.ts` drift apart | Both are a few lines, with a comment linking them. V-E13 tests the inline script's result. |
+| A flash of light mode on reload in dark mode | The inline script runs before the body is parsed. V-E13 checks `data-theme` at `domcontentloaded`. |
+| Native controls (date inputs, scrollbars, selects) stay light | `color-scheme: dark` in the dark block. Phase 3 confirmed dark selects and date pickers, and phase 5 checks the rest. |
+| Recharts sets a color of its own that isn't a token (a default cursor, tooltip or label color) | Phase 5 checks every chart's hover and tooltip in dark mode. Any default found is set to a token in its props. |
+| The token test passes without checking anything | Vitest turns CSS imports, even with `?raw`, into empty strings. So the test reads files with Node, and checks that what it read isn't empty. A probe `rgba()` in `global.css` made it fail. |
+| The literal-color test flags something legitimate | Named colors are checked only as CSS values and color props, and comments are skipped. `url(#id)` is allowed. A self-check covers both cases. |
+| The Midnight hero and active tab are hard to see in dark mode | The product owner decides in phase 8. The alternative for the active tab, a Sea Mist pill with Midnight text (8.3:1), is ready. |
+| Light mode has one contrast gap that this change can't fix (Raspberry text on a hovered row, 4.47:1) | It predates dark mode, and R94 keeps light mode as it is. It's recorded in spec 17.1, and pinned in the token test, so a new failure or a fix both show up. |
 
-## 7. Definition of done
+## 4. Proof
 
-- Intent success criteria 1–3 are met: `npm run check` passes, V-E13 passes, and the four screenshots are in `docs/changes/dark-mode/`.
-- Light mode matches the T0 baselines, apart from the toggle (R94).
-- The walkthrough in section 4.4 is done in both modes and recorded, with no console errors.
-- `docs/spec.md` describes the product as built, and `docs/STATUS.md` is updated.
-- The product owner has approved the dark palette (ADR-019).
+### 4.1 Unit tests (Vitest), V-F11
+
+**`frontend/src/styles/tokens.test.ts`** (phases 2–3, passing)
+
+- NFR-7 light mode: every text token reaches 4.5:1 on `--panel` and `--page` (`--ink-muted` on `--panel` only), and so does every text-on-fill pair. The one exception is the known gap in spec 17.1, listed exactly.
+- NFR-7 dark mode: the same pairs with the dark values, and `--ink-muted` on the page too. No exceptions.
+- ENG-1: the dark block only redefines tokens that light mode has.
+- The contrast arithmetic reproduces spec 3.9's figures (12.1:1 and 4.6:1).
+- ENG-1: the scan covers the styles, components, pages and charts, and reads their real contents.
+- ENG-1: no hex, `rgb()`, `rgba()`, `hsl()` or named color appears in `frontend/src` outside `tokens.css` and the tests.
+- ENG-1: the literal-color check catches each kind of color, and doesn't catch `url(#id)`.
+
+**`frontend/src/lib/theme.test.ts`** (phase 3, passing)
+
+- R91: light when nothing is saved, and for any value other than `dark`.
+- R92: `dark` is read as dark; the choice is saved under `accountable.theme`; this browser's `localStorage` is the default.
+- R93: light when storage can't be read or doesn't exist, and a write that fails is ignored.
+- R92: `applyTheme` sets and removes `data-theme` on `<html>`. `currentTheme` reads it, and any other value counts as light.
+
+**`frontend/src/components/ThemeToggle.test.tsx`** (phase 4)
+
+- R90: it starts from the `data-theme` already on `<html>`, in either mode.
+- R90: a click switches the mode, saves it, and flips `aria-pressed` and the icon. A second click switches back.
+- R90: Enter and Space work on it.
+- R90: its accessible name is "Dark mode".
+- R93: with storage that throws, it still switches, and nothing is logged.
+
+### 4.2 End to end (Playwright), V-E13 `e2e/theme.spec.ts` (phase 6)
+
+Every test goes through `e2e/fixtures.ts`, so a console error or a request outside localhost fails it (V-E00). This is the "new end-to-end test" in intent success criterion 2.
+
+1. **R91, R94:** on first load, `<html>` has no `data-theme`, and the page and panel colors are `#F0F4F5` and `#FFFFFF`.
+2. **R90:** the toggle is in the top bar on each of the five sections and on a record page.
+3. **R90, R95:** a click gives `data-theme="dark"`, `aria-pressed="true"`, a `#04232E` page and `#000000` panels. That's checked on the dashboard (including a chart tooltip's panel), the pipeline (a card), a table, a deal's page, the Add deal side panel and a delete dialog.
+4. **R90:** with the Add deal form open and a name typed in, switching mode keeps the panel open and the name in the field.
+5. **R92:** after a reload, dark mode is still on, with `data-theme` already set at `domcontentloaded`. Switching back to light and reloading keeps light.
+6. **R90, NFR-7:** the toggle can be reached with Tab and switched with Space, with its focus ring visible.
+
+### 4.3 Screenshots, V-M04 `e2e/visual/dark-mode.spec.ts` (`node scripts/run-tests.mjs visual dark-mode`)
+
+These are outside `npm test`, because font rendering differs between machines.
+
+- **R94:** six light-mode screens match the phase 1 baselines at zero tolerance, with the top bar's right-hand group masked. Passing since phase 2.
+- **Intent success criterion 3:** `dashboard-light.png`, `dashboard-dark.png`, `pipeline-light.png` and `pipeline-dark.png` in `docs/changes/dark-mode/` (phase 7).
+
+### 4.4 By hand and the gate
+
+- The phase 5 walkthrough in both modes (AC9, V-M01, V-M04), recorded in `docs/build_logs.log`.
+- The product owner's approval of the dark palette (ADR-019).
+- `npm run check` passes (intent success criterion 1).
+
+### 4.5 Requirement to code and test
+
+| Requirement | Code | Test |
+|---|---|---|
+| R90 Toggle | `ThemeToggle.tsx`, `TopBar.tsx` | `ThemeToggle.test.tsx`, V-E13 steps 2–4 and 6 |
+| R91 Default light | `theme.ts`, `index.html` | `theme.test.ts`, V-E13 step 1 |
+| R92 Remembered | `theme.ts`, `index.html` | `theme.test.ts`, V-E13 step 5 |
+| R93 Storage not available | `theme.ts`, `index.html`, `ThemeToggle.tsx` | `theme.test.ts`, `ThemeToggle.test.tsx` |
+| R94 Light mode unchanged | `tokens.css`, `global.css` | The V-M04 baseline comparison, V-E13 step 1 |
+| R95 Everything follows | `tokens.css`, `global.css`, chart files | V-E13 step 3, V-M04, the walkthrough |
+| NFR-7 Contrast in both modes | `tokens.css` | `tokens.test.ts`, the walkthrough |
+| ENG-1 Colors only from tokens | All styles and chart files | `tokens.test.ts` |
+| R7 Clean console in both modes | All | V-E00 in V-E13, the walkthrough |
