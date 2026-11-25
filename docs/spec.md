@@ -284,7 +284,7 @@ All colors are CSS custom properties in one tokens file (`frontend/src/styles/to
 
 | Token | Value | Use |
 |---|---|---|
-| `--midnight` | `#073B4C` | The hero panel, the active tab, the wordmark square, and text on light fills (8.3:1 on Sea Mist) |
+| `--midnight` | `#073B4C` | The hero panel, the active tab, the selected segmented button, the wordmark square, the revenue chart's dots, and text on light fills (8.3:1 on Sea Mist) |
 | `--on-fill` | `#FFFFFF` | Text on Midnight, Cerulean, Raspberry and their strong fills |
 | `--sea-green` | `#06D6A0` | Primary fills and buttons, with Midnight text |
 | `--marigold` | `#FFC145` | Fills, with Midnight text |
@@ -327,7 +327,7 @@ Dark mode is the same layout, type, spacing and components as light mode, with t
 - The page is `#04232E` and panels and cards are black (`#000000`), rounded with no outline. That includes the top bar, tables, pipeline cards, closed rows, side panels, dialogs, menus, chart tooltips and messages such as the "Can't reach Accountable" banner and the board's error message.
 - Main text is Sea Mist, and Sea Green, Marigold, Coral, Cerulean and Raspberry text use their lighter dark-mode `-text` values.
 - The hero panel stays Midnight (`--midnight`), with the same white figures, Sea Mist labels, Sea Green line and `#0F4C60` gridlines as in light mode.
-- The active tab stays a Midnight pill with white text, and the wordmark keeps its Midnight square and Sea Green "A".
+- The active tab and the selected segmented button (the contact status filter) stay Midnight pills with white text, and the wordmark keeps its Midnight square and Sea Green "A".
 - Fills (buttons, badges, stage colors, probability meters, the donut, the funnel and the chart bars) keep their light-mode colors and their Midnight or white text.
 - The page tells the browser it's dark (`color-scheme: dark`), so scrollbars, date pickers and other native controls are dark too.
 
@@ -935,6 +935,7 @@ Places where the product today falls short of this spec. Each is tracked in `doc
 
 - **REL-7:** saving is blocked while the backend can't be reached in the forms, dialogs, the deal page and timelines, but not on the pipeline board (drops) or the dashboard's follow-up checkboxes. Those fail and roll back with a message instead (review finding REV-001, `docs/reviews/review-report.md`).
 - **V-M02** has been run on Windows only, and **V-M05** hasn't been run.
+- **NFR-7, light mode:** a late date in Raspberry (`--raspberry-text`) on a hovered table row, whose hover is the page color, is 4.47:1, just under 4.5:1. It predates dark mode, and stays because light mode mustn't change in the `dark-mode` change (R94). `styles/tokens.test.ts` lists it as the one known gap. Dark mode has no such gap.
 
 ## 18. Ownership
 

@@ -1,12 +1,14 @@
 /* Accountable design tokens (spec 3.9). Values from docs/mockups/shared/tokens.css.
-   Components use only these tokens, so a dark mode later redefines this file alone. */
+   The only place a color is written: components, styles and charts use these tokens (ENG-1). */
 :root {
-  /* Surfaces and ink */
+  /* Surfaces and ink. --ink is text on panels and the page; text on a fill uses --midnight or --on-fill. */
   --page: #f0f4f5;
   --panel: #ffffff;
   --ink: #073b4c;
   --ink-muted: #5b7a85;
   --on-fill: #ffffff;
+  /* Midnight as a fill (hero, active tab, wordmark, selected segment) and as text on light fills */
+  --midnight: #073b4c;
 
   /* Brand colors: fills, and their darker versions for text on white */
   --sea-green: #06d6a0;
@@ -19,12 +21,17 @@
   --cerulean-text: #0e7194;
   --raspberry: #ef476f;
   --raspberry-text: #d12e57;
+  /* Darker fills under small white text, such as badges (ADR-017, ADR-019) */
+  --cerulean-strong: #0e7194;
+  --raspberry-strong: #d12e57;
   --sea-mist: #cdd8db;
   --tint: #e6edef;
   --hero-grid: #0f4c60;
   /* Light Cerulean behind timeline icons, and the drop gap's fill (mockup 1) */
   --cerulean-tint: #e3f1f6;
   --drop-fill: rgba(255, 255, 255, 0.5);
+  /* Behind side panels and dialogs */
+  --overlay: rgba(7, 59, 76, 0.28);
 
   /* Stage colors (spec 3.9) */
   --stage-new: var(--sea-mist);

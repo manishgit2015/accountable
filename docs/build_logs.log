@@ -1487,3 +1487,45 @@ Files: e2e/visual/dark-mode.spec.ts (new), playwright.config.ts (snapshotPathTem
   (status approved; files table lists playwright.config.ts).
 Requirements covered: R94 (the comparison used from T1 on), V-M04.
 Open: none.
+----------------------------------------------------------------------
+dark-mode T1  Split the tokens, with no visible change
+Date: 2026-11-25
+Audit: every var(--ink), var(--cerulean-text), var(--raspberry-text) and var(--on-fill) in global.css
+  (48 lines, listed with their selectors), the 19 token uses in the dashboard charts, the inline styles in
+  .tsx files, and every fill background. Kept (text on a panel or the page): body, links, .brand,
+  .btn (secondary buttons), form fields, search, sort headers, .feed .title, .follow-up, .icon-button:hover,
+  .add:hover, late and error text, the invalid-field ring, the timeline icon on its tint, the chart tooltip.
+  Moved to --midnight: .brand-mark, .tabs a.active, .segmented button.on, .hero (fills); .badge,
+  .btn-primary (new rule; it inherited --ink from .btn), .feed .ico-stage-new/-proposal/-negotiation/-won
+  (text on fills); RevenueChart dot fill and activeDot stroke. Moved to --cerulean-strong: .badge-qualified,
+  .feed .ico-stage-qualified. Moved to --raspberry-strong: .badge-lost/.badge-late, .feed .ico-stage-lost,
+  .offline-banner. The overlay's rgba() became --overlay. The pipeline card's initials chip is text on
+  --page, so it stays --ink.
+New tokens (same values as what they replace): --midnight #073b4c, --cerulean-strong #0e7194,
+  --raspberry-strong #d12e57, --overlay rgba(7,59,76,.28).
+Literal colors outside tokens.css (grep for hex, rgb(a), hsl(a) in src, tests excluded): none.
+New test frontend/src/styles/tokens.test.ts (V-F11): contrast pairs from tokens.css, literal-color scan,
+  dark block only redefines known tokens (skipped until T2), and self-checks for both. 4 passed, 2 skipped.
+  Finding: --raspberry-text on --page is 4.47:1 in light mode (a late date on a hovered row, since the row
+  hover is --page). Predates this change and can't change under R94; recorded in spec 17.1 and pinned in
+  the test as KNOWN_LIGHT_GAPS, so a new failure or a fix both show.
+Light-mode comparison: e2e/visual/dark-mode.spec.ts now uses threshold 0 (Playwright's default 0.2
+  tolerates small color shifts). node scripts/run-tests.mjs visual dark-mode -> 6 passed.
+  Probe: --midnight #073b4c -> #073b4d -> 6 failed ("2736 pixels ... are different"); restored -> grep
+  shows #073b4c.
+Spec: 3.9 --midnight's uses and the dark-mode bullet name the selected segmented button and chart dots;
+  17.1 has the light-mode contrast gap.
+Requirements covered: R94, ENG-1, NFR-7 (light), V-F11 (part), V-M04 (light comparison).
+T1 (continued) Test reworked after the first check:quick run, which failed Prettier and tsc.
+  tsc: tokens.test.ts used node:fs and process, and the app's tsconfig has only vite/client types;
+  noUncheckedIndexedAccess also flagged unguarded regex groups and array reads. Tried reading files
+  through Vite instead (`?raw`, import.meta.glob): a probe assertion showed both tokens.css and global.css
+  arrive as "" under Vitest (it blanks CSS by default), so that scan would have passed while checking
+  nothing. Back to node:fs, with `/// <reference types="node" />` in the test only (@types/node is already
+  a frontend devDependency; no tsconfig or dependency change), guarded indexing, and a test that the
+  scanned contents aren't empty (global.css over 10,000 characters, tokens.css has --midnight).
+  Probe: an rgba() put into global.css -> "styles/global.css: rgba(" reported, test failed; reverted
+  (grep: 0 rgba( in global.css). tsc, ESLint and Prettier clean; tokens.test.ts 5 passed, 2 skipped.
+  npm run check:quick -> All 12 checks passed. Visual comparison after the rework -> 6 passed.
+Harness note: tokens.test.ts used Node APIs the app's tsconfig doesn't type - caught by tsc in npm run check:quick - typed with a per-file node reference.
+Harness note: a ?raw CSS import is an empty string under Vitest, which would have made a file scan pass vacuously - caught by nothing (found by a probe assertion before relying on it) - switched to node:fs and added a non-empty assertion.

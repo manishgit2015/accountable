@@ -47,8 +47,8 @@ export function RevenueChart({ months }: { months: Dashboard["months"] }) {
             stroke="var(--sea-green)"
             strokeWidth={3}
             fill="url(#revenue-fill)"
-            dot={{ r: 3.5, fill: "var(--ink)", stroke: "var(--sea-green)", strokeWidth: 2 }}
-            activeDot={{ r: 6, fill: "var(--sea-green)", stroke: "var(--ink)", strokeWidth: 2.5 }}
+            dot={{ r: 3.5, fill: "var(--midnight)", stroke: "var(--sea-green)", strokeWidth: 2 }}
+            activeDot={{ r: 6, fill: "var(--sea-green)", stroke: "var(--midnight)", strokeWidth: 2.5 }}
             isAnimationActive={false}
           />
         </AreaChart>

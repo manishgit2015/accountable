@@ -15,9 +15,11 @@ function baseline(name: string): string[] {
 }
 
 async function expectLightUnchanged(page: Page, name: string, fullPage = true): Promise<void> {
+  // threshold 0: any change in any pixel's color fails, not only a visible one (Playwright's default is 0.2).
   await expect(page).toHaveScreenshot(baseline(name), {
     fullPage,
     mask: [page.locator(".topbar-right")],
+    threshold: 0,
   });
 }
 

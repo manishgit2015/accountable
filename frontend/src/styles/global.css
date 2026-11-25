@@ -98,7 +98,7 @@ h2 {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: var(--ink);
+  background: var(--midnight);
   color: var(--sea-green);
   display: grid;
   place-items: center;
@@ -116,7 +116,7 @@ h2 {
   font-weight: 500;
 }
 .tabs a.active {
-  background: var(--ink);
+  background: var(--midnight);
   color: var(--on-fill);
   font-weight: 600;
 }
@@ -143,6 +143,7 @@ h2 {
 }
 .btn-primary {
   background: var(--sea-green);
+  color: var(--midnight);
 }
 .btn-secondary {
   background: var(--panel);
@@ -162,7 +163,7 @@ h2 {
   padding: 0 9px;
   border-radius: 999px;
   font: 600 12px var(--sans);
-  color: var(--ink);
+  color: var(--midnight);
   white-space: nowrap;
 }
 .badge-new,
@@ -180,12 +181,12 @@ h2 {
   background: var(--sea-green);
 }
 .badge-qualified {
-  background: var(--cerulean-text);
+  background: var(--cerulean-strong);
   color: var(--on-fill);
 }
 .badge-lost,
 .badge-late {
-  background: var(--raspberry-text);
+  background: var(--raspberry-strong);
   color: var(--on-fill);
 }
 
@@ -282,7 +283,7 @@ h2 {
   font-weight: 600;
 }
 .offline-banner {
-  background: var(--raspberry-text);
+  background: var(--raspberry-strong);
   color: var(--on-fill);
 }
 .board-message,
@@ -299,7 +300,7 @@ h2 {
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(7, 59, 76, 0.28);
+  background: var(--overlay);
 }
 .side-panel {
   position: fixed;
@@ -482,7 +483,7 @@ h2 {
   margin-left: 4px;
 }
 .segmented button.on {
-  background: var(--ink);
+  background: var(--midnight);
   color: var(--on-fill);
   font-weight: 600;
 }
@@ -696,26 +697,26 @@ th[aria-sort] .sort-button {
 }
 .feed .ico-stage-new {
   background: var(--stage-new);
-  color: var(--ink);
+  color: var(--midnight);
 }
 .feed .ico-stage-qualified {
-  background: var(--cerulean-text);
+  background: var(--cerulean-strong);
   color: var(--on-fill);
 }
 .feed .ico-stage-proposal {
   background: var(--stage-proposal);
-  color: var(--ink);
+  color: var(--midnight);
 }
 .feed .ico-stage-negotiation {
   background: var(--stage-negotiation);
-  color: var(--ink);
+  color: var(--midnight);
 }
 .feed .ico-stage-won {
   background: var(--stage-won);
-  color: var(--ink);
+  color: var(--midnight);
 }
 .feed .ico-stage-lost {
-  background: var(--raspberry-text);
+  background: var(--raspberry-strong);
   color: var(--on-fill);
 }
 .feed .body {
@@ -1042,7 +1043,7 @@ th[aria-sort] .sort-button {
 }
 .hero {
   grid-column: span 12;
-  background: var(--ink);
+  background: var(--midnight);
   color: var(--sea-mist);
   border-radius: 16px;
   padding: 28px 30px 22px;
