@@ -1,0 +1,4 @@
+# Check out text files with LF line endings on every platform, so Prettier and
+# ruff format (which expect LF) pass on Windows whatever core.autocrlf is set to.
+# Git detects binary files (such as screenshots) and leaves them alone.
+* text=auto eol=lf
