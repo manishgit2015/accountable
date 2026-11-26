@@ -22,6 +22,7 @@ Part of the Accountable spec: [`docs/spec.md`](../spec.md) has the summary and t
   | Probability | 0 to 100 |
   | Dates | Real calendar dates in `YYYY-MM-DD` form |
 
+- Every organization, contact, deal and activity also records who added it and who last changed it, taken from the signed-in person (R110).
 - **R22 Duplicates are allowed.** Two organizations or contacts may share a name (ADR-016). The alternative is to warn when a new name matches an existing one: it catches typos, but adds a step to every add.
 
 ### 3.3 Deleting
@@ -51,11 +52,11 @@ Part of the Accountable spec: [`docs/spec.md`](../spec.md) has the summary and t
 
 ### 3.5 Record pages
 
-- **R50 Organization page:** its details (editable), a contacts list, a deals list, and one timeline combining its contacts' activities, its deals' activities and its deals' stage changes, newest first.
-- **R51 Contact page:** details, organization (as a link, or "None"), deals where they're the main contact, and a timeline. The timeline shows their own activities plus the activities and stage changes of those deals, newest first.
-- **R52 Deal page:** details, stage (with a stage picker), organization and contact links, a late warning when it's late, and its timeline.
+- **R50 Organization page:** its details (editable), with who added and last changed it (R111), a contacts list, a deals list, and one timeline combining its contacts' activities, its deals' activities and its deals' stage changes, newest first.
+- **R51 Contact page:** details, with who added and last changed it (R111), organization (as a link, or "None"), deals where they're the main contact, and a timeline. The timeline shows their own activities plus the activities and stage changes of those deals, newest first.
+- **R52 Deal page:** details, with who added and last changed it (R111), stage (with a stage picker), organization and contact links, a late warning when it's late, and its timeline.
 - **R53** Contact and deal pages have a "Log activity" form with type, description, when it happened, and an optional follow-up date.
-- **R54** Each timeline entry shows an icon for its type, the description, the date and time, and, on organization and contact pages, which deal or contact it came from.
+- **R54** Each timeline entry shows an icon for its type, the description, the date and time, who added it (for activities, R112), and, on organization and contact pages, which deal or contact it came from.
 - **R55** Activities in a timeline can be edited and deleted (after asking). Ones with a follow-up can be marked done or not done. Stage change entries can't be edited or deleted.
 - **R56** A record page for an ID that doesn't exist, or that was deleted in another tab, shows "This organization no longer exists" (or contact, or deal), with a link back to the list.
 

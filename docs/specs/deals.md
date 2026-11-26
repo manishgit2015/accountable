@@ -6,7 +6,7 @@ Part of the Accountable spec: [`docs/spec.md`](../spec.md) has the summary and t
 
 - **R14 Stage probabilities:** New 5%, Qualified 20%, Proposal 40%, Negotiation 70%, Won 100%, Lost 0%.
 - **R15** When a deal's stage changes, by any route, its probability becomes the new stage's usual one. A probability set by hand is kept until the next stage change. In the edit form, changing the stage fills in the new usual probability, which can be overwritten before saving. If one save changes both stage and probability, the probability sent is kept.
-- **R16** When a deal moves to Won or Lost, by any route, its close date becomes today (the computer's local date). It can be edited afterwards.
+- **R16** When a deal moves to Won or Lost, by any route, its close date becomes today (the app's local date, ADR-013). It can be edited afterwards.
 - **R17** When a deal moves to Won, its main contact's status becomes customer if it isn't already. Nothing changes it back. A deal with no main contact changes no contact.
 - **R18** Every stage change is saved with its local date and time and its from and to stages. That includes the stage a deal was created at, saved with no from stage. Saving a deal with its stage unchanged adds no row. The timeline shows a change as "Moved from Proposal to Negotiation", and creation as "Created at New".
 - **R19** A deal is *late* when it's in an open stage (New to Negotiation) and its close date is before today.

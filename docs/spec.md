@@ -4,11 +4,12 @@ This is the summary of the whole product and the index of its spec. The detail l
 
 ## Summary
 
-Accountable is a business management system for a small business. Today it's a sales CRM for one salesperson on their own computer, meant to grow into a full Business OS with several people sharing the same data (sections 1.2 and 16.5).
+Accountable is a business management system for a small business. Today it's a sales CRM for a small sales team, shared on the web, meant to grow into a full Business OS (sections 1.2 and 16.5).
 
-- **What it does:** five sections (Dashboard, Organizations, Contacts, Deals, Pipeline) over four kinds of record (organization, contact, deal, activity). Deals move through six stages, New to Won and Lost, on a drag-and-drop pipeline. The dashboard works out sales figures, charts and follow-ups from the data. It comes with sample data and reset and empty commands, and follows the brand in a light mode (the default) and a dark mode chosen with a toggle (section 1.3).
-- **How it runs:** `npm run dev` starts a React app and a FastAPI backend on `127.0.0.1` only, with one local SQLite file. There's no sign-in, and nothing leaves the computer at runtime (sections 7, 8 and 10).
-- **How it's proven:** the acceptance criteria AC1–AC9 and success measures SC1–SC5 (section 1.4), each requirement traced to its verification cases (sections 2 and 13).
+- **What it does:** five sections (Dashboard, Organizations, Contacts, Deals, Pipeline) over four kinds of record (organization, contact, deal, activity), each showing who added and last changed it. Deals move through six stages, New to Won and Lost, on a drag-and-drop pipeline. The dashboard works out sales figures, charts and follow-ups from the data. A search box in the top bar finds any organization, contact or deal, and a menu under your initials holds the theme (Light, Dark or System) and signing out. It follows the brand, and a new database starts with sample data (section 1.3).
+- **Who uses it:** a small team, each person signing in with an email and password through Supabase Auth. Everyone works on the same data and can do everything. People are added in Supabase's dashboard, and there's no sign-up (section 3.11).
+- **How it runs:** hosted, as one Render web service where FastAPI serves the built React app and the API, with the data in Postgres on Supabase through SQLAlchemy Core. In development, `npm run dev` starts the two development servers on `127.0.0.1`, against the local SQLite file or `DATABASE_URL`. It needs the internet, for Supabase, but the tests don't (sections 7, 8, 10 and 14).
+- **How it's proven:** the acceptance criteria AC1–AC15 and success measures SC1–SC5 (section 1.4), each requirement traced to its verification cases (sections 2 and 13). The tests run on SQLite with a test sign-in key, never touching Supabase (section 13.2).
 
 ## Index
 
@@ -24,7 +25,9 @@ Section numbers and IDs are the same as before the spec was split, so a referenc
 | | 3.6 Pipeline | [`specs/pipeline.md`](specs/pipeline.md) |
 | | 3.7 Dashboard | [`specs/dashboard.md`](specs/dashboard.md) |
 | | 3.8 Sample data and commands | [`specs/sample-data.md`](specs/sample-data.md) |
-| | 3.9 Look and feel, 3.10 Light and dark mode (with Writing) | [`specs/look-and-feel.md`](specs/look-and-feel.md) |
+| | 3.9 Look and feel (with the sign-in screen), 3.10 Light and dark mode (with Writing) | [`specs/look-and-feel.md`](specs/look-and-feel.md) |
+| | 3.11 Sign-in and the user menu, 3.12 Who added and changed each record | [`specs/users.md`](specs/users.md) |
+| | 3.13 Search | [`specs/search.md`](specs/search.md) |
 | | 4.1 Journeys | [`specs/journeys.md`](specs/journeys.md) |
 | | 4.2 Deal stage states | [`specs/deals.md`](specs/deals.md) |
 | | 4.3 Follow-up states, 4.4 Contact status | [`specs/records.md`](specs/records.md) |
@@ -45,21 +48,23 @@ Section numbers and IDs are the same as before the spec was split, so a referenc
 
 | IDs | File |
 |---|---|
-| AC1–AC9, SC1–SC5 | `specs/overview.md` |
+| AC1–AC15, SC1–SC5 | `specs/overview.md` |
 | R10–R13, R21, R22, R30–R36, R40–R48, R50–R56 | `specs/records.md` |
 | R14–R20, R23, R24 | `specs/deals.md` |
 | R60–R67 | `specs/pipeline.md` |
 | R70–R79 | `specs/dashboard.md` |
-| R1, R4, R80–R84 | `specs/sample-data.md` |
-| R90–R95 | `specs/look-and-feel.md` |
-| WF-1–WF-10 | `specs/journeys.md` |
-| NFR-1–NFR-13 (with R2, R5, R6, R7, and R1's portability measure) | `specs/nonfunctional.md` |
-| SEC-1–SEC-12 | `specs/security.md` |
-| REL-1–REL-12 (with R3) | `specs/reliability.md` |
-| OBS-1–OBS-6, DEP-1–DEP-7 | `specs/operations.md` |
+| R1, R4, R80–R85 | `specs/sample-data.md` |
+| R90–R96 | `specs/look-and-feel.md` |
+| R100–R109, R110–R115 | `specs/users.md` |
+| R120–R125 | `specs/search.md` |
+| WF-1–WF-16 | `specs/journeys.md` |
+| NFR-1–NFR-15 (with R2, R5, R6, R7, and R1's portability measure) | `specs/nonfunctional.md` |
+| SEC-1–SEC-18 | `specs/security.md` |
+| REL-1–REL-14 (with R3) | `specs/reliability.md` |
+| OBS-1–OBS-6, DEP-1–DEP-11 | `specs/operations.md` |
 | V cases | `specs/testing.md` |
 | ENG-1–ENG-12 | `specs/engineering.md` |
-| A, ADR, E, D and C IDs, and the known gaps | `specs/governance.md` |
+| A-1–A-11, ADR-001–ADR-026, E-1–E-8, D and C IDs, and the known gaps | `specs/governance.md` |
 
 ## Keeping the spec current
 

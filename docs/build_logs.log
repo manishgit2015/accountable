@@ -1892,3 +1892,24 @@ Verification:
   - The index's ID table checked against where each ID is defined (grep); R1 is defined twice (3.8 and as
     NFR-6 / R1), so the table names both files.
   - npm run check -> exit 0, "All 14 checks passed".
+
+mvp-multiuser  Spec updated for the change (docs only, no code)
+Date: 2026-11-26
+Files: docs/spec.md, docs/specs/users.md and search.md (new), overview, look-and-feel, records, sample-data,
+  journeys, deals, api, data, architecture, security, reliability, nonfunctional, operations, testing,
+  engineering, governance.
+Verification:
+  - Stale wording searched for (toggle, offline, one salesperson, no sign-in, own computer, no outbound):
+    the remaining hits are history (A-1 retired, ADR-019's approval note).
+  - Every ID cited in the spec files is defined in one (a script over all 20 files). The only real gap is R3,
+    cited by REL-3 and the traceability table before this change and never defined.
+Open points for the plan or the engineer: the default theme (R91, Light assumed); last write wins with a
+  team (ADR-003); the time zone on Render (ADR-026, A-9); no staging database (DEP-1); test sign-in (SEC-17);
+  Postgres not in the automated tests (V-M08); Render's sleep and Supabase's pause and backups; removing the
+  sample data from Supabase; R113's "Sample data"; new dependencies (a JWT library, the Supabase Auth client).
+mvp-multiuser  Decision: keep the data loaded into Supabase
+Date: 2026-11-26
+The engineer decided that once data is loaded into Supabase, its records aren't deleted. Written in as E-8:
+  operations (runbook row, DEP-4, DEP-11), sample data (R4), governance, and the index. It replaces the
+  runbook's earlier "delete the sample records or empty the tables" assumption. Deleting one record in the
+  app (R30-R36) is unchanged.

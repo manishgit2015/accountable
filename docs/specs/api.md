@@ -6,7 +6,8 @@ Part of the Accountable spec: [`docs/spec.md`](../spec.md) has the summary and t
 
 ### 5.1 Conventions
 
-- **Base path:** `/api`, served by the backend on `127.0.0.1` (SEC-1). The frontend reaches it through the Vite proxy, so it sees one origin.
+- **Base path:** `/api`, served by the backend. In development the frontend reaches it through the Vite proxy, and on Render FastAPI serves both the built page and the API, so the browser always sees one origin (ADR-021).
+- **Sign-in:** every request except `GET /api/health` carries `Authorization: Bearer <access token>`, the token Supabase Auth gave the browser (R101, SEC-13). The signed-in person comes only from the token.
 - **Versioning:** the API is unversioned, because the bundled frontend is its only client (ADR-009). A breaking change after the API gets other clients would be released as `/api/v2`.
 - **Format:** JSON in UTF-8. Requests with a body need `Content-Type: application/json`, or get 415. Bodies over 1 MB get 413.
 - **Unknown fields** in a request body are refused with 422, so typos aren't silently dropped.
@@ -27,13 +28,15 @@ Every error has the same body:
 | Status | `code` | When |
 |---|---|---|
 | 400 | `bad_request` | The JSON is malformed |
-| 403 | `forbidden_origin` | A changing request came from another origin, or the Host header isn't local (SEC-2, SEC-3) |
+| 401 | `unauthorized` | No token, or a token that's malformed, expired, wrongly signed, or not from this Supabase project (SEC-13). The message is always "Sign in to continue." |
+| 403 | `forbidden_origin` | A changing request came from another origin, or the Host header isn't one of the app's own (SEC-2, SEC-3) |
 | 404 | `not_found` | No record has that ID |
 | 409 | `stale_position` | A move refers to a card that's no longer where the request says |
 | 413 | `too_large` | The body is over the limit |
 | 415 | `unsupported_media_type` | The body isn't JSON |
 | 422 | `validation_failed` | A field rule failed (R21, R23, R11, R12). `fields` lists each one. |
 | 503 | `busy` | The database stayed locked past the timeout (REL-6) |
+| 503 | `database_unavailable` | The database can't be reached, for example Supabase is down or the network is (REL-13) |
 | 500 | `internal` | Anything unexpected. The message is generic, and details go only to the log. |
 
 ### 5.3 Resources
@@ -59,18 +62,29 @@ Record shapes in responses:
 
 | Resource | Fields |
 |---|---|
-| Organization | `id`, `name`, `website`, `industry`, `notes`, `contact_count`, `open_deal_count`, `open_value`, `created_at`, `updated_at` |
-| Contact | `id`, `organization_id` (or null), `organization_name` (or null), `name`, `email`, `phone`, `job_title`, `status`, `created_at`, `updated_at` |
-| Deal | `id`, `organization_id`, `organization_name`, `contact_id`, `contact_name` (the last four may be null), `name`, `stage`, `value`, `probability`, `expected_revenue`, `close_date`, `is_late`, `position`, `closed_at` (or null), `created_at`, `updated_at` |
-| Activity | `id`, `type`, `contact_id`, `deal_id` (exactly one is set), `description`, `occurred_at`, `follow_up_date` (or null), `done` |
+| Organization | `id`, `name`, `website`, `industry`, `notes`, `contact_count`, `open_deal_count`, `open_value`, `created_at`, `created_by`, `updated_at`, `updated_by` |
+| Contact | `id`, `organization_id` (or null), `organization_name` (or null), `name`, `email`, `phone`, `job_title`, `status`, `created_at`, `created_by`, `updated_at`, `updated_by` |
+| Deal | `id`, `organization_id`, `organization_name`, `contact_id`, `contact_name` (the last four may be null), `name`, `stage`, `value`, `probability`, `expected_revenue`, `close_date`, `is_late`, `position`, `closed_at` (or null), `created_at`, `created_by`, `updated_at`, `updated_by` |
+| Activity | `id`, `type`, `contact_id`, `deal_id` (exactly one is set), `description`, `occurred_at`, `follow_up_date` (or null), `done`, `created_at`, `created_by`, `updated_at`, `updated_by` |
+
+`created_by` and `updated_by` are each a person, `{ "id": "…", "name": "Priya Shah" }`, where `name` is shown as R105 says, or null for sample data (R110, R113). They're read only: a request that sends them is refused with 422 as an unknown field.
 
 Other shapes:
 
-- **Timeline entry:** `kind` (`activity` or `stage_change`), `id`, `type` (the activity type, or null), `from_stage`, `to_stage`, `description`, `at`, `source` (`{kind, id, name}`, giving the deal or contact it came from).
+- **Timeline entry:** `kind` (`activity` or `stage_change`), `id`, `type` (the activity type, or null), `from_stage`, `to_stage`, `description`, `at`, `source` (`{kind, id, name}`, giving the deal or contact it came from), `added_by` (a person for an activity, or null for a stage change or sample data, R112).
 - **Delete impact:** for example `{ "contacts_kept": 4, "deals_kept": 3, "activities_deleted": 0, "stage_changes_deleted": 0 }`. Only the keys that apply to that resource are present.
+
+Also:
+
+| Method and path | Success |
+|---|---|
+| `GET /api/me` | 200 with the signed-in person: `{ "id": "…", "name": "Priya Shah", "email": "priya@example.com", "initials": "PS" }`, with `name` and `initials` as R105 says |
+| `GET /api/search?q=acme` | 200 with `{ "organizations": { "total": 1, "items": [ { "id": 3, "name": "Acme Ltd", "industry": "Logistics" } ] }, "contacts": { "total": 0, "items": [] }, "deals": { "total": 2, "items": [ { "id": 7, "name": "Acme fleet", "organization_name": "Acme Ltd", "stage": "proposal" } ] } }`. Contact items have `id`, `name` and `organization_name`. Each `items` holds up to 5, in R122's order, and `total` counts every match. `q` is trimmed, and under 2 or over 200 characters gets 422. |
+| `POST /api/test/sign-in` | Test mode only (SEC-17): takes `{ "email": "priya@test.example", "password": "test" }` for one of the test people, and returns 200 with `{ "access_token": "…", "expires_in": 3600 }`, signed with the test run's key. Any other email or password gets 401. Without `ACCOUNTABLE_TEST_AUTH_KEYS` set, it doesn't exist (404). In test mode the sign-in screen signs in through it instead of Supabase, and needs no sign-in itself. |
 
 Rules for creating and changing records:
 
+- Every `POST` sets `created_by` and `updated_by` to the signed-in person, and every `PATCH` sets `updated_by`, along with the times (R110, section 6.5).
 - `POST /api/deals` without `probability` uses the stage's usual one. It also creates the first stage change row.
 - `PATCH` checks a link only when the link is in the request (R34).
 - A stage change through `PATCH /api/deals/{id}` applies R15–R18 and puts the deal at the top of its new column (R67).
@@ -105,7 +119,7 @@ Rules for creating and changing records:
 - `funnel` has the five stages from New to Won.
 - `percent` is null when there are no closed deals.
 
-`GET /api/health` returns `{ "status": "ok", "database": "ok", "schema_version": "…", "app_version": "0.1.0" }`. If the database can't be read, it returns 503 with `"database": "error"`.
+`GET /api/health` returns `{ "status": "ok", "database": "ok", "schema_version": "…", "app_version": "0.1.0" }`. If the database can't be read, it returns 503 with `"database": "error"`. It needs no sign-in and gives nothing away about people or records, so Render can use it as its health check (DEP-8).
 
 ### 5.6 Command-line interface
 
@@ -114,5 +128,6 @@ Rules for creating and changing records:
 | `npm run seed` | Asks "This replaces all data with the sample data. Type yes to continue:", then reseeds in one transaction | 0 when done, 1 when not confirmed, 2 on error |
 | `npm run clear` | The same question ("This deletes all data…"), then empties every table in one transaction | 0, 1 or 2 |
 | Either with `-- --yes` | Skips the question | As above |
+| Either, when `DATABASE_URL` is set | Refuses before asking: "npm run seed only works on a local database. It won't change the team's data on Supabase." (or `clear`). Changes nothing (R4). | 2 |
 
 Both print what they did, for example "Sample data loaded: 12 organizations, 40 contacts, 45 deals, 150 activities."

@@ -8,8 +8,8 @@ The look follows the brand guidelines and mockup 1, as detailed below. These rul
 
 #### Layout
 
-- A floating top bar: a white rounded panel 16px below the top of the window, spanning the content width. It holds the Accountable wordmark (a Midnight square mark with a Sea Green "A"), the tabs Dashboard, Pipeline, Deals, Contacts and Organizations, and on the right the mode toggle (R90) then "Add deal". The active tab is a Midnight pill with white text, and the others are in Muted ink. There's no line under the bar.
-- There's no user name or avatar anywhere.
+- A floating top bar: a white rounded panel 16px below the top of the window, spanning the content width. It holds the Accountable wordmark (a Midnight square mark with a Sea Green "A"), the tabs Dashboard, Pipeline, Deals, Contacts and Organizations, and on the right the search box (R120), "Add deal", then the user menu button (R106). The active tab is a Midnight pill with white text, and the others are in Muted ink. There's no line under the bar.
+- The only sign of who's signed in is their initials on the user menu button (R106). There are no photos or avatars.
 - The content area has the page background `#F0F4F5`, a maximum width of 1440px and a 32px gutter. Each page has a title (Instrument Sans 28px, semibold).
 - Content sits in white panels with 12px corners, no outline and a soft shadow (`0 1px 2px rgba(7,59,76,.06), 0 4px 16px rgba(7,59,76,.04)`). There are no single-edge borders and no rule along the top of the page.
 - Forms open in a right-hand side panel 480px wide. Delete confirmations open in a centered dialog.
@@ -26,6 +26,8 @@ The look follows the brand guidelines and mockup 1, as detailed below. These rul
 | Big dashboard figures | JetBrains Mono | 28–32px / 600 |
 | Dashboard greeting | Instrument Serif | 34px italic, white on Midnight |
 | Empty-state line | Instrument Serif | 20px italic |
+| Initials on the user menu button | Instrument Sans | 13px / 600, white on Midnight |
+| Sign-in tagline | Instrument Serif | 20px italic, Muted ink |
 
 Fonts are bundled from `@fontsource/instrument-sans`, `@fontsource/instrument-serif` and `@fontsource/jetbrains-mono`.
 
@@ -82,11 +84,19 @@ All colors are CSS custom properties in one tokens file (`frontend/src/styles/to
 
 - **Buttons:** primary is a Sea Green fill with Midnight text, 8px corners and 36px high. Secondary is the raised color (`--raised`: white in light mode, so a dark-mode button keeps its edge on a black panel) with a soft shadow. Focused, it shows the focus ring on top of its shadow. Destructive is a Raspberry fill with bold white text, used only in delete dialogs.
 - **Badges:** pill shaped, 12px/600. New, Proposal, Negotiation, Won, Lead and Customer badges are filled with their stage or status color, with Midnight text. Qualified (stage and status) badges are filled with `--cerulean-strong`, and Late and Lost badges with `--raspberry-strong`, both with white text (ADR-017).
-- **Mode toggle:** a 36px icon button in the top bar, styled like a secondary button. It shows an 18px moon in light mode and an 18px sun in dark mode (lucide-react, already a dependency), its accessible name is "Dark mode", and `aria-pressed` is true while dark mode is on (R90).
+- **User menu:** a 36px round button at the end of the top bar, filled Midnight (`--midnight`) with the initials in white (`--on-fill`) in both modes, showing the focus ring when focused. Its menu opens below it, lined up with its right edge: 260px wide on the raised surface (`--raised`, `--shadow-lift`, 12px corners). It holds the name (14px/600, `--ink`) and email (12px/500, Muted ink), a divider in `--tint`, the label "Theme" over a segmented control (Light, Dark, System; the selected one a Midnight pill with white text, like the contact status filter), another divider, and "Sign out" as a menu item (R106, R90).
+- **Search box:** 240px wide (180px below 1280px), 36px high, on `--panel` with a `--line` outline and 8px corners, a 16px search icon (lucide-react, already a dependency) and the placeholder in Muted ink. Results open below it in a 420px panel on the raised surface: group headings in 12px/500 Muted ink, rows 40px high, the highlighted row in the page color (`--page`), and stage badges as elsewhere (R122).
 - **Tables:** header row in 12px/500 Muted ink, rows 48px high, a row hover in the page color (`--page`), and numbers right-aligned in JetBrains Mono.
 - **Pipeline cards:** white, 10px corners and 12px padding. A 30px rounded square with the organization's initials sits beside the name (14px/600) and "organization · contact" in Muted ink. Below them come the value and the date or Late badge, then a 5px probability meter in the stage color with the percentage. "Add deal" is a dashed outline button at the top of each open column. A dragged card lifts with a larger shadow, and the drop gap is a dashed placeholder in the line color (`--line`, Sea Mist in light mode).
 - **Closed rows:** white and 10px corners. Each is one line: the name (shortened with an ellipsis) and organization on the left, the short value and date on the right.
 - **Timeline:** round icons. Note, call and email use Cerulean on a light tint, and stage changes use the destination stage's color.
+
+#### Sign-in screen
+
+- The page background with one panel (`--panel`) 400px wide in the middle of the window: 12px corners, the soft shadow and 32px padding. There's no top bar.
+- In the panel, top to bottom: the wordmark, the title "Sign in" (Instrument Sans 28px/600), the Email and Password fields with their labels above them, the primary button "Sign in" (Sea Green with Midnight text, full width), the error line in `--raspberry-text` when there is one (R103), and "Ask whoever runs Accountable for your team to add you." in 12px Muted ink (R104).
+- Below the panel, the tagline "Your sales, in one place." in Instrument Serif 20px italic, Muted ink.
+- It uses the saved theme (R92), so it's dark when the app is.
 
 #### Dashboard layout (12-column grid)
 
@@ -104,18 +114,19 @@ Dark mode is the same layout, type, spacing and components as light mode, with t
 - What floats above panels (row menus, side panels, the delete dialog, chart tooltips and a lifted pipeline card) is on `--raised` (`#0E3240`), so it keeps its edge against black. Form fields inside them stay black, with their `--line` outline.
 - Main text is Sea Mist, and Sea Green, Marigold, Coral, Cerulean and Raspberry text use their lighter dark-mode `-text` values.
 - The hero panel stays Midnight (`--midnight`), with the same white figures, Sea Mist labels, Sea Green line and `#0F4C60` gridlines as in light mode.
-- The active tab and the selected segmented button (the contact status filter) stay Midnight pills with white text, and the wordmark keeps its Midnight square and Sea Green "A".
+- The active tab and the selected segmented buttons (the contact status filter and the theme choice) stay Midnight pills with white text, the user menu button stays Midnight with white initials, and the wordmark keeps its Midnight square and Sea Green "A".
 - Fills (buttons, badges, stage colors, probability meters, the donut, the funnel and the chart bars) keep their light-mode colors and their Midnight or white text.
 - The page tells the browser it's dark (`color-scheme: dark`), so scrollbars, date pickers and other native controls are dark too.
 
 ### 3.10 Light and dark mode
 
-- **R90 Toggle:** the top bar, on every page and section, has a mode toggle (section 3.9 Components). Clicking it, or pressing Enter or Space on it, switches between light and dark mode at once, with no reload, and keeps the page, its scroll position, and what's typed in its forms.
-- **R91 Default:** light mode is the default. The app starts in light mode the first time, and whenever no valid choice is saved. It doesn't follow the device's own light or dark setting (section 1.3).
-- **R92 Remembered:** the choice is saved in the browser's `localStorage` under `accountable.theme`, as `light` or `dark`, and applied as `data-theme="dark"` on the `<html>` element (no attribute means light). It's applied before the page first paints, so a reload in dark mode never flashes light. It's kept after a reload, a restart of the app and a restart of the browser. It's per browser: another browser, or a private window, starts in light mode (ADR-018). Nothing about the mode is sent to the backend or stored in the database.
-- **R93 Storage not available:** if `localStorage` can't be read or written (for example, it's blocked), the app starts in light mode, the toggle still switches mode for the rest of the visit, and nothing is written to the console.
-- **R94 Light mode unchanged:** in light mode every screen looks exactly as it did before dark mode was added, apart from the toggle in the top bar and two fixes the product owner approved on 26 Nov 2026: a focused secondary button now shows the focus ring, and chart tooltip items are in Midnight ink instead of their series' Sea Green or Sea Mist (1.9:1 and 1.5:1 on white before).
+- **R90 Theme choice:** the user menu (R106), on every page and section, has a Theme choice of Light, Dark and System (section 3.9 Components). Choosing one, by clicking it or with the arrow keys and Enter or Space, changes the mode at once, with no reload, and keeps the page, its scroll position, and what's typed in its forms. The menu stays open, so the change can be seen. The dark mode button that used to be in the top bar is gone.
+- **R91 Default:** Light is the default. The app starts in light mode the first time, and whenever no valid choice is saved *[Assumption: the default stays Light rather than System, so a first visit looks as it did before]*.
+- **R92 Remembered:** the choice is saved in the browser's `localStorage` under `accountable.theme`, as `light`, `dark` or `system`, and the mode in use is applied as `data-theme="dark"` on the `<html>` element (no attribute means light). It's applied before the page first paints, System included, so a reload in dark mode never flashes light. It's kept after a reload, a restart of the app, a restart of the browser and signing out. It's per browser, not per person: another browser, or a private window, starts in light mode, and someone else signing in on the same browser keeps it (ADR-018). Nothing about the mode is sent to the backend or stored in the database.
+- **R93 Storage not available:** if `localStorage` can't be read or written (for example, it's blocked), the app starts in light mode, the theme choice still changes the mode for the rest of the visit, and nothing is written to the console.
+- **R94 Light mode unchanged:** in light mode every screen looks exactly as it did before dark mode was added, apart from the top bar, which now has the search box and the user menu button where the dark mode button was, and two fixes the product owner approved on 26 Nov 2026: a focused secondary button now shows the focus ring, and chart tooltip items are in Midnight ink instead of their series' Sea Green or Sea Mist (1.9:1 and 1.5:1 on white before).
 - **R95 Everything follows the mode:** every page, panel, table, form, side panel, dialog, menu, chart, tooltip, empty state, banner and error message uses the current mode's tokens. Changing mode changes them all at once.
+- **R96 System:** with System chosen, the mode follows the device's light or dark setting (`prefers-color-scheme`). When the device changes it, the app follows at once, with no reload, keeping the page, its scroll position and what's typed. When the browser doesn't say, System means light.
 
 #### Writing
 
