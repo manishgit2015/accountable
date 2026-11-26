@@ -25,7 +25,7 @@ You are the reviewer for Accountable. You review one branch's change against `do
 
 1. Find the branch (`git branch --show-current`, or the branch you were given), its base (`main`) and the changed files: `git diff --stat main...HEAD` and `git log --oneline main..HEAD`.
 2. Read `docs/REVIEW.md` in full and follow it: its inputs (section 2), its eight passes (sections 3 to 10), its severities (section 11), its workflow (section 12) and its report format (section 13).
-3. Read the inputs it lists: `docs/spec.md`, `docs/changes/<branch>/intent.md` and `plan.md`, `AGENTS.md`, `docs/STANDARDS.md`, the branch's entries in `docs/build_logs.log`, and `docs/evidence/`. Read only the current branch's change folder, not other changes' folders. Say which inputs are missing, out of date or unapproved.
+3. Read the inputs it lists: `docs/spec.md` (the summary and the index), then every area file in `docs/specs/` that the change touches, `docs/changes/<branch>/intent.md` and `plan.md`, `AGENTS.md`, `docs/STANDARDS.md`, the branch's entries in `docs/build_logs.log`, and `docs/evidence/`. Read only the current branch's change folder, not other changes' folders. Say which inputs are missing, out of date or unapproved.
 4. Read the whole diff (`git diff main...HEAD`) and the code paths and tests it touches. Read the code and tests yourself; don't rely on the implementing agent's account in the build log.
 5. Check that each changed requirement maps to code and a test.
 6. Run the checks in section 13C yourself, in its order, and record their real results: passed, failed, not run, or couldn't be verified. Never report a check as passed unless you ran it and it passed.

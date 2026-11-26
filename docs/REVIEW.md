@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 1.0 (22 Nov 2026) |
+| Version | 1.1 (26 Nov 2026: the spec split into `docs/spec.md` and area files in `docs/specs/`). 1.0 (22 Nov 2026). |
 | Owner | The engineer (the project owner) |
 | Applies to | Every change to Accountable, whether written by a coding agent or by hand, before it merges into `main` |
 | Status | Approved by the engineer, 22 Nov 2026 |
@@ -23,7 +23,8 @@ Read these before reviewing:
 
 | Input | What it gives |
 |---|---|
-| `docs/spec.md` | The whole product: acceptance and success criteria (AC1–AC9, SC1–SC5, section 1.4), requirements (R, NFR, SEC, REL, OBS, DEP, ENG), contracts (section 5), the data design (section 6) and the decision log (section 16.3) |
+| `docs/spec.md` | The product's summary, and the index of the area files: which file holds each section and each ID |
+| `docs/specs/*.md` | The whole product, one file per area: acceptance and success criteria (AC1–AC9, SC1–SC5, section 1.4, `overview.md`), requirements (R, NFR, SEC, REL, OBS, DEP, ENG, in the file the index gives), contracts (section 5, `api.md`), the data design (section 6, `data.md`) and the decision log (section 16.3, `governance.md`). Read every area file the change touches, and any other its code paths reach. |
 | `docs/changes/<branch name>/intent.md` | The change's approved scope and its own acceptance criteria |
 | `docs/changes/<branch name>/plan.md` | The change's approved tasks, files, risks and verification cases (V IDs) |
 | `AGENTS.md` | The repository's rules and checks |
@@ -39,13 +40,14 @@ Read these before reviewing:
 
 Check that:
 
-- the change does what the spec says: the requirements in spec section 3, the stage effects in section 4.2, the field rules in R21, the delete rules in R30–R36, and the dashboard definitions in R70–R79
+- the change does what the spec says: the requirements in spec section 3 (`records.md`, `deals.md`, `pipeline.md`, `dashboard.md`, `sample-data.md`, `look-and-feel.md`), the stage effects in section 4.2 (`deals.md`), the field rules in R21 and the delete rules in R30–R36 (`records.md`), and the dashboard definitions in R70–R79 (`dashboard.md`)
 - the acceptance criteria it touches still hold
-- requests and responses match spec 5 exactly (names, nullability, status codes, the error format)
-- edge cases are handled (spec 4.5): cleared links, reopened deals, stale drops, month boundaries, empty data
+- requests and responses match spec 5 (`api.md`) exactly (names, nullability, status codes, the error format)
+- edge cases are handled (spec 4.5, `journeys.md`): cleared links, reopened deals, stale drops, month boundaries, empty data
 - "today", "this month" and dates come from the one clock, in local time
-- nothing outside the approved scope was added (the change's intent, and spec section 1.3)
-- every behavior in the code is described in `docs/spec.md`: flag code that the spec doesn't describe (behavior, endpoints, fields, settings, commands), whether the fix is to add it to the spec in this change or to remove the code
+- nothing outside the approved scope was added (the change's intent, and spec section 1.3, `overview.md`)
+- every behavior in the code is described in the spec (`docs/spec.md` and the area files in `docs/specs/`): flag code that the spec doesn't describe (behavior, endpoints, fields, settings, commands), whether the fix is to add it to the spec in this change or to remove the code
+- the change updated every area file its behavior, contracts, data, decisions or tests affect, and `docs/spec.md` when its summary, index or ID table changed: each section and ID still sits in the file the index names, and no area file describes the product as it was before the change
 
 **Blocking:**
 - wrong business behavior
@@ -53,12 +55,13 @@ Check that:
 - data loss or corruption
 - a regression
 - a contract that doesn't match spec 5
+- an area file the change affects that still describes the product as it was before the change
 
 ## 4. Pass 2: Architecture and design
 
 Check that:
 
-- the boundaries in spec 7.1 and ENG-1 hold: routers do HTTP only, services hold the use cases and transactions, `rules.py` is pure, and only `src/api/` calls `fetch`
+- the boundaries in spec 7.1 (`architecture.md`) and ENG-1 (`engineering.md`) hold: routers do HTTP only, services hold the use cases and transactions, `rules.py` is pure, and only `src/api/` calls `fetch`
 - SQL goes only through SQLAlchemy Core, with text SQL only for the PRAGMAs in `db.py` (E-1). Schema changes go only through Alembic migrations.
 - new dependencies are popular, maintained, needed and recorded (ENG-5)
 - the approved decisions (ADRs) are followed, and any change to one was approved
@@ -72,7 +75,7 @@ Check that:
 
 ## 5. Pass 3: Security and data protection
 
-Accountable has no sign-in by design (spec section 1.3, SEC-4). Its protection is staying on one computer, so check that:
+Accountable has no sign-in by design (spec section 1.3, SEC-4, in `overview.md` and `security.md`). Its protection is staying on one computer, so check that:
 
 - both servers listen on `127.0.0.1` only, and the Host and Origin checks, body limit and JSON-only rule are intact (SEC-1–SEC-3, SEC-7)
 - every input is validated on the server (R21), and unknown fields are refused
@@ -95,7 +98,7 @@ Sign-in and permission checks aren't applicable until a change adds users. AI-sp
 Check that:
 
 - each request runs in one transaction, and moves, deletes, seed and clear are all or nothing (REL-2)
-- the durability settings are unchanged (REL-1, spec 6.3)
+- the durability settings are unchanged (REL-1 in `reliability.md`, spec 6.3 in `data.md`)
 - timeouts are bounded (REL-4), reads are retried once at most, and changes are never retried automatically (REL-5)
 - the failure paths in REL-6 to REL-12 still work: busy database, backend unreachable, rollback on a failed move, start-up failures, stale positions, error boundary
 - an existing database is never deleted, reset or reseeded by the app itself (REL-9)
@@ -113,7 +116,7 @@ Check that:
 - code is clear, cohesive and named understandably, and follows the existing conventions
 - the changed code and tests follow the coding standards in `docs/STANDARDS.md`
 - duplication that would cost real maintenance is avoided
-- error messages help the user without leaking details (spec 3.9 Writing)
+- error messages help the user without leaking details (spec 3.9 Writing, `look-and-feel.md`)
 - the docs are updated where the change needs it: `docs/STATUS.md`, the build log, and the runbook
 - there's no dead code
 
@@ -127,7 +130,7 @@ Check that the tests prove the behavior:
 |---|---|
 | Unit | Business rules, validation, boundaries, error paths and stage effects (pytest for `rules.py` and schemas, Vitest for `lib/` and components) |
 | Integration | API contracts, persistence, cascades, migrations, the security boundary and dependency failures (pytest with a temporary SQLite database) |
-| End to end | The journeys in spec 4.1, negative cases and regressions (Playwright in the installed Chrome) |
+| End to end | The journeys in spec 4.1 (`journeys.md`), negative cases and regressions (Playwright in the installed Chrome) |
 | Nonfunctional | Performance (`npm run test:perf`), security (V-S cases), recovery and keyboard use, where the change touches them |
 
 Ask:

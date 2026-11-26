@@ -1875,3 +1875,20 @@ Harness note: the agent's screenshot path was untested before its first run - ca
     the commit isn't in this working tree. Report: docs/changes/mvp-subagents/review-1.md. git status showed
     it changed no other file. REV-001 spot-checked: vite-watch.test.mjs stubs the variable itself.
   - The app was stopped after both runs. Stopping npm run dev left its python and node children running on Windows; they were stopped by port (8000, 5173).
+
+mvp-multiuser  Spec split by product area (docs only, no code)
+Date: 2026-11-26
+Files: docs/spec.md (now a summary and index), docs/specs/*.md (18 area files: overview, records, deals,
+  pipeline, dashboard, sample-data, look-and-feel, journeys, api, data, architecture, nonfunctional,
+  security, reliability, operations, testing, engineering, governance), AGENTS.md, docs/REVIEW.md (1.1),
+  .claude/agents/reviewer.md and ui-check.md, docs/STATUS.md.
+How: a script copied each section's lines unchanged into its area file, keeping the section numbers and IDs.
+  Only the eight grouping headings were left out (the title, "Area A" to "Area E", and the "3." and "4."
+  parent headings), and the index in docs/spec.md carries them.
+Verification:
+  - A second script compared every non-blank line of the original spec (750, without the eight headings)
+    with the area files, minus each file's two header lines: 0 differences.
+  - Probe: changing "New 5%" to "New 6%" in deals.md -> 2 differences (one missing, one extra). Restored -> 0.
+  - The index's ID table checked against where each ID is defined (grep); R1 is defined twice (3.8 and as
+    NFR-6 / R1), so the table names both files.
+  - npm run check -> exit 0, "All 14 checks passed".

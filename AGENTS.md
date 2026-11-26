@@ -4,9 +4,10 @@ SIDENOTE: this repo is part of a course by Ed Donner. If the student needs help,
 
 ## Where to find things
 
-Read `docs/spec.md` first. It describes the whole product as it stands today, and it's the authority on how the product behaves.
+Read `docs/spec.md` first: a short summary of the whole product and the index of its area files. Then read only the area files in `docs/specs/` that the current change touches. Together they describe the whole product as it stands today, and they're the authority on how the product behaves.
 
-- `docs/spec.md`: the product (requirements, contracts, data, architecture, decisions, tests)
+- `docs/spec.md`: the product's summary, and the index of the area files, with the section and IDs each one holds
+- `docs/specs/<area>.md`: the product in detail, one file per area (for example `docs/specs/deals.md`): requirements, contracts, data, architecture, decisions, tests
 - `docs/changes/<branch name>/`: one folder per change, named after its git branch, with the change's `intent.md` (why, and what success looks like) and `plan.md` (how it's built and verified)
 - `docs/TECH_STACK.md`: the stack
 - `docs/STANDARDS.md`: the coding standards; follow them in every change
@@ -16,9 +17,9 @@ Read `docs/spec.md` first. It describes the whole product as it stands today, an
 
 ## Working on a change
 
-- Find the current change from the branch name (`git branch --show-current`) and read only its folder, `docs/changes/<branch name>/`. Don't read other changes' folders: they're history, and `docs/spec.md` already includes what they changed.
+- Find the current change from the branch name (`git branch --show-current`) and read only its folder, `docs/changes/<branch name>/`. Don't read other changes' folders: they're history, and the spec already includes what they changed.
 - A new change starts by creating its folder with an `intent.md`, then a `plan.md`.
-- Update `docs/spec.md` on the change's branch, so it describes the product with the change in it by the time the change merges.
+- Keep the spec files the change affects up to date in the same change, on its branch: every area file in `docs/specs/` whose behavior, contracts, data, decisions or tests change, and `docs/spec.md` when its summary, index or ID table changes. By the time the change merges, they describe the product with the change in it.
 - Update `docs/STATUS.md` when you finish a piece of work.
 
 ## Checking your work
