@@ -264,7 +264,8 @@ All colors are CSS custom properties in one tokens file (`frontend/src/styles/to
 | Token | Light | Dark | Use |
 |---|---|---|---|
 | `--page` | `#F0F4F5` | `#04232E` | Page background |
-| `--panel` | `#FFFFFF` | `#000000` | Panels, cards, tables, the top bar, side panels, dialogs, chart tooltips |
+| `--panel` | `#FFFFFF` | `#000000` | Panels, cards, tables, the top bar, form fields |
+| `--raised` | `#FFFFFF` | `#0E3240` (text 5.1:1 or more; 1.55:1 against `--panel`) | What floats above panels: row menus, side panels, the delete dialog, chart tooltips and a lifted pipeline card. In dark mode a black menu on a black table would lose its edge, because shadows don't show on black. |
 | `--ink` | `#073B4C` Midnight (12.1:1) | `#CDD8DB` Sea Mist (14.4:1) | Main text |
 | `--ink-muted` | `#5B7A85` (4.6:1) | `#8AA3AC` (7.9:1; 6.2:1 on the page) | Secondary text. On white only in light mode; on the panel or the page in dark mode. |
 | `--sea-green-text` | `#047857` (5.5:1) | `#5EEBC4` (14.2:1) | Sea Green as text |
@@ -276,6 +277,7 @@ All colors are CSS custom properties in one tokens file (`frontend/src/styles/to
 | `--cerulean-tint` | `#E3F1F6` | `#0A3443` | Behind timeline icons, which are in `--cerulean-text` (6.4:1 in dark mode) |
 | `--drop-fill` | `rgba(255,255,255,.5)` | `rgba(205,216,219,.08)` | The drop gap on the pipeline |
 | `--overlay` | `rgba(7,59,76,.28)` | `rgba(0,0,0,.6)` | Behind side panels and dialogs |
+| `--line` | `#CDD8DB` Sea Mist | `#62828E` (5.1:1; 3.3:1 on `--raised`; 4.0:1 on the page) | Form field outlines, the dashed "Add deal" buttons and the drop gap on the pipeline. In dark mode it's at least 3:1 on every surface it sits on (the panel, the raised surface of side panels and dialogs, and the page), as a control's edge, and quieter than Sea Mist on black. |
 | `--shadow` | `0 1px 2px rgba(7,59,76,.06), 0 4px 16px rgba(7,59,76,.04)` | `0 1px 2px rgba(0,0,0,.5), 0 4px 16px rgba(0,0,0,.4)` | Panels and secondary buttons |
 | `--shadow-lift` | `0 2px 4px rgba(7,59,76,.08), 0 12px 32px rgba(7,59,76,.14)` | `0 2px 4px rgba(0,0,0,.6), 0 12px 32px rgba(0,0,0,.5)` | A lifted card, side panels, menus |
 | `--focus-ring` | `0 0 0 3px rgba(17,138,178,.45)` | `0 0 0 3px rgba(91,192,227,.6)` | Keyboard focus |
@@ -304,11 +306,11 @@ All colors are CSS custom properties in one tokens file (`frontend/src/styles/to
 
 #### Components
 
-- **Buttons:** primary is a Sea Green fill with Midnight text, 8px corners and 36px high. Secondary is the panel color (white in light mode) with a soft shadow. Destructive is a Raspberry fill with bold white text, used only in delete dialogs.
+- **Buttons:** primary is a Sea Green fill with Midnight text, 8px corners and 36px high. Secondary is the raised color (`--raised`: white in light mode, so a dark-mode button keeps its edge on a black panel) with a soft shadow. Focused, it shows the focus ring on top of its shadow. Destructive is a Raspberry fill with bold white text, used only in delete dialogs.
 - **Badges:** pill shaped, 12px/600. New, Proposal, Negotiation, Won, Lead and Customer badges are filled with their stage or status color, with Midnight text. Qualified (stage and status) badges are filled with `--cerulean-strong`, and Late and Lost badges with `--raspberry-strong`, both with white text (ADR-017).
-- **Mode toggle:** a 36px icon button in the top bar, styled like a secondary button. It shows a moon in light mode and a sun in dark mode (lucide-react, already a dependency), its accessible name is "Dark mode", and `aria-pressed` is true while dark mode is on (R90).
+- **Mode toggle:** a 36px icon button in the top bar, styled like a secondary button. It shows an 18px moon in light mode and an 18px sun in dark mode (lucide-react, already a dependency), its accessible name is "Dark mode", and `aria-pressed` is true while dark mode is on (R90).
 - **Tables:** header row in 12px/500 Muted ink, rows 48px high, a row hover in the page color (`--page`), and numbers right-aligned in JetBrains Mono.
-- **Pipeline cards:** white, 10px corners and 12px padding. A 30px rounded square with the organization's initials sits beside the name (14px/600) and "organization · contact" in Muted ink. Below them come the value and the date or Late badge, then a 5px probability meter in the stage color with the percentage. "Add deal" is a dashed outline button at the top of each open column. A dragged card lifts with a larger shadow, and the drop gap is a dashed Sea Mist placeholder.
+- **Pipeline cards:** white, 10px corners and 12px padding. A 30px rounded square with the organization's initials sits beside the name (14px/600) and "organization · contact" in Muted ink. Below them come the value and the date or Late badge, then a 5px probability meter in the stage color with the percentage. "Add deal" is a dashed outline button at the top of each open column. A dragged card lifts with a larger shadow, and the drop gap is a dashed placeholder in the line color (`--line`, Sea Mist in light mode).
 - **Closed rows:** white and 10px corners. Each is one line: the name (shortened with an ellipsis) and organization on the left, the short value and date on the right.
 - **Timeline:** round icons. Note, call and email use Cerulean on a light tint, and stage changes use the destination stage's color.
 
@@ -318,13 +320,14 @@ All colors are CSS custom properties in one tokens file (`frontend/src/styles/to
 2. Funnel (R74), 5 columns; won and lost bars (R72), 4 columns; donut (R73), 3 columns.
 3. Follow-ups (R76), 6 columns; recent activity (R75), 6 columns.
 
-Charts have no borders, their text is Instrument Sans 12px, and their tooltips sit in panels (`--panel`, with `--ink` text and `--shadow`). Every chart color, including axis text, gridlines, dots and tooltips, is a token, so charts follow the mode with no chart-specific dark rule.
+Charts have no borders, their text is Instrument Sans 12px, and their tooltips sit on the raised surface (`--raised`, with `--shadow`). All tooltip text is `--ink`, including each item's line: not the series color, which Recharts uses by default and which is a fill too light for text on white. Every chart color, including axis text, gridlines, dots and tooltips, is a token, so charts follow the mode with no chart-specific dark rule.
 
 #### Dark mode
 
 Dark mode is the same layout, type, spacing and components as light mode, with the dark token values above. Following the brand:
 
-- The page is `#04232E` and panels and cards are black (`#000000`), rounded with no outline. That includes the top bar, tables, pipeline cards, closed rows, side panels, dialogs, menus, chart tooltips and messages such as the "Can't reach Accountable" banner and the board's error message.
+- The page is `#04232E` and panels and cards are black (`#000000`), rounded with no outline. That includes the top bar, tables, pipeline cards, closed rows, form fields, and messages such as the board's error message. The "Can't reach Accountable" banner keeps its Raspberry fill.
+- What floats above panels (row menus, side panels, the delete dialog, chart tooltips and a lifted pipeline card) is on `--raised` (`#0E3240`), so it keeps its edge against black. Form fields inside them stay black, with their `--line` outline.
 - Main text is Sea Mist, and Sea Green, Marigold, Coral, Cerulean and Raspberry text use their lighter dark-mode `-text` values.
 - The hero panel stays Midnight (`--midnight`), with the same white figures, Sea Mist labels, Sea Green line and `#0F4C60` gridlines as in light mode.
 - The active tab and the selected segmented button (the contact status filter) stay Midnight pills with white text, and the wordmark keeps its Midnight square and Sea Green "A".
@@ -333,11 +336,11 @@ Dark mode is the same layout, type, spacing and components as light mode, with t
 
 ### 3.10 Light and dark mode
 
-- **R90 Toggle:** the top bar, on every page and section, has a mode toggle (section 3.9 Components). Clicking it, or pressing Enter or Space on it, switches between light and dark mode at once, with no reload, and keeps the page, its scroll position, any open form and what's typed in it.
+- **R90 Toggle:** the top bar, on every page and section, has a mode toggle (section 3.9 Components). Clicking it, or pressing Enter or Space on it, switches between light and dark mode at once, with no reload, and keeps the page, its scroll position, and what's typed in its forms.
 - **R91 Default:** light mode is the default. The app starts in light mode the first time, and whenever no valid choice is saved. It doesn't follow the device's own light or dark setting (section 1.3).
 - **R92 Remembered:** the choice is saved in the browser's `localStorage` under `accountable.theme`, as `light` or `dark`, and applied as `data-theme="dark"` on the `<html>` element (no attribute means light). It's applied before the page first paints, so a reload in dark mode never flashes light. It's kept after a reload, a restart of the app and a restart of the browser. It's per browser: another browser, or a private window, starts in light mode (ADR-018). Nothing about the mode is sent to the backend or stored in the database.
 - **R93 Storage not available:** if `localStorage` can't be read or written (for example, it's blocked), the app starts in light mode, the toggle still switches mode for the rest of the visit, and nothing is written to the console.
-- **R94 Light mode unchanged:** in light mode every screen looks exactly as it did before dark mode was added, apart from the toggle in the top bar.
+- **R94 Light mode unchanged:** in light mode every screen looks exactly as it did before dark mode was added, apart from the toggle in the top bar and two fixes the product owner approved on 26 Nov 2026: a focused secondary button now shows the focus ring, and chart tooltip items are in Midnight ink instead of their series' Sea Green or Sea Mist (1.9:1 and 1.5:1 on white before).
 - **R95 Everything follows the mode:** every page, panel, table, form, side panel, dialog, menu, chart, tooltip, empty state, banner and error message uses the current mode's tokens. Changing mode changes them all at once.
 
 #### Writing
@@ -407,7 +410,7 @@ Lead, qualified and customer can each be set by hand to any other. The only auto
 | A search with no matches | "No matches for 'xyz'", with a clear-search link |
 | The month boundary, at midnight on the last day | Figures follow local time each time the dashboard loads (R77) |
 | Clearing while the app is open | Allowed. The next refresh shows empty states (REL-10). |
-| The mode is changed while a side panel or dialog is open | It stays open, with what was typed, and changes mode with the rest of the page (R90, R95) |
+| The mode is changed while a form on the page has something typed in it (the Log activity form, a search box) | The form keeps what was typed, and the page and its scroll position stay (R90). Side panels and dialogs are modal, so the toggle can't be reached while one is open. |
 | `localStorage` holds something other than `light` or `dark` under `accountable.theme` | Treated as no choice: light mode (R91). The next toggle overwrites it. |
 | `localStorage` is blocked | R93 |
 | Two tabs are open and the mode is changed in one | The other tab keeps its mode until it's reloaded *[Assumption]* |
@@ -786,7 +789,7 @@ These steps go in `docs/STATUS.md` when the app is built.
 | V-F08 | `pages/pipeline/DealCard.test.tsx`: Late badge, meter width | R62 |
 | V-F09 | `pages/dashboard/FollowUps.test.tsx`: groups, later count, ticking removes | R76 |
 | V-F10 | `components/ErrorBoundary.test.tsx` and the API client: fallback screen, timeout message, request ID shown | REL-4, REL-12, OBS-3 |
-| V-F11 | `lib/theme.test.ts` and `components/ThemeToggle.test.tsx`: light by default, an invalid saved value means light, the toggle sets `data-theme` and saves the choice, `aria-pressed` and the icon follow the mode, and blocked storage still switches with no error. `styles/tokens.test.ts`: every text token meets 4.5:1 on the surfaces it's used on, in both modes, and no color is written anywhere in `frontend/src` except `tokens.css`. | R90–R93, NFR-7, ENG-1 |
+| V-F11 | `lib/theme.test.ts` and `components/ThemeToggle.test.tsx`: light by default, an invalid saved value means light, the toggle sets `data-theme` and saves the choice, `aria-pressed` and the icon follow the mode, and blocked storage still switches both ways with no error, both when its methods throw and when reading `window.localStorage` itself throws (site data blocked). `styles/tokens.test.ts`: the dark block is found (its checks fail rather than skip), every text token meets 4.5:1 on the surfaces it's used on in both modes, `--line` meets 3:1 on the panel, raised surface and page in dark mode, and no color is written anywhere in `frontend/src` except `tokens.css`. | R90–R93, NFR-7, ENG-1 |
 | V-E00 | `e2e/fixtures.ts`, in every test: no console errors and no request outside localhost | R2, R7 |
 | V-E01 | `start.spec.ts`: lands on the dashboard with sample data on every screen | AC1, R4 |
 | V-E02 | `organizations.spec.ts`: add, search, sort, edit, delete with counts, links show "None" | AC2, R30, R31, R34 |
@@ -798,15 +801,15 @@ These steps go in `docs/STATUS.md` when the app is built.
 | V-E08 | `activities.spec.ts`: log each type with a follow-up, on the deal's and contact's timelines, on the dashboard until done | AC5, R53, R76 |
 | V-E09 | `commands.spec.ts`: after `clear --yes`, every screen is empty but works. After `seed --yes`, the sample data is back. | AC2, R4, R78 |
 | V-E10 | `persistence.spec.ts`: survives a reload, and survives a backend restart | AC2, R3 |
-| V-E11 | `keyboard.spec.ts`: add, edit, delete and drag with the keyboard only, focus always visible | NFR-7, R66 |
+| V-E11 | `keyboard.spec.ts`: add, edit, delete and drag with the keyboard only, focus always visible; and secondary buttons show the focus ring in both modes. Focus counts as visible only with an outline, the `--focus-ring` color itself, a highlighted menu item, or Chrome's own outline on a date field's calendar button; an ordinary shadow doesn't count. | NFR-7, R66 |
 | V-E12 | `layout.spec.ts`: no horizontal scroll at 1024px and 1280px | R5 |
-| V-E13 | `theme.spec.ts`: starts in light mode; the toggle is on every section; switching to dark changes the page and panel colors on the dashboard, the pipeline, a table, a record page, a side panel and a delete dialog; the choice survives a reload and switching back is remembered too; in light mode the page and panel colors are the light tokens | R90–R92, R94, R95 |
+| V-E13 | `theme.spec.ts`: starts in light mode with the light tokens; the toggle is on every section and a record page; switching to dark changes the page, panel and raised colors on the dashboard (with a chart tooltip), the pipeline, a table, its row menu, a delete dialog, the Add deal side panel and a record page; a search box and the Log activity form keep what's typed; the choice survives a reload, is already on `<html>` when `<body>` first exists, and switching back is remembered too; Tab reaches the toggle, its focus ring shows in both modes, and Space and Enter switch it; with reading `localStorage` blocked, the app starts light and the toggle switches both ways with no console error; chart tooltip items are in `--ink` in both modes | R90–R95, NFR-7 |
 | V-S01–V-S10 | `test_security.py` and `security.spec.ts`: each negative case in section 10, plus a check that nothing listens on anything but `127.0.0.1` | SEC-1–SEC-8 |
 | V-P01 | `e2e/perf/` plus a data generator: page, API and search timings at 2 × volume | R6, NFR-1–NFR-3, NFR-13 |
 | V-M01 | The coding agent's end-to-end walkthrough, every screen by eye, then the product owner's review | AC9 |
 | V-M02 | A fresh clone on Windows, macOS and Linux: first run, then a second run with the network off | AC1, R1, R2, NFR-6 |
 | V-M03 | Crash test: kill the backend process (`kill -9`, or Task Manager) straight after a save, restart, and check the change | AC8, REL-1 |
-| V-M04 | Every screen compared by eye with mockup 1 and the brand rules, in light mode and in dark mode. Light mode is also compared with screenshots taken before dark mode, to confirm nothing changed but the toggle. | SC5, NFR-9, R94, R95 |
+| V-M04 | Every screen compared by eye with mockup 1 and the brand rules, in light mode and in dark mode. Light mode is also compared with screenshots taken before dark mode (`e2e/visual/dark-mode.spec.ts`: six screens at 1440px, pixel for pixel), to confirm nothing changed but the toggle and the approved fixes in R94; the top bar at 1024px and 1280px, and the screens those six don't cover, are checked by eye. The approved dashboard and pipeline screenshots in `docs/changes/mvp-darkmode/` are replaced only when `ACCOUNTABLE_SCREENSHOTS=1` is set. | SC5, NFR-9, R94, R95 |
 | V-M05 | Someone new answers the SC1 questions with no instructions | SC1, NFR-8 |
 | V-M06 | Two weeks of real use, with the product owner checking SC2–SC4 | SC2–SC4 |
 
@@ -815,7 +818,7 @@ These steps go in `docs/STATUS.md` when the app is built.
 | ID | Requirement |
 |---|---|
 | DEP-1 | **Environments.** *Local* is the user's or a developer's computer, using `npm run dev`, ports 8000 and 5173, and `backend/data/accountable.db`. *Test* is automated, using ports 8001 and 5174 and a temporary database. There's no shared or hosted environment. |
-| DEP-2 | **Configuration**, all optional with defaults: `ACCOUNTABLE_DB` (the database path), `ACCOUNTABLE_API_PORT` (8000), `ACCOUNTABLE_WEB_PORT` (5173), `ACCOUNTABLE_LOG_LEVEL` (INFO) and `ACCOUNTABLE_RELOAD` (off, E-2). The test runs alone also set `ACCOUNTABLE_FIXED_NOW`, which fixes the backend clock; `npm run dev` never sets it, and start-up logs a warning when it is set. There are no secrets. |
+| DEP-2 | **Configuration**, all optional with defaults: `ACCOUNTABLE_DB` (the database path), `ACCOUNTABLE_API_PORT` (8000), `ACCOUNTABLE_WEB_PORT` (5173), `ACCOUNTABLE_LOG_LEVEL` (INFO) and `ACCOUNTABLE_RELOAD` (off, E-2). The test runs alone also set `ACCOUNTABLE_FIXED_NOW`, which fixes the backend clock; `npm run dev` never sets it, and start-up logs a warning when it is set. `ACCOUNTABLE_SCREENSHOTS=1`, read only by the visual suite, replaces the approved screenshots in `docs/changes/mvp-darkmode/`. There are no secrets. |
 | DEP-3 | **First run.** `predev` runs `scripts/ensure-installed.mjs`, which checks for Node 24+ and uv with a clear message if either is missing, then runs `npm install` and `uv sync` only if they haven't been run. Then both servers start. |
 | DEP-4 | **Migrations.** Alembic runs `upgrade head` on start-up, before serving requests. A new database is created by the migrations, then seeded. Migrations are forward-only, and every one is tested on a database holding data (V-B13). |
 | DEP-5 | **Release.** The version is kept the same in `package.json`, `pyproject.toml` and `backend/app/config.py` (`APP_VERSION`, shown by health). A release is a git tag such as `v0.1.0` with notes in `docs/STATUS.md`, made only when the releasing change's definition of done (in its plan) is met and the product owner approves. The current release is `v0.1.0`. |
@@ -892,8 +895,8 @@ Architecture decisions (ADR) and engineering decisions (E) that shape the produc
 | ADR-015 | The `closed_at` column drives the month figures | See C-3 |
 | ADR-016 | Duplicate names are allowed | See R22 |
 | ADR-017 | Small text with a white color uses darker fills: badges stay at 12px, and their Cerulean and Raspberry fills become the darker `#0E7194` and `#D12E57` (now `--cerulean-strong` and `--raspberry-strong`, ADR-019) | Resolves a contradiction between the badge style and the contrast rule in 3.9 |
-| ADR-018 | The light or dark choice is kept in the browser's `localStorage`, not in the database | No backend, API or migration change, and it can be applied before the first paint. The alternative, a settings row with an API, would follow the app across browsers, but adds a migration, an endpoint and a request before the page can be colored. Approved 25 Nov 2026 (`docs/changes/dark-mode/intent.md`). |
-| ADR-019 | The dark palette is derived from the brand: page `#04232E`, black panels, Sea Mist ink, lighter `-text` colors, and unchanged fills. Tokens used as fills, or for text on fills, are separate from text tokens and don't change with the mode (`--midnight`, `--cerulean-strong`, `--raspberry-strong`). | A `-text` token can't be both a text color that lightens in dark mode and a fill under white text, and `--ink` can't be both main text and Midnight on fills. Splitting them keeps one tokens file and no per-component overrides. Approved by the product owner from the screenshots (V-M04). |
+| ADR-018 | The light or dark choice is kept in the browser's `localStorage`, not in the database | No backend, API or migration change, and it can be applied before the first paint. The alternative, a settings row with an API, would follow the app across browsers, but adds a migration, an endpoint and a request before the page can be colored. Approved 25 Nov 2026 (`docs/changes/mvp-darkmode/intent.md`). |
+| ADR-019 | The dark palette is derived from the brand: page `#04232E`, black panels, Sea Mist ink, lighter `-text` colors, and unchanged fills. Tokens used as fills, or for text on fills, are separate from text tokens and don't change with the mode (`--midnight`, `--cerulean-strong`, `--raspberry-strong`). | A `-text` token can't be both a text color that lightens in dark mode and a fill under white text, and `--ink` can't be both main text and Midnight on fills. Splitting them keeps one tokens file and no per-component overrides. Approved by the product owner on 26 Nov 2026, from the screenshots in `docs/changes/mvp-darkmode/` (V-M04). |
 | E-1 | The connection `PRAGMA` statements in `db.py` are the only text SQL | SQLite's settings in section 6.3 can only be set that way. A test checks it's the only text SQL (V-B02). |
 | E-2 | Uvicorn runs without reload by default, and `ACCOUNTABLE_RELOAD=1` turns reload on for development | One command, `npm run dev`, serves both users and developers |
 | E-3 | NFR-1 is measured as in-app navigation after the first load; the cold first load is recorded without a threshold | Under ADR-010 the first load compiles modules on demand |
@@ -935,7 +938,7 @@ Places where the product today falls short of this spec. Each is tracked in `doc
 
 - **REL-7:** saving is blocked while the backend can't be reached in the forms, dialogs, the deal page and timelines, but not on the pipeline board (drops) or the dashboard's follow-up checkboxes. Those fail and roll back with a message instead (review finding REV-001, `docs/reviews/review-report.md`).
 - **V-M02** has been run on Windows only, and **V-M05** hasn't been run.
-- **NFR-7, light mode:** a late date in Raspberry (`--raspberry-text`) on a hovered table row, whose hover is the page color, is 4.47:1, just under 4.5:1. It predates dark mode, and stays because light mode mustn't change in the `dark-mode` change (R94). `styles/tokens.test.ts` lists it as the one known gap. Dark mode has no such gap.
+- **NFR-7, light mode:** Raspberry text (`--raspberry-text`) on the page color is 4.47:1, just under 4.5:1. That pair shows in three places: a late date on a hovered table row (the hover is the page color), every form's error message (`.form-error`, always), and the highlighted "Delete" item in a row menu. It predates dark mode, and stays because light mode mustn't change in the `mvp-darkmode` change (R94). `styles/tokens.test.ts` lists it as the one known gap. Dark mode has no such gap.
 
 ## 18. Ownership
 
@@ -943,4 +946,4 @@ Places where the product today falls short of this spec. Each is tracked in `doc
 |---|---|
 | **Owner** | The product owner (the project owner) |
 | **Describes** | Accountable `v0.1.0` |
-| **Last changed by** | The change `dark-mode` (`docs/changes/dark-mode/`). Before it: the change `mvp` (`docs/changes/mvp/`), and the docs reorganization that made this spec the description of the whole product. |
+| **Last changed by** | The change `mvp-darkmode` (`docs/changes/mvp-darkmode/`). Before it: the change `mvp` (`docs/changes/mvp/`), and the docs reorganization that made this spec the description of the whole product. |

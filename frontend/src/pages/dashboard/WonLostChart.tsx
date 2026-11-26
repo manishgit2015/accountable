@@ -4,7 +4,7 @@ import type { Dashboard } from "../../api/types";
 import { EmptyState } from "../../components/EmptyState";
 import { Panel } from "../../components/Panel";
 import { formatMonth } from "../../lib/format";
-import { TOOLTIP_STYLE } from "./RevenueChart";
+import { TOOLTIP_ITEM_STYLE, TOOLTIP_STYLE } from "./RevenueChart";
 
 const AXIS = { fill: "var(--ink-muted)", fontSize: 12, fontFamily: "var(--sans)" };
 
@@ -44,7 +44,11 @@ export function WonLostChart({ months }: { months: Dashboard["months"] }) {
                 tickFormatter={(v: string) => v.charAt(0)}
               />
               <YAxis tick={AXIS} axisLine={false} tickLine={false} allowDecimals={false} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "var(--tint)", fillOpacity: 0.5 }} />
+              <Tooltip
+                contentStyle={TOOLTIP_STYLE}
+                itemStyle={TOOLTIP_ITEM_STYLE}
+                cursor={{ fill: "var(--tint)", fillOpacity: 0.5 }}
+              />
               <Bar dataKey="won" name="Won" fill="var(--sea-green)" radius={[3, 3, 0, 0]} isAnimationActive={false} />
               <Bar dataKey="lost" name="Lost" fill="var(--sea-mist)" radius={[3, 3, 0, 0]} isAnimationActive={false} />
             </BarChart>

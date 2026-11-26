@@ -4,6 +4,8 @@
   /* Surfaces and ink. --ink is text on panels and the page; text on a fill uses --midnight or --on-fill. */
   --page: #f0f4f5;
   --panel: #ffffff;
+  /* What floats above panels: menus, side panels, dialogs, chart tooltips and a lifted card */
+  --raised: #ffffff;
   --ink: #073b4c;
   --ink-muted: #5b7a85;
   --on-fill: #ffffff;
@@ -32,6 +34,8 @@
   --drop-fill: rgba(255, 255, 255, 0.5);
   /* Behind side panels and dialogs */
   --overlay: rgba(7, 59, 76, 0.28);
+  /* Form field outlines, the dashed "Add deal" buttons and the drop gap on the pipeline */
+  --line: #cdd8db;
 
   /* Stage colors (spec 3.9) */
   --stage-new: var(--sea-mist);
@@ -63,6 +67,7 @@
 :root[data-theme="dark"] {
   --page: #04232e;
   --panel: #000000;
+  --raised: #0e3240; /* 1.55:1 against the black panels, so a menu or dialog keeps its edge */
   --ink: #cdd8db; /* Sea Mist, 14.4:1 */
   --ink-muted: #8aa3ac; /* 7.9:1, 6.2:1 on the page */
 
@@ -75,6 +80,7 @@
   --cerulean-tint: #0a3443;
   --drop-fill: rgba(205, 216, 219, 0.08);
   --overlay: rgba(0, 0, 0, 0.6);
+  --line: #62828e; /* 5.1:1 on the panel, 3.3:1 on --raised, 4.0:1 on the page: quieter than Sea Mist, still an edge */
 
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.4);
   --shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.6), 0 12px 32px rgba(0, 0, 0, 0.5);

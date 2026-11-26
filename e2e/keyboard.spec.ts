@@ -22,13 +22,22 @@ async function focused(page: Page): Promise<Focused> {
       "";
     const style = getComputedStyle(el);
     const outline = style.outlineStyle !== "none" && parseFloat(style.outlineWidth) > 0;
-    const shadow = style.boxShadow !== "none" && style.boxShadow !== "";
+    // The ring itself, not just any shadow: a secondary button's soft shadow isn't a focus indicator. The
+    // ring's color comes from the --focus-ring token, so this holds in light and dark mode alike.
+    const ringColor = /rgba?\([^)]*\)/.exec(
+      getComputedStyle(document.documentElement).getPropertyValue("--focus-ring"),
+    )?.[0];
+    const hasRing = (element: Element) => !!ringColor && getComputedStyle(element).boxShadow.includes(ringColor);
     // A field shows its ring on its wrapper (the search box) in a few places.
     const wrapper = el.closest(".search");
-    const wrapperShadow = !!wrapper && getComputedStyle(wrapper).boxShadow !== "none";
+    // Menu items show focus as a highlighted row (Radix's data-highlighted).
+    const highlighted = el.hasAttribute("data-highlighted");
+    // After a date field's last part, Tab moves to Chrome's own calendar button inside the field, which
+    // Chrome outlines itself: the input stays the active element but no longer matches :focus.
+    const datePicker = /^(date|datetime-local|time)$/.test((el as HTMLInputElement).type) && !el.matches(":focus");
     return {
       description: `${el.tagName.toLowerCase()} "${label.trim().replace(/\s+/g, " ").slice(0, 60)}"`,
-      visible: outline || shadow || wrapperShadow,
+      visible: outline || hasRing(el) || (!!wrapper && hasRing(wrapper)) || highlighted || datePicker,
     };
   });
 }
@@ -186,4 +195,19 @@ test("R66 NFR-7 a pipeline card is reached with Tab, moved with Space and the ar
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Website rebuild");
   await expect(page.getByRole("main")).toContainText("Proposal");
+});
+
+test("NFR-7 secondary buttons show the focus ring in light and dark mode", async ({ page }) => {
+  for (const mode of ["light", "dark"] as const) {
+    await page.goto("/deals");
+    await page.evaluate((m) => localStorage.setItem("accountable.theme", m), mode);
+    await page.reload();
+    await expect(page.getByText("Showing 1–25 of 45")).toBeVisible();
+    // The mode toggle and the pager's "Next" (enabled: 45 deals make two pages) are secondary buttons, and
+    // reaching "Next" checks every stop on the way, rows and row menus included.
+    await tabTo(page, /^button "Dark mode"$/);
+    await expectFocusVisible(page);
+    await tabTo(page, /^button "Next"$/, { limit: 200 });
+    await expectFocusVisible(page);
+  }
 });

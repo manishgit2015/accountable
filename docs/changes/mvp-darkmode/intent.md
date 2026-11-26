@@ -23,7 +23,7 @@ A dark mode with a toggle on every page, across every section.
 
 Answers from the product owner, 25 Nov 2026:
 
-- The change's branch is `dark-mode`, matching this folder (renamed from `mvp-darkmode`).
+- The change's branch is `mvp-darkmode`, and this folder is named after it, as AGENTS.md requires. (On 25 Nov the branch was to be renamed `dark-mode`; on 26 Nov the product owner kept `mvp-darkmode` and the folder was renamed to match.)
 - The choice is stored in the browser, not the database.
 - The dark palette is derived from the brand and approved by eye, rather than from a mockup or a supplied palette.
 
@@ -36,4 +36,4 @@ Answers from the product owner, 25 Nov 2026:
 
 1. npm run check passes.
 2. A new end-to-end test proves that the toggle works and is remembered after a reload.
-3. Screenshots of the dashboard and the pipeline in both modes are saved in docs/changes/dark-mode/.
+3. Screenshots of the dashboard and the pipeline in both modes are saved in docs/changes/mvp-darkmode/.

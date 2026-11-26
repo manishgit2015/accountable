@@ -1,6 +1,6 @@
 # Plan: dark mode
 
-Status: approved by the engineer on 25 Nov 2026, and restructured the same day into four sections with the same content. Phases 1 to 3 (T0–T2) are built and committed (`ead0cb4`, `31de085`, `15e1f61`). Phase 4 (T3) is next.
+Status: approved by the engineer on 25 Nov 2026, and restructured the same day into four sections with the same content. Phases 1 to 3 (T0–T2) are built and committed (`ead0cb4`, `31de085`, `15e1f61`). Phases 4 to 8 (T3–T7) are built on 26 Nov 2026 and not committed yet. The product owner approved the dark palette on 26 Nov 2026, so every phase is done.
 
 This plan builds what `intent.md` sets out and `docs/spec.md` describes:
 
@@ -16,8 +16,8 @@ The work is frontend only: there's no backend, API, database or migration change
 
 | File | Change | Phase |
 |---|---|---|
-| `frontend/src/styles/tokens.css` | Fixed tokens `--midnight`, `--cerulean-strong`, `--raspberry-strong` and `--overlay`, each with the value of the color it replaced. `color-scheme: light` on `:root`. A `:root[data-theme="dark"]` block holding only the tokens that change with the mode, plus `color-scheme: dark`. Phase 5 adds `--field-line`. | 2, 3, 5 |
-| `frontend/src/styles/global.css` | Fills and text on fills move to the fixed tokens (16 rules). The overlay uses `--overlay`. Field outlines use `--field-line`. The toggle's style. No dark-mode rules. | 2, 4, 5 |
+| `frontend/src/styles/tokens.css` | Fixed tokens `--midnight`, `--cerulean-strong`, `--raspberry-strong` and `--overlay`, each with the value of the color it replaced. `color-scheme: light` on `:root`. A `:root[data-theme="dark"]` block holding only the tokens that change with the mode, plus `color-scheme: dark`. Phase 5 adds `--line` and `--raised`. | 2, 3, 5 |
+| `frontend/src/styles/global.css` | Fills and text on fills move to the fixed tokens (16 rules). The overlay uses `--overlay`. Field outlines and dashed lines use `--line`; floating surfaces and secondary buttons use `--raised`; the toggle keeps its focus ring. The toggle's style. No dark-mode rules. | 2, 4, 5 |
 | `frontend/src/pages/dashboard/RevenueChart.tsx` | The dots use `--midnight` | 2 |
 | Other chart files (`WonLostChart.tsx`, `StageDonut.tsx`, `FunnelPanel.tsx`) | Change only if phase 5 finds a Recharts default color that isn't a token | 5 |
 | `frontend/index.html` | An inline script in `<head>` that applies the saved mode before the first paint | 3 |
@@ -28,11 +28,12 @@ The work is frontend only: there's no backend, API, database or migration change
 | `frontend/src/lib/theme.test.ts` | New (V-F11) | 3 |
 | `frontend/src/components/ThemeToggle.test.tsx` | New (V-F11) | 4 |
 | `e2e/theme.spec.ts` | New (V-E13) | 6 |
+| `e2e/keyboard.spec.ts` | V-E11's focus check requires the focus ring itself, not any shadow, and a new test checks secondary buttons' ring in both modes | 8 |
 | `e2e/visual/dark-mode.spec.ts` | New (V-M04): the light-mode comparison with the baselines (zero tolerance, top bar's right-hand group masked). Phase 7 adds the screenshots in both modes. | 1, 7 |
 | `playwright.config.ts` | `snapshotPathTemplate: "docs/changes/{arg}{ext}"`, so a visual test's baselines live in the change folder it names | 1 |
-| `docs/changes/dark-mode/baseline/` | Six light-mode baselines: the dashboard, pipeline, deals table, a deal's page, the Add deal side panel and a delete dialog | 1 |
-| `docs/changes/dark-mode/*.png` | `dashboard-light.png`, `dashboard-dark.png`, `pipeline-light.png`, `pipeline-dark.png` (intent success criterion 3) | 7 |
-| `docs/spec.md` | Already describes dark mode. Phase 5 adds `--field-line` to section 3.9. Updated again if the build turns up anything else it doesn't describe. | 5, 8 |
+| `docs/changes/mvp-darkmode/baseline/` | Six light-mode baselines: the dashboard, pipeline, deals table, a deal's page, the Add deal side panel and a delete dialog | 1 |
+| `docs/changes/mvp-darkmode/*.png` | `dashboard-light.png`, `dashboard-dark.png`, `pipeline-light.png`, `pipeline-dark.png` (intent success criterion 3) | 7 |
+| `docs/spec.md` | Already describes dark mode. Phase 5 adds `--line` and `--raised` to section 3.9, and a focus gap to 17.1. Updated again if the build turns up anything else it doesn't describe. | 5, 8 |
 | `docs/STATUS.md`, `docs/build_logs.log` | Progress, and evidence for each task | Every phase |
 
 ## 2. Order of work
@@ -44,7 +45,7 @@ Each phase ends with its evidence in `docs/build_logs.log`, `npm run check:quick
 - Write `e2e/visual/dark-mode.spec.ts`.
 - Take the six light-mode baselines on the code as it was, before any change.
 
-Done when: the six baselines are in `docs/changes/dark-mode/baseline/`, and two more runs match them.
+Done when: the six baselines are in `docs/changes/mvp-darkmode/baseline/`, and two more runs match them.
 
 ### Phase 2 (T1): split the tokens, with no visible change. Done.
 
@@ -83,7 +84,7 @@ Done when: the toggle's tests pass, and light mode matches the baselines with th
 
 ### Phase 5 (T4): walk every screen in dark mode and fix what's wrong
 
-Fixes change which token a rule uses, or add a token. They never add a dark-only rule. Known so far: form field outlines use `--sea-mist`, a fill token, which is too bright on black. They get a new `--field-line` token, Sea Mist in light mode and a quieter line in dark mode, added to spec 3.9.
+Fixes change which token a rule uses, or add a token. They never add a dark-only rule. Known so far: form field outlines use `--sea-mist`, a fill token, which is too bright on black. They get a new `--line` token, Sea Mist in light mode and a quieter line in dark mode, added to spec 3.9.
 
 The walkthrough covers, in both modes:
 
@@ -106,7 +107,7 @@ Done when: it passes, and fails when the toggle's save is commented out (checked
 
 ### Phase 7 (T6): the screenshots
 
-- `e2e/visual/dark-mode.spec.ts` saves the dashboard and the pipeline, full page at 1440px, in both modes, into `docs/changes/dark-mode/`.
+- `e2e/visual/dark-mode.spec.ts` saves the dashboard and the pipeline, full page at 1440px, in both modes, into `docs/changes/mvp-darkmode/`.
 
 Done when: the four files are there and have been checked by eye.
 
@@ -118,12 +119,14 @@ Done when: the four files are there and have been checked by eye.
 
 Done when: `npm run check` passes and the product owner approves.
 
+The product owner approved the palette on 26 Nov 2026, and asked for the focus ring on every secondary button too. `.btn-secondary:focus-visible` now keeps the ring over the shadow (replacing the toggle-only rule), a light-mode change they approved (R94). V-E11's check was tightened, because it counted any shadow as a focus indicator, which is how the gap went unnoticed.
+
 ## 3. Risks
 
 | Risk | Handling |
 |---|---|
 | A `var(--ink)` used as Midnight on a fill is missed, so a badge or button shows Sea Mist text on a bright fill in dark mode | Phase 2 checked every use by hand (listed in the build log). Phase 5's walkthrough covers every badge and stage color. The light screenshots can't catch this, because the values are the same in light mode. |
-| A fill token is used as a line or text color, and is too bright in dark mode | Phase 5 looks for these. Form field outlines are one, fixed with `--field-line`. |
+| A fill token is used as a line or text color, and is too bright in dark mode | Phase 5 looks for these. Form field outlines are one, fixed with `--line`. |
 | The light-mode comparison fails on pixels that didn't really change (font hinting, chart animation) | Charts render with animation off, and Playwright waits for two identical screenshots. The baselines and later runs are on the same machine. So far, every run has matched at zero tolerance. |
 | The light-mode comparison passes when it shouldn't | It uses threshold 0, and a probe showed a one-step change in `--midnight` fails all six screens |
 | The toggle moves the tabs, so light mode changes beyond the toggle | Phase 4's comparison with the masked baselines shows it. The product owner decides before going on. |
@@ -154,16 +157,16 @@ Done when: `npm run check` passes and the product owner approves.
 
 - R91: light when nothing is saved, and for any value other than `dark`.
 - R92: `dark` is read as dark; the choice is saved under `accountable.theme`; this browser's `localStorage` is the default.
-- R93: light when storage can't be read or doesn't exist, and a write that fails is ignored.
+- R93: light when storage can't be read or doesn't exist, and a write that fails is ignored, including when reading `window.localStorage` itself throws (review REV-001).
 - R92: `applyTheme` sets and removes `data-theme` on `<html>`. `currentTheme` reads it, and any other value counts as light.
 
 **`frontend/src/components/ThemeToggle.test.tsx`** (phase 4)
 
 - R90: it starts from the `data-theme` already on `<html>`, in either mode.
 - R90: a click switches the mode, saves it, and flips `aria-pressed` and the icon. A second click switches back.
-- R90: Enter and Space work on it.
 - R90: its accessible name is "Dark mode".
-- R93: with storage that throws, it still switches, and nothing is logged.
+- Enter and Space are checked in real Chrome by V-E13 step 6, not here: jsdom doesn't turn them into a click on a button, and `@testing-library/user-event` isn't a dependency.
+- R93: with storage that throws, it still switches, and nothing is logged; and with reading `window.localStorage` itself throwing, it switches both ways (review REV-001).
 
 ### 4.2 End to end (Playwright), V-E13 `e2e/theme.spec.ts` (phase 6)
 
@@ -171,17 +174,25 @@ Every test goes through `e2e/fixtures.ts`, so a console error or a request outsi
 
 1. **R91, R94:** on first load, `<html>` has no `data-theme`, and the page and panel colors are `#F0F4F5` and `#FFFFFF`.
 2. **R90:** the toggle is in the top bar on each of the five sections and on a record page.
-3. **R90, R95:** a click gives `data-theme="dark"`, `aria-pressed="true"`, a `#04232E` page and `#000000` panels. That's checked on the dashboard (including a chart tooltip's panel), the pipeline (a card), a table, a deal's page, the Add deal side panel and a delete dialog.
-4. **R90:** with the Add deal form open and a name typed in, switching mode keeps the panel open and the name in the field.
-5. **R92:** after a reload, dark mode is still on, with `data-theme` already set at `domcontentloaded`. Switching back to light and reloading keeps light.
-6. **R90, NFR-7:** the toggle can be reached with Tab and switched with Space, with its focus ring visible.
+3. **R90, R95:** a click gives `data-theme="dark"`, `aria-pressed="true"`, a `#04232E` page, `#000000` panels and `#0E3240` raised surfaces. That's checked on the dashboard (with the revenue chart's tooltip on the raised surface), the pipeline (a card), a table, its row menu, a delete dialog, the Add deal side panel and a deal's page.
+4. **R90:** with a search typed on the contacts table, and a description typed in a contact's Log activity form, switching mode keeps the page and what's typed. (Side panels and dialogs are modal, so the toggle can't be reached while one is open; spec 4.5.)
+5. **R92:** after a reload, dark mode is still on, and `data-theme` was already on `<html>` when `<body>` first existed (recorded by an init script), so it was applied before the page could be drawn. Switching back to light and reloading keeps light.
+6. **R90, NFR-7:** the toggle can be reached with Tab, its focus ring shows in both modes, and Space and Enter switch it.
+7. **R93** (review REV-001): with reading `window.localStorage` made to throw, as when site data is blocked, the app starts light and the toggle switches both ways, with no console error.
+8. **NFR-7** (review REV-004): chart tooltip items on both charts are in `--ink`, in both modes.
+
+**`e2e/keyboard.spec.ts` (V-E11, phase 8)**
+
+- NFR-7: focus is visible at every Tab stop only with an outline, the `--focus-ring` color, a highlighted menu item, or Chrome's own outline on a date field's calendar button.
+- NFR-7: in light and dark mode, the mode toggle and the deals table's "Next" show the focus ring, and so does every stop on the way.
 
 ### 4.3 Screenshots, V-M04 `e2e/visual/dark-mode.spec.ts` (`node scripts/run-tests.mjs visual dark-mode`)
 
 These are outside `npm test`, because font rendering differs between machines.
 
-- **R94:** six light-mode screens match the phase 1 baselines at zero tolerance, with the top bar's right-hand group masked. Passing since phase 2.
-- **Intent success criterion 3:** `dashboard-light.png`, `dashboard-dark.png`, `pipeline-light.png` and `pipeline-dark.png` in `docs/changes/dark-mode/` (phase 7).
+- **R94:** six light-mode screens match the phase 1 baselines at zero tolerance, with the top bar's right-hand group masked. Passing since phase 2. Limits: only those six screens at 1440px are compared. The top bar at 1024px and 1280px was checked by eye (same height, no horizontal scroll), and the other screens in the phase 5 walkthrough. The suite isn't part of `npm run check`, so R94 is checked by hand before merge.
+- The approved screenshots are replaced only with `ACCOUNTABLE_SCREENSHOTS=1`; a routine run writes them to Playwright's output folder.
+- **Intent success criterion 3:** `dashboard-light.png`, `dashboard-dark.png`, `pipeline-light.png` and `pipeline-dark.png` in `docs/changes/mvp-darkmode/` (phase 7).
 
 ### 4.4 By hand and the gate
 

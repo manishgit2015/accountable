@@ -1553,3 +1553,208 @@ By hand: a throwaway visual test (deleted afterwards) set accountable.theme to "
   Finding for T4: form fields' 1px outline uses --sea-mist (a fixed fill token), which is too bright on
   black. Fix in T4 with its own token (light value unchanged).
 Requirements covered: R91, R92 (apply and before-paint), R93, NFR-7 (dark), V-F11 (part).
+----------------------------------------------------------------------
+dark-mode T3 (plan phase 4)  The toggle
+Date: 2026-11-26
+Files: frontend/src/components/ThemeToggle.tsx (new: secondary Button, class theme-toggle, aria-label
+  "Dark mode", aria-pressed, Moon in light and Sun in dark, state from <html data-theme>; a click runs
+  applyTheme, saveTheme and setState, nothing else), ThemeToggle.test.tsx (new), TopBar.tsx (toggle before
+  "Add deal"), global.css (.topbar-right becomes a flex row with an 8px gap; .theme-toggle 36px square).
+Unit tests: ThemeToggle.test.tsx -> 4 passed (R90 starts light with no data-theme, starts dark when the
+  inline script set it, a click switches to dark and saves it and a second click switches back, with
+  aria-pressed and the icon following; R93 setItem throwing still switches, no console.error or warn).
+  npm test -- frontend -> 31 files, 248 tests passed. tsc and ESLint clean.
+  Not as planned: @testing-library/user-event isn't installed and the plan adds no dependency, so the tests
+  use fireEvent. jsdom doesn't turn Enter or Space on a button into a click, so the keyboard case moves to
+  V-E13 step 6 (real Chrome). Plan 4.1 updated.
+Light-mode comparison: first run -> 6 failed, about 2,830 pixels each. The diff images showed only the
+  toggle's spot, just left of the old mask: the mask follows .topbar-right, which is now wider, so it covered
+  pixels the baseline showed as the bar. Tabs and everything else were unchanged. The comparison now hides
+  .theme-toggle before the screenshot, so .topbar-right has its old box and the mask covers the same pixels;
+  it also checks <html> has no data-theme first. Rerun -> 6 passed at threshold 0, which also shows the
+  toggle doesn't move the tabs (no R94 question for the product owner).
+Requirements covered: R90 (part; V-E13 covers keyboard, every section and open forms), R93, R94.
+----------------------------------------------------------------------
+dark-mode T4 (plan phase 5)  Walk every screen in dark mode and fix what's wrong
+Date: 2026-11-26
+How: a throwaway visual test (e2e/visual/zz-walk.spec.ts, deleted afterwards) ran in light and dark mode on the
+  seeded test database, with V-E00's console and network guards, and saved screenshots to the scratchpad:
+  the dashboard with the revenue, won/lost and donut hovers; the organizations table with its row menu;
+  an organization's page; the contacts table and status filter; the Add contact form with its field errors
+  and the Add organization panel stacked on it; a deal's page with a focused date field; the pipeline
+  mid-drag with its drop gap, and a failed move (mocked 500) showing the board's error message; the
+  dashboard, pipeline and contacts after `clear` (empty states); the offline banner (all /api requests
+  refused); a close-up of the toggle, and with keyboard focus. First run: 4 passed, 2 failed - the light
+  runs, on a bug in the throwaway helper (it expected data-theme="" instead of no attribute); fixed ->
+  6 passed. No console errors in either mode.
+  The donut has no tooltip by design (its values are listed beside it).
+Findings and fixes (each a token change, no dark-only rule):
+  1. Field outlines, the dashed "Add deal" buttons and the drop gap used --sea-mist (a fill) as a line:
+     too bright on black. New --line: #cdd8db in light (unchanged), #527280 in dark (4.1:1 on the panel,
+     3.2:1 on the page). tokens.test.ts checks it's at least 3:1 in dark.
+  2. Row menus, the side panel, the delete dialog, chart tooltips and a lifted card were black on black, so
+     they lost their edges (shadows don't show on black). New --raised: #ffffff in light (unchanged),
+     #0e3240 in dark (1.55:1 against black; every text color 5.1:1 or more on it, now in tokens.test.ts).
+  3. The toggle, a black secondary button on the black top bar, had no visible edge. Secondary buttons now
+     use --raised too (white in light, unchanged).
+  4. The toggle showed no focus ring. Cause, which predates this change: :focus-visible's ring and
+     .btn-secondary's shadow have the same specificity, and the shadow comes later in global.css, so no
+     secondary button shows a ring, in either mode. Fixed for the toggle (.theme-toggle:focus-visible keeps
+     both). Fixing every secondary button changes light mode's focused look (R94), so it's recorded in spec
+     17.1 for the product owner to decide.
+  5. The toggle's icon went from 16px to 18px, to sit better next to Add deal's "+".
+Rechecked after the fixes: the dark walk and the close-ups -> 5 passed; the menu, side panel, dialog,
+  tooltip, lifted card, toggle and its focus ring all have visible edges. tokens.test.ts -> 8 passed.
+  Light-mode comparison -> 6 passed at threshold 0 (--line, --raised and the secondary button change
+  nothing in light mode).
+Spec: 3.9 gains --line and --raised, the drop gap, tooltip and dark-mode bullets follow them, secondary
+  buttons and the toggle's icon and focus ring are described, and 17.1 has the secondary-button focus gap.
+Requirements covered: R95, NFR-7 (both modes), R7, AC9's walkthrough for this change (by the agent; the
+  product owner's review is phase 8).
+Harness note: the throwaway walk's light runs failed on a wrong attribute check (expected "" for no attribute) - caught by the test run - fixed in the helper.
+----------------------------------------------------------------------
+dark-mode T5 (plan phase 6)  The end-to-end test, V-E13
+Date: 2026-11-26
+File: e2e/theme.spec.ts (new, 6 tests). Colors are read with getComputedStyle, so the browser's own values for
+  the tokens are what's checked.
+Runs: npm test -- e2e theme -> first run 5 passed, 1 failed (strict mode: two .recharts-default-tooltip
+  elements, the won/lost chart has one too); scoped to the revenue chart -> 6 passed (17.5s).
+  1 R91 R94 starts light: no data-theme, aria-pressed false, page rgb(240,244,245), panels white.
+  2 R90 the toggle is visible on all five sections and a deal's page.
+  3 R90 R95 dark: page rgb(4,35,46), panels black, raised rgb(14,50,64) for the revenue tooltip, row menu,
+    delete dialog and Add deal side panel; a card, a table and a record page's panel black.
+  4 R90 a search ("Priya") and a Log activity description are kept when the mode changes; same URL.
+  5 R92 reload keeps dark, and an init script's MutationObserver records data-theme="dark" when <body>
+    first exists (before paint); switching back and reloading keeps light (null at <body>).
+  6 R90 NFR-7 Tab from Organizations reaches the toggle; box-shadow holds rgba(17,138,178,0.45) in light and
+    rgba(91,192,227,0.6) in dark; Space and Enter switch it.
+Not as planned: step 4 was to type in the Add deal side panel and switch mode. Side panels and dialogs are
+  modal (overlay over the top bar, focus trapped), so that can't happen; the step uses the inline Log
+  activity form and the search box instead. Spec R90, 4.5 and V-E13, and plan 4.2, corrected.
+Probes (each restored afterwards; git diff shows both files unchanged):
+  saveTheme(next) commented out in ThemeToggle.tsx -> 2 failed (tests 3 and 5), 4 passed.
+  index.html's inline script removed -> 2 failed (tests 3 and 5), 4 passed.
+  Test 3 fails in both too, because it moves between screens with full page loads.
+Requirements covered: R90, R91, R92, R94, R95, NFR-7 (focus), R7 (V-E00).
+----------------------------------------------------------------------
+dark-mode T6 (plan phase 7)  The screenshots
+Date: 2026-11-26
+e2e/visual/dark-mode.spec.ts gains "V-M04 dashboard and pipeline in light/dark mode": full page at 1440px, the
+  toggle in view, dark mode switched on with the toggle itself. node scripts/run-tests.mjs visual dark-mode ->
+  8 passed (the six R94 comparisons at threshold 0, and the two screenshot tests).
+Files: docs/changes/dark-mode/dashboard-light.png, dashboard-dark.png, pipeline-light.png, pipeline-dark.png.
+  Checked by eye: dark mode follows spec 3.9 (page #04232E, black panels, Midnight hero and active tab, fills
+  unchanged, quiet dashed lines, raised toggle); light mode is unchanged apart from the toggle.
+Requirements covered: intent success criterion 3, V-M04.
+----------------------------------------------------------------------
+dark-mode T7 (plan phase 8)  Check and approve
+Date: 2026-11-26
+npm run check -> exit 0, "All 12 checks passed": 388 backend (97.33% coverage), core 99.8% (479/480),
+  249 frontend (lines 98.44%), 54 e2e. Output: docs/evidence/2026-11-26-dark-mode/npm-run-check.txt.
+  After that, the visual suite again -> 8 passed.
+Getting there:
+  1. The first full run failed only Prettier (e2e, scripts) on e2e/theme.spec.ts and dark-mode.spec.ts. I had
+     formatted them with a bare `npx prettier`, which uses the root config; the gate uses
+     --config frontend/.prettierrc. Reformatted with the gate's config.
+  2. The Stop hook's check:quick failed "Unit tests, coverage gates" twice while a full run was going in the
+     background: both write coverage files at once. The full runs' own tests all passed. Stopped the
+     background run and ran the gate in the foreground instead.
+  3. That run failed Prettier (frontend) on three frontend/coverage/.tmp/*.json files left by the stopped
+     run (git-ignored output, which Vitest clears at the end of a run). They were gone by the end of the
+     run; the next run passed everything.
+Docs: docs/STATUS.md updated; plan status line updated; spec already describes the product as built.
+Waiting on the product owner: approval of the dark palette from the four screenshots (ADR-019), and whether
+  to fix the missing focus ring on every secondary button (spec 17.1; it would change light mode's focused
+  look, R94).
+Harness note: e2e specs formatted with the root Prettier config instead of frontend/.prettierrc - caught by npm run check - reformatted with the gate's config.
+Harness note: check:quick (Stop hook) and a background npm run check collided on coverage files and failed - caught by the Stop hook - ran the gate in the foreground only.
+Harness note: stopping a background npm run check left coverage/.tmp files that failed the next Prettier check - caught by npm run check - none needed once Vitest's next run cleared them.
+dark-mode T7 (continued)  Product owner approval
+Date: 2026-11-26
+The product owner approved the dark palette from the four screenshots in docs/changes/dark-mode/ (ADR-019).
+  Recorded in spec 16.3 (ADR-019), plan.md's status and docs/STATUS.md. Every phase of the plan is done.
+Still open, not part of this approval: the missing focus ring on secondary buttons (spec 17.1), which would
+  change light mode's focused look.
+----------------------------------------------------------------------
+dark-mode T7 (continued)  Focus ring on every secondary button
+Date: 2026-11-26
+The product owner asked for the secondary-button focus gap (spec 17.1) to be fixed, accepting the light-mode
+  change to the focused look.
+Checked first: which focusable elements set their own box-shadow. Only .btn-secondary. Pipeline cards and
+  closed rows have a shadow, but the focusable element is their .draggable wrapper, which has none; the search
+  box shows its ring with :focus-within; menu items show focus as a highlighted row.
+Fix: frontend/src/styles/global.css - .btn-secondary:focus-visible { box-shadow: var(--shadow), var(--focus-ring) },
+  replacing the toggle-only rule.
+Why it went unnoticed: V-E11's focused() counted any box-shadow as a focus indicator, and a secondary button's
+  soft shadow passed. Tightened (e2e/keyboard.spec.ts): visible only with an outline, a box-shadow holding the
+  --focus-ring color (read from the page, so either mode), a .search wrapper with the ring, a highlighted
+  menu item, or Chrome's calendar button inside a date field. New test: in both modes, Tab reaches the toggle
+  and the deals table's "Next" (45 deals, so it's enabled) with every stop showing focus.
+Runs:
+  First run of the tightened V-E11 -> 2 failed, 2 passed.
+    - The new test aimed at the organizations table's "Next", which is disabled (12 organizations, one page)
+      and can't take focus. Moved to the deals table.
+    - The deal-by-keyboard test flagged input "Close date". A probe showed that after typing a date, Tab
+      moves focus to Chrome's own calendar button inside the field: the input stays document.activeElement
+      but no longer matches :focus. A close-up screenshot shows Chrome's own outline on the button, so focus
+      is visible. The check now allows that case (date, datetime-local and time inputs not matching :focus).
+  Rerun -> 4 passed.
+  Probe: the .btn-secondary:focus-visible rule removed -> 4 failed (each at the toggle, its first secondary
+    button); restored (grep finds the rule once).
+  Light-mode comparison -> 1 failed: the delete dialog, 504 pixels. The diff shows only the ring around
+    Cancel, which the dialog focuses when it opens: the approved change. The comparison now puts back the
+    old shadow on .btn-secondary:focus-visible (style tag, like the toggle), so every other pixel is still
+    compared exactly. Rerun -> 8 passed.
+Docs: spec R94 (the approved exception), 3.9 Buttons, the toggle bullet, V-E11, and 17.1 (gap removed);
+  plan files table, phase 8 and Proof; docs/STATUS.md.
+Requirements covered: NFR-7 (focus visible on every secondary button, both modes), R94.
+Harness note: V-E11 counted any box-shadow as a focus indicator, so secondary buttons without a ring passed - caught by the phase 5 walkthrough (by eye) - V-E11 now requires the ring color, and a probe without the fix fails all four tests.
+Harness note: the new focus test first aimed at a disabled "Next" button - caught by the test run - moved to a table with two pages.
+----------------------------------------------------------------------
+dark-mode  Fixes from the independent review (REVIEW.md)
+Date: 2026-11-26
+Review: run by a fresh agent that hadn't written the change (REVIEW.md 1), on the uncommitted working tree.
+  Decision CHANGES REQUIRED: REV-001 and REV-002 (P1), REV-003 to REV-007 (P2). Its own runs: npm run check
+  passed (388 / 249 / 55), npm run audit 0 vulnerabilities, npm run test:perf 4 of 4. I checked both P1s
+  and the merge-base claim before acting: all hold. The engineer asked for every finding to be fixed except
+  the branch rename, which stays theirs.
+REV-001 (P1, R93): theme.ts read globalThis.localStorage as a default parameter, outside the try. Now read in
+  browserStorage() inside each try; ThemeToggle updates its state before saving. New tests make reading
+  window.localStorage itself throw (src/test/storage.ts: blockLocalStorage, restoreLocalStorage):
+  theme.test.ts (read, missing, save), ThemeToggle.test.tsx (both ways, no console.error), and V-E13
+  step 7 (addInitScript getter that throws; V-E00 guards the console). Probe: the old theme.ts and click
+  order -> 3 unit tests failed; restored -> 18 passed. E2E theme -> 7 passed.
+  The helper first lived in theme.test.ts and was imported by ThemeToggle.test.tsx, which would have run
+  theme.test's tests twice; moved to src/test/. Hook order (Vitest runs afterEach last-registered first)
+  meant storage had to be restored explicitly at the start of each afterEach.
+REV-002 (P1, AGENTS.md): not fixed, the engineer's decision. Reflog: the rename to dark-mode (21:19) was
+  undone at 21:26 by a command that wasn't mine; my later reports said "on dark-mode", which was wrong.
+REV-003 (P2): tokens.test.ts now checks --line on --raised too, and failed (2.63:1). Dark --line #527280 ->
+  #62828e: 5.10 on the panel, 3.29 on --raised, 3.97 on the page. Test -> passed. pipeline-dark.png retaken
+  (its dashed lines changed); the new value needs the product owner's look.
+REV-004 (P2): Recharts colors tooltip items by series. itemStyle={TOOLTIP_ITEM_STYLE} (color var(--ink)) on
+  both tooltips. New V-E13 step 8 checks every item's computed color is ink, in both modes. Probe without
+  itemStyle -> failed; restored -> passed. A light-mode change, recorded as approved in R94.
+REV-005 (P2): spec 17.1 names the form error message and the highlighted Delete menu item as well;
+  docs/STATUS.md's stale focus bullet corrected.
+REV-006 (P2): the three dark checks no longer use skipIf: a test asserts the dark block is found with the
+  surfaces and ink, and darkTokens() throws if it isn't. tokens.test.ts -> 9 passed.
+REV-007 (P2): the V-M04 screenshot tests write to Playwright's output folder unless ACCOUNTABLE_SCREENSHOTS=1
+  (added to spec DEP-2). Checked: a routine visual run left all four approved files unchanged (md5), and
+  wrote copies under test-results/. ACCOUNTABLE_SCREENSHOTS=1 run -> only pipeline-dark.png changed, as
+  expected. Top bar at 1024px and 1280px, both modes (throwaway test, deleted): height 56.3px in all four,
+  no horizontal scroll, checked by eye. Plan 4.3 states the limits of the R94 comparison.
+Harness note: theme.ts read localStorage in a default parameter, outside its try, and the tests only made getItem/setItem throw - caught by the independent review - storage is read inside the try and tests make the property itself throw.
+Harness note: my reports said the commits were on dark-mode after the branch had been renamed back to mvp-darkmode - caught by the independent review - checked with git branch --show-current and the reflog.
+Harness note: the visual suite overwrote the approved screenshots on every run - caught by the independent review - gated behind ACCOUNTABLE_SCREENSHOTS=1.
+----------------------------------------------------------------------
+mvp-darkmode  Change folder renamed to match the branch (review REV-002)
+Date: 2026-11-26
+The product owner chose to keep the branch name `mvp-darkmode`. AGENTS.md names a change's folder after its
+  branch, so docs/changes/dark-mode/ moved to docs/changes/mvp-darkmode/ (plain mv, nothing staged), and the
+  references followed: intent.md (the branch decision, with the history), plan.md, spec.md (V-M04, DEP-2,
+  ADR-018, ADR-019, 17.1, Ownership), STATUS.md, e2e/visual/dark-mode.spec.ts (the baselines' snapshot path
+  and the screenshots' folder) and playwright.config.ts's comment. The entries above this one name the folder
+  docs/changes/dark-mode/ and the change `dark-mode`; this log is append-only, so they stay as written.
+  Not changed: course/ (the course's own instructions), docs/evidence/2026-11-26-dark-mode/ (evidence named by
+  date and feature), and e2e/visual/dark-mode.spec.ts's file name (named after the feature).

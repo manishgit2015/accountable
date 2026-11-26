@@ -32,6 +32,12 @@ function block(css: string, selector: string): Tokens | undefined {
 const LIGHT = block(TOKENS, ":root") ?? {};
 const DARK_OVERRIDES = block(TOKENS, ':root[data-theme="dark"]');
 
+/** The tokens in dark mode: the light ones with the dark block on top. Throws if the dark block is missing. */
+function darkTokens(): Tokens {
+  if (DARK_OVERRIDES === undefined) throw new Error('No :root[data-theme="dark"] block in tokens.css');
+  return { ...LIGHT, ...DARK_OVERRIDES };
+}
+
 /** A token's color, following `var(--other)` references, as `#rrggbb`. */
 function hex(tokens: Tokens, name: string): string {
   const value = tokens[name];
@@ -75,14 +81,19 @@ const ON_FILLS: [string, string][] = [
 function pairs(mode: "light" | "dark"): [string, string][] {
   const onSurfaces = TEXT.flatMap((text): [string, string][] => [
     [text, "--panel"],
+    [text, "--raised"],
     [text, "--page"],
   ]);
   // Muted ink is for white only in light mode; in dark mode it may sit on the page as well (spec 3.9).
   const muted: [string, string][] =
     mode === "light"
-      ? [["--ink-muted", "--panel"]]
+      ? [
+          ["--ink-muted", "--panel"],
+          ["--ink-muted", "--raised"],
+        ]
       : [
           ["--ink-muted", "--panel"],
+          ["--ink-muted", "--raised"],
           ["--ink-muted", "--page"],
         ];
   return [...onSurfaces, ...muted, ...ON_FILLS];
@@ -107,12 +118,29 @@ describe("NFR-7 text contrast from the tokens", () => {
     expect(failures(LIGHT, "light")).toEqual(KNOWN_LIGHT_GAPS);
   });
 
-  it.skipIf(DARK_OVERRIDES === undefined)("NFR-7 dark mode: every text color is at least 4.5:1 on its surfaces", () => {
-    expect(failures({ ...LIGHT, ...DARK_OVERRIDES }, "dark")).toEqual([]);
+  // The dark checks never skip: if the dark block can't be found (its selector edited), they fail.
+  it("R92 the dark block is found in tokens.css, and redefines the surfaces and text", () => {
+    expect(DARK_OVERRIDES, ':root[data-theme="dark"] block').toBeDefined();
+    expect(Object.keys(DARK_OVERRIDES ?? {})).toEqual(
+      expect.arrayContaining(["--page", "--panel", "--raised", "--ink"]),
+    );
   });
 
-  it.skipIf(DARK_OVERRIDES === undefined)("ENG-1 dark mode only redefines tokens light mode has", () => {
+  it("NFR-7 dark mode: every text color is at least 4.5:1 on its surfaces", () => {
+    expect(failures(darkTokens(), "dark")).toEqual([]);
+  });
+
+  it("NFR-7 dark mode: field outlines and dashed lines are at least 3:1 on every surface they sit on", () => {
+    const dark = darkTokens();
+    // Fields sit on panels and, inside side panels and dialogs, on the raised surface; dashed lines on the page.
+    for (const surface of ["--panel", "--raised", "--page"]) {
+      expect(contrast(hex(dark, "--line"), hex(dark, surface)), surface).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("ENG-1 dark mode only redefines tokens light mode has", () => {
     const unknown = Object.keys(DARK_OVERRIDES ?? {}).filter((name) => !(name in LIGHT));
+    expect(DARK_OVERRIDES).toBeDefined();
     expect(unknown).toEqual([]);
   });
 

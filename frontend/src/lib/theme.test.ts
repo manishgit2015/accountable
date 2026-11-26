@@ -1,6 +1,7 @@
 // V-F11: the light or dark choice is read, saved and shown as spec 3.10 sets out (R91-R93).
 import { afterEach, describe, expect, it } from "vitest";
 
+import { blockLocalStorage, restoreLocalStorage } from "../test/storage";
 import { applyTheme, currentTheme, readTheme, saveTheme, THEME_KEY } from "./theme";
 
 function memoryStorage(initial: Record<string, string> = {}): Storage {
@@ -27,6 +28,7 @@ const blocked = {
 };
 
 afterEach(() => {
+  restoreLocalStorage();
   delete document.documentElement.dataset.theme;
   localStorage.clear();
 });
@@ -50,8 +52,14 @@ describe("readTheme", () => {
     expect(readTheme(blocked)).toBe("light");
   });
 
-  it("R93 is light when there's no storage at all", () => {
-    expect(readTheme(undefined)).toBe("light");
+  it("R93 is light when reading the browser's localStorage itself throws (site data blocked)", () => {
+    blockLocalStorage();
+    expect(readTheme()).toBe("light");
+  });
+
+  it("R93 is light when the browser has no localStorage at all", () => {
+    blockLocalStorage("missing");
+    expect(readTheme()).toBe("light");
   });
 
   it("R92 reads this browser's localStorage by default", () => {
@@ -71,6 +79,11 @@ describe("saveTheme", () => {
 
   it("R93 ignores storage that can't be written", () => {
     expect(() => saveTheme("dark", blocked)).not.toThrow();
+  });
+
+  it("R93 ignores a browser localStorage that can't even be read (site data blocked)", () => {
+    blockLocalStorage();
+    expect(() => saveTheme("dark")).not.toThrow();
   });
 
   it("R92 writes this browser's localStorage by default", () => {

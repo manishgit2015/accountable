@@ -1,9 +1,17 @@
-// V-M04 and R94 for the dark-mode change (docs/changes/dark-mode/plan.md, section 4.3).
+// V-M04 and R94 for the mvp-darkmode change (docs/changes/mvp-darkmode/plan.md, section 4.3).
 // Light mode must look exactly as it did before dark mode, apart from the toggle. T0 took these baselines
 // on the code before any change (`node scripts/run-tests.mjs visual dark-mode --update-snapshots`), and
-// every later run compares light mode with them. The top bar's right-hand group is masked, because the
-// toggle goes there (T3). The baselines are in docs/changes/dark-mode/baseline/ (snapshotPathTemplate in
-// playwright.config.ts). Run with `node scripts/run-tests.mjs visual dark-mode`. Not part of `npm test`.
+// every later run compares light mode with them. The top bar's right-hand group was masked in the
+// baselines, because the toggle goes there (T3). The comparison hides the toggle first, so that group has
+// the same box as before and the mask covers exactly the same pixels: anything else that changed still
+// fails. The toggle's own look is checked in the screenshots in both modes, and by eye.
+// The product owner also approved one more light-mode change: a focused secondary button now shows the focus
+// ring (spec 3.9; the baselines show the delete dialog's Cancel, which the dialog focuses, without it). The
+// comparison puts back the old unfocused look on that one rule; V-E11 checks the ring itself.
+// The baselines are in docs/changes/mvp-darkmode/baseline/ (snapshotPathTemplate in playwright.config.ts).
+// Run with `node scripts/run-tests.mjs visual dark-mode`. Not part of `npm test`.
+import { fileURLToPath } from "node:url";
+
 import type { Page } from "@playwright/test";
 
 import { expect, test } from "../fixtures";
@@ -11,10 +19,15 @@ import { expect, test } from "../fixtures";
 test.use({ viewport: { width: 1440, height: 900 } });
 
 function baseline(name: string): string[] {
-  return ["dark-mode", "baseline", `${name}.png`];
+  return ["mvp-darkmode", "baseline", `${name}.png`];
 }
 
 async function expectLightUnchanged(page: Page, name: string, fullPage = true): Promise<void> {
+  await expect(page.locator("html")).not.toHaveAttribute("data-theme");
+  await page.addStyleTag({
+    content:
+      ".theme-toggle { display: none !important; } .btn-secondary:focus-visible { box-shadow: var(--shadow) !important; }",
+  });
   // threshold 0: any change in any pixel's color fails, not only a visible one (Playwright's default is 0.2).
   await expect(page).toHaveScreenshot(baseline(name), {
     fullPage,
@@ -69,3 +82,33 @@ test("R94 delete dialog in light mode is unchanged", async ({ page }) => {
   await expect(page.getByRole("alertdialog")).toContainText(/will be deleted|will be kept|Delete/);
   await expectLightUnchanged(page, "delete-dialog", false);
 });
+
+// Intent success criterion 3 (plan phase 7): the dashboard and the pipeline, full page at 1440px, in both
+// modes, for the product owner's review. The toggle is in view here. The approved copies in
+// docs/changes/mvp-darkmode/ are replaced only when asked, with ACCOUNTABLE_SCREENSHOTS=1 (spec DEP-2); otherwise
+// the screenshots go to Playwright's output folder, so a routine run never changes the approved evidence.
+const CHANGE_DIR = fileURLToPath(new URL("../../docs/changes/mvp-darkmode/", import.meta.url));
+const replaceApproved = process.env.ACCOUNTABLE_SCREENSHOTS === "1";
+const shotPath = (name: string) => (replaceApproved ? `${CHANGE_DIR}${name}` : test.info().outputPath(name));
+
+for (const mode of ["light", "dark"] as const) {
+  test(`V-M04 dashboard and pipeline in ${mode} mode`, async ({ page }) => {
+    await page.goto("/");
+    if (mode === "dark") await page.getByRole("button", { name: "Dark mode" }).click();
+    await expect(page.getByText("Recent activity")).toBeVisible();
+    await page.mouse.move(0, 0);
+    await page.screenshot({
+      path: shotPath(`dashboard-${mode}.png`),
+      fullPage: true,
+      animations: "disabled",
+    });
+
+    await page.goto("/pipeline");
+    await expect(page.getByText(/Closed in/).first()).toBeVisible();
+    await page.screenshot({
+      path: shotPath(`pipeline-${mode}.png`),
+      fullPage: true,
+      animations: "disabled",
+    });
+  });
+}

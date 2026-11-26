@@ -5,7 +5,7 @@ import { formatMoney, formatMoneyShort, formatMonth } from "../../lib/format";
 
 const AXIS = { fill: "var(--sea-mist)", fontSize: 12, fontFamily: "var(--sans)" };
 export const TOOLTIP_STYLE = {
-  background: "var(--panel)",
+  background: "var(--raised)",
   border: "none",
   borderRadius: 10,
   boxShadow: "var(--shadow)",
@@ -13,6 +13,11 @@ export const TOOLTIP_STYLE = {
   fontFamily: "var(--sans)",
   fontSize: 12,
 };
+/**
+ * Tooltip item text in ink. Recharts colors each item in its series' color by default, and Sea Green and Sea
+ * Mist are fills, too light for text on white (NFR-7, spec 3.9).
+ */
+export const TOOLTIP_ITEM_STYLE = { color: "var(--ink)" };
 
 /** R71: revenue won each month for the last 12 months, the current one included. The one gradient. */
 export function RevenueChart({ months }: { months: Dashboard["months"] }) {
@@ -38,6 +43,7 @@ export function RevenueChart({ months }: { months: Dashboard["months"] }) {
           />
           <Tooltip
             contentStyle={TOOLTIP_STYLE}
+            itemStyle={TOOLTIP_ITEM_STYLE}
             formatter={(value) => [formatMoney(Number(value)), "Revenue won"]}
             cursor={{ stroke: "var(--sea-mist)", strokeOpacity: 0.4 }}
           />

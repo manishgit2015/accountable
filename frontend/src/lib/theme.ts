@@ -6,19 +6,27 @@ export type Theme = "light" | "dark";
 
 export const THEME_KEY = "accountable.theme";
 
+/**
+ * This browser's localStorage, read here rather than as a default parameter: when the browser blocks site
+ * data, reading the property itself throws, and a default parameter would throw outside the caller's try.
+ */
+function browserStorage(): Storage | undefined {
+  return globalThis.localStorage;
+}
+
 /** The saved mode: dark only if exactly "dark" is saved, light otherwise, or if storage can't be read (R91, R93). */
-export function readTheme(storage: Pick<Storage, "getItem"> | undefined = globalThis.localStorage): Theme {
+export function readTheme(storage?: Pick<Storage, "getItem">): Theme {
   try {
-    return storage?.getItem(THEME_KEY) === "dark" ? "dark" : "light";
+    return (storage ?? browserStorage())?.getItem(THEME_KEY) === "dark" ? "dark" : "light";
   } catch {
     return "light";
   }
 }
 
 /** Save the mode. A storage that can't be written is ignored: the mode still applies for this visit (R93). */
-export function saveTheme(theme: Theme, storage: Pick<Storage, "setItem"> | undefined = globalThis.localStorage): void {
+export function saveTheme(theme: Theme, storage?: Pick<Storage, "setItem">): void {
   try {
-    storage?.setItem(THEME_KEY, theme);
+    (storage ?? browserStorage())?.setItem(THEME_KEY, theme);
   } catch {
     // Blocked or full storage: nothing to do, and nothing to log (R7, R93).
   }

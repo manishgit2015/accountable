@@ -34,7 +34,7 @@ export default defineConfig({
   retries: 0,
   reporter: [["list"]],
   // Screenshot baselines (visual suite only) live in the change folder that owns them: a test names its
-  // path under docs/changes/, for example ["dark-mode", "baseline", "dashboard.png"].
+  // path under docs/changes/, for example ["mvp-darkmode", "baseline", "dashboard.png"].
   snapshotPathTemplate: "docs/changes/{arg}{ext}",
   use: {
     channel: "chrome",
