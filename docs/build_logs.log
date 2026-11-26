@@ -1839,3 +1839,39 @@ Date: 2026-11-26
 The engineer decided the R94 light-mode comparison (node scripts/run-tests.mjs visual) stays outside
   npm run check, because its screenshots depend on the machine. It stays a by-hand step before merging, as
   REVIEW.md 13C and docs/STATUS.md ("For developers", "Next") already say. Recorded in docs/STATUS.md.
+
+mvp-subagents  T1-T3: reviewer and ui-check subagents
+Date: 2026-11-26
+Files: .claude/agents/reviewer.md, .claude/agents/ui-check.md, docs/changes/mvp-subagents/intent.md and
+  plan.md, docs/spec.md (ENG-12), docs/STATUS.md.
+  - T1 reviewer: tools Read, Grep, Glob, Bash; model sonnet. Follows REVIEW.md; read-only commands only, so
+    it returns the report as text and reports 13C's checks as "not run by the reviewer", with the build
+    log's evidence.
+  - T2 ui-check: tools Read, Grep, Glob and the Playwright browser tools of both the project's .mcp.json
+    server (disabled in this machine's settings.local.json) and the Playwright plugin; no evaluate,
+    run_code, type, fill_form or file_upload. Preloads the brand skill; screenshots by file name into
+    .playwright-mcp/ (git-ignored); changes no app data.
+Verification:
+  - V1: npm run check -> exit 0, "All 14 checks passed" (59 e2e), including "Change folder matches branch".
+  - V2: both files start with YAML frontmatter (name, description, tools, model: sonnet). Not yet invoked
+    as agents: Claude Code loads .claude/agents/ at session start.
+mvp-subagents  T1 revised: the reviewer writes its report and runs the checks
+Date: 2026-11-26
+The engineer decided the reviewer follows REVIEW.md section 12 as written: it runs the 13C checks itself and
+  creates or updates its report, docs/changes/<branch>/review-<n>.md (only the Disposition lines of an
+  earlier report). Tools now Read, Grep, Glob, Bash, Write, Edit; it changes no other file. Intent, plan,
+  spec ENG-12 and STATUS updated to match.
+  Verification: npm run check -> exit 0, "All 14 checks passed".
+mvp-subagents  First runs of both agents
+Date: 2026-11-26
+  - ui-check on the dashboard and pipeline (light, dark, 1024/1280px): no Broken or Off-brand findings, six
+    Minor. Its screenshots landed in the repository root, not .playwright-mcp/: the plugin's Playwright server
+    saves a bare file name relative to the working folder. Moved them to .playwright-mcp/; ui-check.md now
+    passes .playwright-mcp/<name>.png.
+Harness note: the agent's screenshot path was untested before its first run - caught by the agent's own report - fixed the path in ui-check.md.
+  - reviewer on commit ca5db24 ("Deploy: harness improved", the newest of seven with that name; the engineer
+    had no preference): PASS, no P0 or P1, two P2s (REV-001 nothing tests that checks.mjs sets
+    ACCOUNTABLE_VITE_WATCH=off; REV-002 copyEnv relies on inheriting it). 13C checks couldn't be verified:
+    the commit isn't in this working tree. Report: docs/changes/mvp-subagents/review-1.md. git status showed
+    it changed no other file. REV-001 spot-checked: vite-watch.test.mjs stubs the variable itself.
+  - The app was stopped after both runs. Stopping npm run dev left its python and node children running on Windows; they were stopped by port (8000, 5173).
