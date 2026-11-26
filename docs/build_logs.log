@@ -1913,3 +1913,31 @@ The engineer decided that once data is loaded into Supabase, its records aren't 
   operations (runbook row, DEP-4, DEP-11), sample data (R4), governance, and the index. It replaces the
   runbook's earlier "delete the sample records or empty the tables" assumption. Deleting one record in the
   app (R30-R36) is unchanged.
+
+mvp-multiuser  High-level architecture diagram (docs only)
+Date: 2026-11-26
+File: docs/architecture/high-level-architecture.md (AGENTS.md names no architecture folder, so the default).
+Sources: AGENTS.md, docs/spec.md and its area files, docs/changes/mvp-multiuser/intent.md, the code.
+  Missing: plan.md for mvp-multiuser, render.yaml, and standalone ADR files (the ADRs are in
+  docs/specs/governance.md).
+Verification:
+  - Existing parts checked in the code: 127.0.0.1 binding (main.py, vite.config.ts), Host and Origin
+    checks (security.py), request IDs and the rotating log (logging.py), SQLite PRAGMAs (db.py), routers
+    and services, one migration, the frontend's API client and libraries. No auth, search or Postgres code.
+  - Every number and ID in the document matched against docs/specs (pool 5, key cache 10 min, 10 people,
+    Render sleep 15 min, Supabase pause, 10 s timeout, 200 ms search pause): all found.
+  - Mermaid syntax kept to the widely supported forms (pipe edge labels, quoted labels, renamed the node
+    ids edge and static); not rendered, since no Mermaid renderer is installed.
+  - SVG and PNG exports not produced: @mermaid-js/mermaid-cli isn't installed, and installing it means
+    downloading a package, which needs the engineer's OK.
+mvp-multiuser  Architecture diagram exports
+Date: 2026-11-26
+The engineer approved installing @mermaid-js/mermaid-cli (12.2.0, from npm) to export the diagrams. It was
+  installed in the session's scratchpad, not the project (package.json and the lockfile unchanged), with
+  PUPPETEER_SKIP_DOWNLOAD so it used the installed Chrome.
+  - Rendered docs/architecture/high-level-architecture.svg and .png, and runtime-environments.svg and .png
+    (PNG at 2x), with the brand's Midnight ink and white edge labels. Both diagrams parsed, which confirms
+    the Mermaid syntax.
+  - Checked each PNG by eye: the container diagram reads left to right with the three boundaries; the
+    runtime diagram first stacked its groups in reverse, so it was changed to top-to-bottom with the groups
+    defined prod, test, local, which shows development, tests and production left to right.
