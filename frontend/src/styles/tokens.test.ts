@@ -84,12 +84,14 @@ function pairs(mode: "light" | "dark"): [string, string][] {
     [text, "--raised"],
     [text, "--page"],
   ]);
-  // Muted ink is for white only in light mode; in dark mode it may sit on the page as well (spec 3.9).
+  // Spec 3.9 says muted ink is for white only in light mode, but the app also puts it on the page there (under
+  // the pipeline's column heads, the dashed "Add deal" buttons): checked, and pinned below as a known gap.
   const muted: [string, string][] =
     mode === "light"
       ? [
           ["--ink-muted", "--panel"],
           ["--ink-muted", "--raised"],
+          ["--ink-muted", "--page"],
         ]
       : [
           ["--ink-muted", "--panel"],
@@ -107,14 +109,16 @@ function failures(tokens: Tokens, mode: "light" | "dark"): string[] {
 }
 
 /**
- * Light mode's one known shortfall, which predates dark mode and stays because light mode mustn't change
- * (R94): a late date in Raspberry on a hovered table row (the row hover is --page). Spec 17.1 tracks it.
- * Listing it exactly means a new failure, or this one being fixed, both show up here.
+ * Light mode's known shortfalls, which predate dark mode and stay because light mode mustn't change (R94).
+ * Spec 17.1 tracks both, with where they show: Raspberry text on the page color (a hovered row's late date,
+ * form error messages, the highlighted Delete menu item), and muted ink on the page color (the pipeline's
+ * column heads, its dashed "Add deal" buttons and "Closed in" notes). Listing them exactly means a new
+ * failure, or one of these being fixed, both show up here.
  */
-const KNOWN_LIGHT_GAPS = ["--raspberry-text on --page: 4.47:1"];
+const KNOWN_LIGHT_GAPS = ["--raspberry-text on --page: 4.47:1", "--ink-muted on --page: 4.15:1"];
 
 describe("NFR-7 text contrast from the tokens", () => {
-  it("NFR-7 light mode: every text color is at least 4.5:1 on its surfaces, apart from the known gap", () => {
+  it("NFR-7 light mode: every text color is at least 4.5:1 on its surfaces, apart from the known gaps", () => {
     expect(failures(LIGHT, "light")).toEqual(KNOWN_LIGHT_GAPS);
   });
 

@@ -219,3 +219,28 @@ test("NFR-7 chart tooltip text is in ink, not the series colors, in both modes",
     }
   }
 });
+
+test("R90 the toggle's icon is 18px square in both modes, inside a 36px button", async ({ page }) => {
+  await page.goto("/");
+  for (const mode of ["light", "dark"] as const) {
+    if (mode === "dark") await toggle(page).click();
+    const button = await toggle(page).boundingBox();
+    const icon = await toggle(page).locator("svg").boundingBox();
+    expect(button, mode).toMatchObject({ width: 36, height: 36 });
+    expect(icon, mode).toMatchObject({ width: 18, height: 18 });
+  }
+});
+
+test("R90 changing mode keeps the scroll position", async ({ page }) => {
+  await page.goto("/deals");
+  await expect(page.getByText("Showing 1–25 of 45")).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 600));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(600);
+  // Click the element itself: Playwright's own click would scroll it into view first.
+  await toggle(page).evaluate((button) => (button as HTMLButtonElement).click());
+  await expect(html(page)).toHaveAttribute("data-theme", "dark");
+  expect(await page.evaluate(() => window.scrollY)).toBe(600);
+  await toggle(page).evaluate((button) => (button as HTMLButtonElement).click());
+  await expect(html(page)).not.toHaveAttribute("data-theme");
+  expect(await page.evaluate(() => window.scrollY)).toBe(600);
+});

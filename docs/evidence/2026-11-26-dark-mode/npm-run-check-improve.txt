@@ -1,0 +1,696 @@
+
+> accountable@0.1.0 check
+> node scripts/check.mjs full
+
+
+=== Prettier (frontend) ===
+
+Checking formatting...
+All matched files use Prettier code style!
+
+=== Prettier (e2e, scripts) ===
+
+Checking formatting...
+All matched files use Prettier code style!
+
+=== ESLint (frontend) ===
+
+
+=== tsc (frontend app) ===
+
+
+=== tsc (frontend config) ===
+
+
+=== ruff format (backend) ===
+
+47 files already formatted
+
+=== ruff check (backend) ===
+
+All checks passed!
+
+=== ty (backend) ===
+
+All checks passed!
+
+=== .env is git-ignored ===
+
+
+=== gitleaks (git history) ===
+
+[90m1:23PM[0m [32mINF[0m [1m216 commits scanned.[0m
+[90m1:23PM[0m [32mINF[0m [1mscanned ~10619902 bytes (10.62 MB) in 517ms[0m
+[90m1:23PM[0m [32mINF[0m [1mno leaks found[0m
+
+=== gitleaks (working tree) ===
+
+[90m1:23PM[0m [32mINF[0m [1mscanned ~4937118 bytes (4.94 MB) in 120ms[0m
+[90m1:23PM[0m [32mINF[0m [1mno leaks found[0m
+
+=== Change folder matches branch ===
+
+Branch "mvp-darkmode" has its change folder (docs\changes\mvp-darkmode\intent.md).
+
+=== No skipped tests ===
+
+No skipped, focused or to-do tests.
+
+=== All tests, coverage gates ===
+
+
+=== backend tests (database C:\Users\manis\AppData\Local\Temp\accountable-test-lIpPLc\test.db) ===
+
+........................................................................ [ 18%]
+........................................................................ [ 37%]
+........................................................................ [ 55%]
+........................................................................ [ 74%]
+........................................................................ [ 92%]
+............................                                             [100%]
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\github\accountable\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.13-final-0 _______________
+
+Name                              Stmts   Miss Branch BrPart  Cover   Missing
+-----------------------------------------------------------------------------
+backend\app\cli.py                   53      1      6      1    97%   86
+backend\app\config.py                78      3     10      2    94%   46, 69, 71
+backend\app\errors.py                92      3     22      2    96%   88, 149-150
+backend\app\main.py                  84     12     10      2    83%   71-77, 111-117, 123->125, 142
+backend\app\perfdata.py             118      4     26      2    96%   234->237, 274-276, 292
+backend\app\routers\health.py        18      4      0      0    78%   19-22
+backend\app\schemas.py              381      4     58      3    98%   163, 189, 194-195, 288->292
+backend\app\security.py              73      5     26      3    92%   72-74, 97, 104->94, 115
+backend\app\services\moves.py        81      0     34      1    99%   149->147
+backend\app\services\records.py     151      1     40      1    99%   280
+-----------------------------------------------------------------------------
+TOTAL                              1783     37    318     17    97%
+
+15 files skipped due to complete coverage.
+Required test coverage of 80.0% reached. Total coverage: 97.33%
+388 passed, 1 warning in 21.91s
+
+=== backend-core-coverage tests (database C:\Users\manis\AppData\Local\Temp\accountable-test-lIpPLc\test.db) ===
+
+  100.0%  backend\app\rules.py
+  100.0%  backend\app\services\__init__.py
+  100.0%  backend\app\services\dashboard.py
+  100.0%  backend\app\services\deletes.py
+  100.0%  backend\app\services\moves.py
+   99.3%  backend\app\services\records.py
+  100.0%  backend\app\services\timeline.py
+
+Lines covered in rules.py and services/: 99.8% (479/480), minimum 90%.
+
+=== frontend tests (database C:\Users\manis\AppData\Local\Temp\accountable-test-lIpPLc\test.db) ===
+
+
+ RUN  v5.1.1 C:/github/accountable/frontend
+      Coverage enabled with v8
+
+
+ Test Files  31 passed (31)
+      Tests  253 passed (253)
+   Start at  13:23:36
+   Duration  18.56s (transform 40%, environment 20%, tests 17%, import 16%, setup 7%, worker 1%)
+
+    Isolate  31 workers spawned · ~4.24s startup each (spawn + environment, per file)
+             at least ~1.48s faster with isolate: false — reuses workers across files instead of one per file
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+
+=============================== Coverage summary ===============================
+Statements   : 97.3% ( 1085/1115 )
+Branches     : 91.37% ( 847/927 )
+Functions    : 96.61% ( 485/502 )
+Lines        : 98.44% ( 952/967 )
+================================================================================
+
+=== e2e tests (database C:\Users\manis\AppData\Local\Temp\accountable-test-lIpPLc\test.db) ===
+
+[WebServer] 2026-11-26 13:23:56 INFO Accountable 0.1.0 starting. Open http://127.0.0.1:5174
+[WebServer] 2026-11-26 13:23:56 INFO database C:\Users\manis\AppData\Local\Temp\accountable-test-lIpPLc\test.db (schema 0001_initial, new)
+[WebServer] 2026-11-26 13:23:56 INFO sample data loaded: yes
+[WebServer] 2026-11-26 13:23:56 WARNING clock fixed at 2026-11-21T14:30:00 by ACCOUNTABLE_FIXED_NOW (tests only)
+[WebServer] 2026-11-26 13:23:56 INFO API on http://127.0.0.1:8001
+[WebServer] 2026-11-26 13:23:56 INFO request id=6325c1c3e6e146b7939a1f8f0108c609 method=GET path=/api/health status=200 duration_ms=12
+
+Running 59 tests using 1 worker
+
+[WebServer] 2026-11-26 13:24:01 INFO request id=43bc2dab2b94471c842179f00fb5ca3a method=GET path=/api/deals status=200 duration_ms=11
+[WebServer] 2026-11-26 13:24:01 INFO request id=d437ae39b33e447eb80d9ed94677d7a2 method=GET path=/api/deals/{deal_id} status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:01 INFO request id=1f6680fc9c914d48ae0d5cec909a1dd9 method=GET path=/api/activities status=200 duration_ms=9
+[WebServer] 2026-11-26 13:24:01 INFO request id=01ce9fa0743f4736aa08fc0ba6f2ce41 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:01 INFO request id=a225fd3c0d564ce789c284fa805999ec method=POST path=/api/activities status=201 duration_ms=4
+[WebServer] 2026-11-26 13:24:01 INFO request id=1767858a21ae49dda40389c023c23bb1 method=GET path=/api/deals/{deal_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:01 INFO request id=a1a1db0d8a9a44f492323d8c7b5e6252 method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:01 INFO request id=ca45409b46b54bd185f525b13f618359 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:01 INFO request id=b9c86935f81c49e6b8567faff3146b93 method=POST path=/api/activities status=201 duration_ms=3
+[WebServer] 2026-11-26 13:24:01 INFO request id=940fc177f8d4450396b301abb0251dae method=GET path=/api/deals/{deal_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:01 INFO request id=379e4014744d4011977e05824d2984b5 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:01 INFO request id=1e0c97c23a724590977a943e9c565ce7 method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:01 INFO request id=61600ac617ad4f358e5d98a559550004 method=POST path=/api/activities status=201 duration_ms=3
+[WebServer] 2026-11-26 13:24:01 INFO request id=4dba019abb774a87a54b1ea520d94cdb method=GET path=/api/deals/{deal_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:01 INFO request id=f9be65ed295a44799040e4a4b229bd4b method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:01 INFO request id=85103f3838304fc9a795e652b2cbe094 method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:01 INFO request id=1817f49a69a043daa49c5f5319e5f1e7 method=GET path=/api/contacts/{contact_id} status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:01 INFO request id=755d4567e99e4c4ba60e0c4b92fa123c method=GET path=/api/deals status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:01 INFO request id=fd3e3d57f13542c9b83cf29c40e0ea54 method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:01 INFO request id=516a6218e6d3437097b30cd3a6d5aa13 method=GET path=/api/contacts/{contact_id}/timeline status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:01 INFO request id=df09310e74364f3093de11b0a83d9b3d method=GET path=/api/dashboard status=200 duration_ms=9
+[WebServer] 2026-11-26 13:24:01 INFO request id=31c45c417d08408dbbdadb21bb5f218c method=PATCH path=/api/activities/{activity_id} status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:01 INFO request id=383759dc7e1c4e3ca876fa3ce420cbc0 method=GET path=/api/dashboard status=200 duration_ms=6
+[WebServer] 2026-11-26 13:24:02 INFO request id=e8ead5c32c7c4604bfd31c490acadf3e method=GET path=/api/dashboard status=200 duration_ms=10
+[WebServer] 2026-11-26 13:24:02 INFO request id=bdba47c8600b48d3a87d40424df3814e method=GET path=/api/dashboard status=200 duration_ms=9
+[WebServer] 2026-11-26 13:24:02 INFO request id=2b6e05e9c5fe418eb9678ccc54e25220 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:03 INFO request id=ae65cebc69a949e1a59978fca06b5b39 method=GET path=/api/deals/{deal_id} status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:03 INFO request id=0ac840dd82574d3890d217e1cc43e1c6 method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:03 INFO request id=930c3e0438fc4f20b9ec67eab9cdef1e method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:03 INFO request id=4b38b7196d2348a795d559ca63505a1f method=PATCH path=/api/activities/{activity_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:03 INFO request id=c23bc34aa77446fa98f3bfd872cafa3b method=GET path=/api/deals/{deal_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:03 INFO request id=306fc4297ba94ec0a6d5bc3b4bda17ff method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:03 INFO request id=d137423b0af34c0a8827ab147ea44d27 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:03 INFO request id=2bf4aa5da7b545a38fff4474551d98b2 method=GET path=/api/dashboard status=200 duration_ms=5
+  ok  1 e2e\activities.spec.ts:26:1 › AC5 R53 R76 logs a call, an email and a note with follow-ups, shown until done (3.4s)
+[WebServer] 2026-11-26 13:24:04 INFO request id=682e531f7ce9495ba8a511ec340f25ee method=GET path=/api/contacts status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:04 INFO request id=0fd57c2394f74a34989e0c7dba61aa56 method=GET path=/api/contacts status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:04 INFO request id=d682993598e74e179d9ef01611dbebc0 method=GET path=/api/contacts/{contact_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:04 INFO request id=9ace094a28914f14ae132ac169f6e645 method=GET path=/api/deals status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:04 INFO request id=8734c73c7553403ebb3e1448d581bce0 method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:04 INFO request id=6f95fae08fc04c7ebe767daae9534470 method=GET path=/api/contacts/{contact_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:04 INFO request id=1b0b2c23b7a54161b44a2dab8edcb640 method=POST path=/api/activities status=201 duration_ms=4
+[WebServer] 2026-11-26 13:24:04 INFO request id=315dab63cff44c74a1202b1b36c5cd0b method=GET path=/api/contacts/{contact_id} status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:04 INFO request id=6c493fa3a4da4acbb48510f901ee5bf0 method=GET path=/api/contacts/{contact_id}/timeline status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:04 INFO request id=d7bbf3b031a94c578dcf2dbd685bb4dd method=GET path=/api/activities status=200 duration_ms=6
+[WebServer] 2026-11-26 13:24:04 INFO request id=87a4291ddc91485892c3f10ceb24706e method=GET path=/api/deals status=200 duration_ms=7
+[WebServer] 2026-11-26 13:24:04 INFO request id=013577be75d3435aab777ffed5e5b430 method=GET path=/api/dashboard status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:04 INFO request id=4a4c76a7c294461d93f1212019c04350 method=PATCH path=/api/activities/{activity_id} status=200 duration_ms=13
+[WebServer] 2026-11-26 13:24:04 INFO request id=3d58b869bbc648af9630ff528839493b method=GET path=/api/dashboard status=200 duration_ms=6
+[WebServer] 2026-11-26 13:24:05 INFO request id=e040e9bc59294fa49c6e25aad1cf5664 method=GET path=/api/dashboard status=200 duration_ms=4
+  ok  2 e2e\activities.spec.ts:90:1 › WF-5 logs a call on a contact's page and finishes it from the dashboard (2.1s)
+[WebServer] 2026-11-26 13:24:06 INFO request id=5c87ea4ffe3f45d79d3d51ff322d0d41 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:06 INFO request id=ca8f2893dd314d9bb2420c9c401e85f0 method=GET path=/api/deals/{deal_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:06 INFO request id=9d48bd7344e94ec4958a3bfcdb93917e method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:06 INFO request id=f11eb2c99bc64c1a83f3402b212fd3db method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:06 INFO request id=e77c0b39d6734c1a80297fe3f1bc4a5c method=POST path=/api/activities status=201 duration_ms=3
+[WebServer] 2026-11-26 13:24:06 INFO request id=e9fb41c57eb54bb199eba4bd16a661ec method=GET path=/api/deals/{deal_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:06 INFO request id=962d9fe49ddd4820933b239dc4fafc18 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:06 INFO request id=43555630b4c74543be5102f7279f8262 method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:06 INFO request id=78b3be9c49854a1b8efcea13b10550f2 method=PATCH path=/api/activities/{activity_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:06 INFO request id=440bfc0e9f8c457cae0030ab5c977bfd method=GET path=/api/deals/{deal_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:06 INFO request id=775334ecaecc4818a0271999e2645d82 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:06 INFO request id=33f25c1105e64852ba7ddbdb48b67f50 method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:07 INFO request id=23d985482a9043e69c02592116565713 method=DELETE path=/api/activities/{activity_id} status=204 duration_ms=3
+[WebServer] 2026-11-26 13:24:07 INFO request id=d48940957e4847b79e11200771b86952 method=GET path=/api/deals/{deal_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:07 INFO request id=1f9be44b99d64d2e90b789407cc1b69c method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:07 INFO request id=3b3570e39e144bbdafef3479fed9d6b6 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=4
+  ok  3 e2e\activities.spec.ts:109:1 › R55 edits and deletes an activity from the timeline (1.6s)
+[WebServer] 2026-11-26 13:24:08 INFO request id=41d21bffef674be6a1ee5ec8398cea6a method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:08 INFO request id=a0cab91627604f09a776d39a4050da4a method=GET path=/api/organizations status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:08 INFO request id=121234f5472441bb9c40fc2984d4402d method=GET path=/api/dashboard status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:08 INFO request id=d6acb2eda956436f90e72cdc3cb641d4 method=GET path=/api/deals status=200 duration_ms=1
+[WebServer] 2026-11-26 13:24:08 INFO request id=92cf3cc5224747108943777dc355ca14 method=GET path=/api/deals status=200 duration_ms=1
+[WebServer] 2026-11-26 13:24:09 INFO request id=0f807113e45c469faec9b070c0310af1 method=GET path=/api/contacts status=200 duration_ms=1
+[WebServer] 2026-11-26 13:24:09 INFO request id=e1fe4ac091f04481936fcd3c36e7a700 method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:09 INFO request id=71b6e5630a82403592f1b4d5bd27a6cc method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:09 INFO request id=bafa909231a64deb9f4104beca8a2681 method=POST path=/api/organizations status=201 duration_ms=6
+[WebServer] 2026-11-26 13:24:09 INFO request id=de85ad69f99048ee86d7b9ca95428b68 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:10 INFO request id=25274b48346447da8959944bb567ce26 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:10 INFO request id=9ff17bcef9ca4f289bb2440141e6cf13 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:10 INFO request id=6bab5cbcae5c4b3db709071365b5ebe7 method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:10 INFO request id=26cbc1286fbb48c5b728121c32d79db9 method=GET path=/api/dashboard status=200 duration_ms=6
+  ok  4 e2e\commands.spec.ts:6:1 › AC2 R4 R78 REL-10 after clear every screen is empty but works, and seed brings the sample data back (3.5s)
+[WebServer] 2026-11-26 13:24:11 INFO request id=12f7092541804f5fa450ee29f90a3751 method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:11 INFO request id=9c6782b6151849dbaf9563f20a77888d method=GET path=/api/contacts status=200 duration_ms=3
+  ok  5 e2e\contacts.spec.ts:5:1 › R44 the status filter shows each status with its count (1.5s)
+[WebServer] 2026-11-26 13:24:13 INFO request id=5350297fce0b45b5aa08b55d1e3f5dc2 method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:13 INFO request id=544cf7e4a3f54766a183a56ed93aaac5 method=GET path=/api/contacts status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:13 INFO request id=95df81f7c240471daac7a622f16ac909 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:13 INFO request id=b8c7cc5bb8214f7c89979f817c53e251 method=POST path=/api/organizations status=201 duration_ms=3
+[WebServer] 2026-11-26 13:24:13 INFO request id=477bf771959d47b7af62062182cfb7c4 method=GET path=/api/contacts status=200 duration_ms=29
+[WebServer] 2026-11-26 13:24:13 INFO request id=ea8c153de0814730a09c20983a0bc78d method=GET path=/api/organizations status=200 duration_ms=29
+[WebServer] 2026-11-26 13:24:13 INFO request id=9b6139f502344500b3866c3f26ee9143 method=POST path=/api/contacts status=201 duration_ms=3
+[WebServer] 2026-11-26 13:24:13 INFO request id=7c34704dcfbe436bb8dafd14e6843fd4 method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:13 INFO request id=ee92271bce4545119f5eff06f1eb7bff method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:13 INFO request id=e1638cfc5d14422caffa184d688f1751 method=GET path=/api/organizations/{organization_id} status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:13 INFO request id=936c1a72103144068e1881cd7048cdf9 method=GET path=/api/deals status=200 duration_ms=6
+[WebServer] 2026-11-26 13:24:13 INFO request id=a5ca96c7f19f4276b84818738e7814f3 method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:13 INFO request id=a91a992ca4fe40978ba8cf1355b434bb method=GET path=/api/contacts status=200 duration_ms=7
+[WebServer] 2026-11-26 13:24:13 INFO request id=961db1b7da8142708e7e006c09948664 method=GET path=/api/organizations/{organization_id}/timeline status=200 duration_ms=3
+  ok  6 e2e\contacts.spec.ts:26:1 › WF-3 R45 adds a lead with a new organization made from the picker (1.6s)
+[WebServer] 2026-11-26 13:24:14 INFO request id=6216438aed134f1c874effdb33f6892f method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:15 INFO request id=8e803160392d4d8c89e4e084e4a51184 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:15 INFO request id=2646623bf0e34b448e90f9af1e5d962e method=PATCH path=/api/contacts/{contact_id} status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:15 INFO request id=ab024791cdca41e78705e847c23e6986 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:15 INFO request id=341527a954834bbaa228a0659e3d9244 method=GET path=/api/contacts status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:15 INFO request id=2041baf7054a42f79f94513dfad0db22 method=GET path=/api/contacts/{contact_id}/delete-impact status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:15 INFO request id=011e7900121344ccbd910ebda887c02c method=DELETE path=/api/contacts/{contact_id} status=204 duration_ms=2
+[WebServer] 2026-11-26 13:24:15 INFO request id=4e3d98a1c0e143f7835b29ce84c17a62 method=GET path=/api/contacts status=200 duration_ms=1
+  ok  7 e2e\contacts.spec.ts:62:1 › AC2 R32 edits a contact, then deletes it with the server's counts (1.6s)
+[WebServer] 2026-11-26 13:24:16 INFO request id=207b0bb15d154ffda54d797b03d5d2ea method=GET path=/api/deals status=200 duration_ms=2
+  ok  8 e2e\deals.spec.ts:5:1 › R19 R44 late deals show a Raspberry Late badge and date (1.2s)
+[WebServer] 2026-11-26 13:24:17 INFO request id=0180c022c177439bb43f48baf52800f0 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:17 INFO request id=161df1269c78426ea52bd698a18a59d1 method=GET path=/api/deals status=200 duration_ms=3
+  ok  9 e2e\deals.spec.ts:17:1 › R47 R41 sorts by close date by default, and by value on a click (1.3s)
+[WebServer] 2026-11-26 13:24:19 INFO request id=0a8e5781a3fb412da6a99683e2932dce method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:19 INFO request id=abce14661c6943bc80071a351712ec4b method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:19 INFO request id=68ff87da9e1045eb96afd983f9d382e4 method=GET path=/api/contacts status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:19 INFO request id=86383678c2604845a93ddccfd186ec45 method=POST path=/api/deals status=201 duration_ms=5
+[WebServer] 2026-11-26 13:24:19 INFO request id=6b6222ad9951496994a61b1e2758ce4f method=GET path=/api/organizations status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:19 INFO request id=4db444b33628432a9cce3b040ff29448 method=GET path=/api/contacts status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:19 INFO request id=9deeeac8df2d40afa5b36346ffc44b53 method=GET path=/api/deals status=200 duration_ms=3
+  ok 10 e2e\deals.spec.ts:27:1 › AC4 R15 R23 adds a deal: probability from the stage, contacts filtered by organization (1.5s)
+[WebServer] 2026-11-26 13:24:20 INFO request id=5a29d6b0c52147948f59f733e1a5893c method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:20 INFO request id=fea15a8654c143e7b0e4b3c42c0a8d07 method=GET path=/api/contacts status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:20 INFO request id=ea5357f4661f4c73a1938cd7e1a55cff method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:20 INFO request id=02cf60ba79e64d99bba07d7c12e3d755 method=PATCH path=/api/deals/{deal_id} status=422 duration_ms=2
+[WebServer] 2026-11-26 13:24:20 INFO request id=a77a33bab1274a58ad3de3e81bf6ecaa method=PATCH path=/api/deals/{deal_id} status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:20 INFO request id=38a0d676bf64481fbb2dfcd0044acf62 method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:20 INFO request id=40192c70e61947eeac8bbc45bf54c291 method=GET path=/api/contacts status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:20 INFO request id=b744af5c2fb04d528661aecd6a7d8fe3 method=GET path=/api/deals status=200 duration_ms=3
+  ok 11 e2e\deals.spec.ts:59:1 › AC2 R23 edits a deal and refuses a contact from another organization (1.5s)
+[WebServer] 2026-11-26 13:24:22 INFO request id=c1c0c7bd3bd64b31ac88d4831ca0a553 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:22 INFO request id=a01b9c32535646368b0fa7b4683c376d method=GET path=/api/deals/{deal_id}/delete-impact status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:22 INFO request id=83ee15fe47d64a5cb84211b40711e46c method=DELETE path=/api/deals/{deal_id} status=204 duration_ms=3
+[WebServer] 2026-11-26 13:24:22 INFO request id=00aa2f972e90437e9c0b5abd15385758 method=GET path=/api/deals status=200 duration_ms=2
+  ok 12 e2e\deals.spec.ts:88:1 › AC2 R33 deletes a deal after warning about its activities and stage changes (1.4s)
+[WebServer] 2026-11-26 13:24:23 INFO request id=797ee443dc40437e88da4b24a56c0603 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:23 INFO request id=25a05d5c84db418ba663a1b49955820d method=POST path=/api/organizations status=201 duration_ms=3
+[WebServer] 2026-11-26 13:24:23 INFO request id=6a70ede433644508a54a0fced9d6cb3d method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:24 INFO request id=d75db9a4c05e433da1b741e97c8c8e69 method=PATCH path=/api/organizations/{organization_id} status=200 duration_ms=7
+[WebServer] 2026-11-26 13:24:24 INFO request id=e72abcb662894a0a8bb4f04da75a3d4b method=GET path=/api/organizations status=200 duration_ms=1
+[WebServer] 2026-11-26 13:24:24 INFO request id=01cff369d435470f82af9046a4ccf4af method=GET path=/api/organizations/{organization_id}/delete-impact status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:24 INFO request id=0be529e350f24db7a8dcbbc38236af75 method=DELETE path=/api/organizations/{organization_id} status=204 duration_ms=2
+[WebServer] 2026-11-26 13:24:24 INFO request id=56dc0ee6711d4438b780fb6efe6e9a6a method=GET path=/api/organizations status=200 duration_ms=2
+  ok 13 e2e\keyboard.spec.ts:68:1 › NFR-7 an organization is added, edited and deleted with the keyboard only (2.2s)
+[WebServer] 2026-11-26 13:24:25 INFO request id=d52a75bbdf7c43fc8e401b62b5ef1a6a method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:25 INFO request id=c2962b34753549f8be7d8e0df4aa2252 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:25 INFO request id=e177718c80394a45afd411caacef71f1 method=GET path=/api/contacts status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:26 INFO request id=be1eed0bdd5049baac001f02f5e825bd method=POST path=/api/deals status=201 duration_ms=6
+[WebServer] 2026-11-26 13:24:26 INFO request id=8035b4210e0e44cd9cf3910eeb69a21a method=GET path=/api/deals status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:26 INFO request id=ec37fa48a71545349b6b9f200b45116b method=GET path=/api/organizations status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:26 INFO request id=e8ca63069c3346d2a573fa95c990fdcd method=GET path=/api/contacts status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:26 INFO request id=270d54b361304482add6c2bed1adf25e method=GET path=/api/deals/{deal_id} status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:26 INFO request id=33435f8de9634cc5870b30fc70b54292 method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:26 INFO request id=d5a6c8b340be48daa436e08b33ddac74 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=1
+  ok 14 e2e\keyboard.spec.ts:129:1 › NFR-7 a deal is added from the top bar with the keyboard only (1.6s)
+[WebServer] 2026-11-26 13:24:27 INFO request id=718fa7941baa4ea08f91375e81d94211 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:27 INFO request id=e68265f81d6c42dc9c8ee272bbb9b280 method=POST path=/api/deals/{deal_id}/move status=200 duration_ms=7
+[WebServer] 2026-11-26 13:24:27 INFO request id=22102fcf2d374b83ae90f1309be78b3e method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:27 INFO request id=b5eb9dd3527b492a8bacd48ffefc3f8c method=GET path=/api/deals/{deal_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:27 INFO request id=184a64c7084e4958a9b857ef560a655a method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:27 INFO request id=13ccdcc4ba934368baf74ab76a297c15 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=1
+  ok 15 e2e\keyboard.spec.ts:171:1 › R66 NFR-7 a pipeline card is reached with Tab, moved with Space and the arrows, and opened with Enter (1.8s)
+[WebServer] 2026-11-26 13:24:29 INFO request id=e01ad70920ec4dae9a9c26b9eced5d6e method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:29 INFO request id=e25bd5831a154905a25a73b4647a3640 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:30 INFO request id=f8019450fa9c44f499438fbc0a45dcbe method=GET path=/api/deals status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:30 INFO request id=97f4540b2cdd4fafa238325b44751701 method=GET path=/api/deals status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:31 INFO request id=28a206f9ba4f4ecbb91d191de7184fb2 method=GET path=/api/deals status=200 duration_ms=2
+  ok 16 e2e\keyboard.spec.ts:200:1 › NFR-7 secondary buttons show the focus ring in light and dark mode (4.3s)
+[WebServer] 2026-11-26 13:24:33 INFO request id=a65f975f1d2e4565b55882e9204ad71a method=GET path=/api/dashboard status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:34 INFO request id=5bde6fb0d4934590a8eb4a19fc12cf0f method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:34 INFO request id=b75a697b97a945af8decbb64dd672684 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:34 INFO request id=43ef744727594d7797ffeb36019a684e method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:35 INFO request id=728ec680d870495bac9c6c498f1c8240 method=GET path=/api/organizations status=200 duration_ms=2
+  ok 17 e2e\layout.spec.ts:61:5 › at 1024px › R5 no horizontal scroll on the five sections at 1024px (3.3s)
+[WebServer] 2026-11-26 13:24:36 INFO request id=48c67b097b66414eab8b66542bd46dcd method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:36 INFO request id=a2c93f8cc46b4406ae63f5912d994ae4 method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:36 INFO request id=b30074c96f6541fd958a5d1d7b218232 method=GET path=/api/organizations/{organization_id} status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:36 INFO request id=6abb91f8028e401e9908eee24750b6e8 method=GET path=/api/contacts status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:36 INFO request id=766bbfc6d4354fc5937db88b1b69e545 method=GET path=/api/deals status=200 duration_ms=6
+[WebServer] 2026-11-26 13:24:36 INFO request id=8fc8720870ef4421a627f2826f0b77ec method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:36 INFO request id=8655fdef37194d7fa2931a5f6d65f3c4 method=GET path=/api/organizations/{organization_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:37 INFO request id=ff8e451cf899451ab7d14ddb6362098f method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:37 INFO request id=74b270f99868478e817ba210efeee2f8 method=GET path=/api/contacts/{contact_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:37 INFO request id=2a07ba9ae919441b9e9a5b189782e680 method=GET path=/api/deals status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:37 INFO request id=9eddfb09dee94cdc9b64897b0a7b10b3 method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:37 INFO request id=b48459a328e444b59861cdc75898bbef method=GET path=/api/contacts/{contact_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:37 INFO request id=c871ea75d7dd4e9188add14ad343b6c7 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:38 INFO request id=8360aebc10cf4cffaa113a9055aac522 method=GET path=/api/deals/{deal_id} status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:38 INFO request id=a75a0848e1424304ba804ff884804e83 method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:38 INFO request id=546e3b5a046f4b448691fe329171bde4 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:38 INFO request id=e88d11f1b6be45b493a14c22c368549b method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:38 INFO request id=1c600c410aed4f448cebed834ced97fb method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:38 INFO request id=194970fc82d1463b935ac162172da201 method=GET path=/api/contacts status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:38 INFO request id=322a38bc827645e88428cc26ec009037 method=GET path=/api/deals/{deal_id}/delete-impact status=200 duration_ms=2
+  ok 18 e2e\layout.spec.ts:69:5 › at 1024px › R5 no horizontal scroll on the record pages, side panels and dialogs at 1024px (3.3s)
+[WebServer] 2026-11-26 13:24:40 INFO request id=664671bb363b47deae1703ca925da5f4 method=GET path=/api/dashboard status=200 duration_ms=6
+[WebServer] 2026-11-26 13:24:40 INFO request id=93bb4f97c5b24500b0e82cf6bc55488e method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:41 INFO request id=3a7aeb980bec44ff8abcb5f1b15837f1 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:41 INFO request id=ba4809b3ccf14973a54bb3bd154fb684 method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:42 INFO request id=8642287db6634dd3a4b9bcc54c75f299 method=GET path=/api/organizations status=200 duration_ms=2
+  ok 19 e2e\layout.spec.ts:61:5 › at 1280px › R5 no horizontal scroll on the five sections at 1280px (3.4s)
+[WebServer] 2026-11-26 13:24:43 INFO request id=22d7af35196541e3b2d2e6aabde2b708 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:43 INFO request id=ee72c97d8c4d4a21a735909691a7a543 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:43 INFO request id=a3f00a1166c44d109504ec620b05cd17 method=GET path=/api/organizations/{organization_id} status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:43 INFO request id=c37dd93fadfe444492f5b9db77353719 method=GET path=/api/contacts status=200 duration_ms=6
+[WebServer] 2026-11-26 13:24:43 INFO request id=3c81b05169ae472a81d9e60edb7efe6c method=GET path=/api/deals status=200 duration_ms=8
+[WebServer] 2026-11-26 13:24:43 INFO request id=c5c677a9a19e4681b4bc09170d3e5278 method=GET path=/api/activities status=200 duration_ms=8
+[WebServer] 2026-11-26 13:24:43 INFO request id=0c1ed423f5164921be623947559a0646 method=GET path=/api/organizations/{organization_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:44 INFO request id=bda3ce25049246d2999d317c2f40d132 method=GET path=/api/contacts status=200 duration_ms=1
+[WebServer] 2026-11-26 13:24:44 INFO request id=753efaf82ddc45e99d1a3a951c5c28ee method=GET path=/api/contacts/{contact_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:44 INFO request id=85b76b6a0a4248a7a2521f97e2bd2a9e method=GET path=/api/deals status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:44 INFO request id=f63432492afc4b2cacb1e3ea8849ef7a method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:44 INFO request id=1935f82275bf436895294bef0af8f354 method=GET path=/api/contacts/{contact_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:44 INFO request id=e8e74c3f1216473797ad093924fea431 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:44 INFO request id=1beb53ef191a4a0b8f585d80dfe230c2 method=GET path=/api/deals/{deal_id} status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:44 INFO request id=8a4893d9ca784f42935d3de018e4db4f method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:44 INFO request id=9099021fe1694d419f5adab0bd50ac54 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:45 INFO request id=3e4d3d06650d42c1abfa5c85824c74ad method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:45 INFO request id=421dde6cbc5348ffa77fbde722a6e3ee method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:45 INFO request id=fde175e4e0504b10a09553c5e717ce27 method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:45 INFO request id=ce393c585f8a4aefa6fbee0ddaafc249 method=GET path=/api/deals/{deal_id}/delete-impact status=200 duration_ms=2
+  ok 20 e2e\layout.spec.ts:69:5 › at 1280px › R5 no horizontal scroll on the record pages, side panels and dialogs at 1280px (3.2s)
+[WebServer] 2026-11-26 13:24:46 INFO request id=c91ef86c263a42089192c38778682969 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:46 INFO request id=a5c2b25a6ba647edae741945b9e7784d method=POST path=/api/organizations status=201 duration_ms=5
+[WebServer] 2026-11-26 13:24:46 INFO request id=c8dc2e98ba2a4122b362ad73cc459ecc method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:47 INFO request id=fb64a71e7d644a6597886e1f08b12302 method=PATCH path=/api/organizations/{organization_id} status=200 duration_ms=5
+[WebServer] 2026-11-26 13:24:47 INFO request id=e2cb706385e24d5a9586061cb930caf3 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:47 INFO request id=967605709bc84044911300563e2a9ab5 method=GET path=/api/organizations/{organization_id} status=200 duration_ms=4
+[WebServer] 2026-11-26 13:24:47 INFO request id=3bd94dee779649a097f348e1fdfa3f97 method=GET path=/api/contacts status=200 duration_ms=6
+[WebServer] 2026-11-26 13:24:47 INFO request id=80e18e4ea6ca465c9c524b5d312961ad method=GET path=/api/deals status=200 duration_ms=7
+[WebServer] 2026-11-26 13:24:47 INFO request id=5db861b36cd247e5a148c6804b160c2e method=GET path=/api/activities status=200 duration_ms=7
+[WebServer] 2026-11-26 13:24:47 INFO request id=63965c0e29fa4e378dccf8212ceea3ba method=GET path=/api/organizations/{organization_id}/timeline status=200 duration_ms=2
+  ok 21 e2e\organizations.spec.ts:5:1 › AC2 R40–R43 adds, searches, sorts and edits an organization (1.7s)
+[WebServer] 2026-11-26 13:24:48 INFO request id=4990a0799f6d4630bfe531378fb2f651 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:48 INFO request id=452a74d1f88b4d5fa15fdf99aced5d7b method=GET path=/api/organizations/{organization_id}/delete-impact status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:48 INFO request id=6d029b6a3bed4ecd9fde8932043cf77a method=GET path=/api/organizations/{organization_id}/delete-impact status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:48 INFO request id=75a25fa8966d4e3287f53b9963faae1a method=DELETE path=/api/organizations/{organization_id} status=204 duration_ms=4
+[WebServer] 2026-11-26 13:24:48 INFO request id=916ba90043da4cd5a1b4eeb5ac003e92 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:48 INFO request id=00af0c968391428289543efe6551d1a8 method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:48 INFO request id=c4d07d77888140258b96d4651348a589 method=GET path=/api/deals status=200 duration_ms=2
+  ok 22 e2e\organizations.spec.ts:60:1 › R30 R31 R34 deleting an organization warns with counts and keeps its contacts and deals (1.7s)
+[WebServer] 2026-11-26 13:24:50 INFO request id=d79ac17309cf41709db8b2c0ff915e39 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:50 INFO request id=e296f24e6a4e44eaaa23a6c32cbc0651 method=POST path=/api/organizations status=201 duration_ms=3
+[WebServer] 2026-11-26 13:24:50 INFO request id=11c36eb436e5497190eed81261f2f0c7 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:50 INFO request id=c83aa0afc6cb4e7386a6d35ac9347724 method=PATCH path=/api/organizations/{organization_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:24:50 INFO request id=a14e96fb96f34d6591453bc48052e621 method=GET path=/api/organizations status=200 duration_ms=1
+[WebServer] 2026-11-26 13:24:50 INFO request id=ba0e068c78d5451fa110b2f26e217441 method=GET path=/api/organizations/{organization_id}/delete-impact status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:50 INFO request id=4f57fa21c84c44e39e69d278b6b60974 method=DELETE path=/api/organizations/{organization_id} status=204 duration_ms=2
+[WebServer] 2026-11-26 13:24:50 INFO request id=368113e1dd9849b7952148c1622a7714 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:50 INFO request id=bb1c93c62a7a4ef2be57db7adbb0860f method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:51 INFO request id=3e69eda12cdd4e39a32384176ed3ce0a method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:24:51 INFO request id=bab660a1c9cc444f8dc8a825bc269ac4 method=GET path=/api/organizations status=200 duration_ms=1
+  ok 23 e2e\persistence.spec.ts:16:1 › AC2 R3 saved changes survive a reload (2.5s)
+  ok 24 e2e\persistence.spec.ts:122:1 › AC2 R3 REL-1 saved changes survive a backend restart, even after it's killed (7.4s)
+[WebServer] 2026-11-26 13:25:00 INFO request id=5e06f25a74e34d06ad061eb80ba72aa8 method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:00 INFO request id=3022b18f1c85490487cb3a15c5d4cb82 method=PATCH path=/api/organizations/{organization_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:00 INFO request id=d3ba15524a5d4174bef3346519b6bb2f method=GET path=/api/organizations status=200 duration_ms=2
+  ok 25 e2e\persistence.spec.ts:168:1 › REL-6 a 503 busy answer shows Accountable is busy, and the save can be tried again (1.4s)
+[WebServer] 2026-11-26 13:25:01 INFO request id=8361aba2103a472ca3fe485a99cf5c08 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:11 INFO request id=bec5de06b0d24b2a8395ad2b52ad5a9b method=GET path=/api/health status=200 duration_ms=1
+  ok 26 e2e\persistence.spec.ts:209:1 › REL-4 a save with no answer gives up after 10 seconds with a message (11.5s)
+[WebServer] 2026-11-26 13:25:12 INFO request id=b58f9db75c4d4c608313d25dfcb7a356 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:12 INFO request id=a794f658a8b847ee9c28a5d285aa280e method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:15 INFO request id=7658d9e0eb9e4ad6946c234390e74bc7 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:15 INFO request id=f20586fb2b1b46deade3d203fd96f43f method=POST path=/api/organizations status=201 duration_ms=2
+[WebServer] 2026-11-26 13:25:15 INFO request id=9b755ac2ff0f4ac88ab6458947591bf9 method=GET path=/api/organizations status=200 duration_ms=2
+  ok 27 e2e\persistence.spec.ts:238:1 › REL-7 when the backend can't be reached, a banner shows, data stays and saving waits (4.1s)
+[WebServer] 2026-11-26 13:25:17 INFO request id=87d2758d71984439b347a9880f0feab9 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:17 INFO request id=b4c45a97b1914eee883ed5bb3c998d63 method=POST path=/api/deals/{deal_id}/move status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:17 INFO request id=ed188f1d960b4257877b9a6e242152cd method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:17 INFO request id=17ec0401d2124c078aa87a0052e317c1 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:17 INFO request id=4b5a255c9e0f4cac80be4e09b687aa21 method=GET path=/api/deals/{deal_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:17 INFO request id=9f66eaa878f94cd69a79c4f31de97d33 method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:17 INFO request id=4931cd5ea9c04f82845238a7cdfd6fba method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=2
+  ok 28 e2e\pipeline.spec.ts:18:1 › AC4 R63 R15 dragging a card into a gap in another column changes its stage, exactly there (2.1s)
+[WebServer] 2026-11-26 13:25:19 INFO request id=67da0f50d51b4fe983f05f779910d684 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:19 INFO request id=0f625a9ca34047a483b0b4cfecffc41d method=POST path=/api/deals/{deal_id}/move status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:19 INFO request id=d4931c176b2344cf9e8829d3467630a8 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:19 INFO request id=a7c9c72ac6354a88a7674a601011b6c9 method=GET path=/api/deals status=200 duration_ms=2
+  ok 29 e2e\pipeline.spec.ts:47:1 › R63 dragging within a column puts the card exactly where it was dropped (2.0s)
+[WebServer] 2026-11-26 13:25:21 INFO request id=6f8d1ce662d8442c9aa1248c322d034d method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:21 INFO request id=bca63394d6b747a28f4e11bfb5a3f1b2 method=POST path=/api/deals/{deal_id}/move status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:21 INFO request id=70e0785708654974a3f5a20bbaa09685 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:22 INFO request id=227fd428f6a94cb19f86ceb04bee6a33 method=GET path=/api/deals status=200 duration_ms=2
+  ok 30 e2e\pipeline.spec.ts:62:1 › R66 a card can be moved with the keyboard: Space, arrows, Space; Escape cancels (2.1s)
+[WebServer] 2026-11-26 13:25:23 INFO request id=0ccc733f8abe48dab2339db2cdea642e method=GET path=/api/deals status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:23 INFO request id=71440ac3a7ac4561852bc9f7b4198778 method=GET path=/api/deals status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:23 INFO request id=69099a6d5718436a8b8b87e8c0a0db10 method=GET path=/api/deals/{deal_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:23 INFO request id=2c16da5d439447859b8e39f2e3b307b8 method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:23 INFO request id=2f7679fc42d04b6e8bf6964f7a314b25 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=2
+  ok 31 e2e\pipeline.spec.ts:85:1 › R66 Enter on a focused card opens the deal (1.2s)
+[WebServer] 2026-11-26 13:25:24 INFO request id=fbea9febd00b4747974f87ce6ed740e3 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:24 INFO request id=3dd2adbaf8ce49109dbf32106a4c5621 method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:24 INFO request id=1e09100886f942c199cff9edbff4f8d6 method=GET path=/api/contacts status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:24 INFO request id=be14b63660c64f8d889cf446e08d1490 method=POST path=/api/deals status=201 duration_ms=3
+[WebServer] 2026-11-26 13:25:24 INFO request id=685629605d7e4a8eb04aa1960fffff8a method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:24 INFO request id=aac22ec710a343129fd2d187be573967 method=GET path=/api/contacts status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:24 INFO request id=cd835bf91a2f43e39c66247b9f9027db method=GET path=/api/deals status=200 duration_ms=4
+  ok 32 e2e\pipeline.spec.ts:92:1 › R65 Add deal in a column opens the form with that stage, and the card goes to the top (1.4s)
+[WebServer] 2026-11-26 13:25:25 INFO request id=620d359a9d4e4410938f12b18fc3e7fe method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:25 INFO request id=d2ee479d5b6343c0a229195d45576267 method=GET path=/api/deals status=200 duration_ms=3
+  ok 33 e2e\pipeline.spec.ts:110:1 › R62 late cards show a Late badge with the date (1.2s)
+[WebServer] 2026-11-26 13:25:27 INFO request id=b30507da5480474887b40389bbb5cae6 method=GET path=/api/deals status=200 duration_ms=2
+  ok 34 e2e\pipeline.spec.ts:117:1 › R60 Won and Lost show this month's deals only, with their totals (1.2s)
+[WebServer] 2026-11-26 13:25:28 INFO request id=c7b3a4c6d796446b89f630e9add49867 method=GET path=/api/deals status=200 duration_ms=2
+  ok 35 e2e\pipeline.spec.ts:128:1 › R64 REL-8 a failed move puts the card and totals back and says so (1.6s)
+[WebServer] 2026-11-26 13:25:29 INFO request id=180e733c73b84fe6981122ffabd2242c method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:30 INFO request id=80d819174d9549a9aa63029811230016 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:30 INFO request id=91f0f298d00244c5b957372f06848ccf method=PATCH path=/api/deals/{deal_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:30 INFO request id=85cdc0b4d2bf4b27aabd105872e70162 method=POST path=/api/deals/{deal_id}/move status=409 duration_ms=2
+[WebServer] 2026-11-26 13:25:30 INFO request id=4c6e77254ead4098b74a270beb57976e method=GET path=/api/deals status=200 duration_ms=2
+  ok 36 e2e\pipeline.spec.ts:153:1 › REL-11 a move against a changed board reloads it and says so (1.6s)
+[WebServer] 2026-11-26 13:25:31 INFO request id=d2d4e777746d4086b1acf7a97c397a6b method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:31 INFO request id=531ff0308adf4dafa117acc23b99e06a method=GET path=/api/organizations/{organization_id} status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:31 INFO request id=30341457e1be49df9eda3d82bf7ac1d5 method=GET path=/api/contacts status=200 duration_ms=6
+[WebServer] 2026-11-26 13:25:31 INFO request id=c6339c1e43cf496a9b8c24ef37c53115 method=GET path=/api/activities status=200 duration_ms=7
+[WebServer] 2026-11-26 13:25:31 INFO request id=3dd38bfd97704c3baf27d4e2c70fce9c method=GET path=/api/deals status=200 duration_ms=8
+[WebServer] 2026-11-26 13:25:31 INFO request id=a9de1ea6a4e94745a1eefe79f9b2cbd1 method=GET path=/api/organizations/{organization_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:31 INFO request id=ab1cc375adca4f52a79d2d07388bbdac method=GET path=/api/contacts/{contact_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:31 INFO request id=ded1af4dd3854d778bf126c3ec28113e method=GET path=/api/deals status=200 duration_ms=5
+[WebServer] 2026-11-26 13:25:31 INFO request id=c3d41c36b6ac4aeda296e236a1bbace5 method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:25:31 INFO request id=a4200656f1dd48cca51a80bda088f349 method=GET path=/api/contacts/{contact_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:31 INFO request id=334f6178b2ea447887b27e376d362094 method=GET path=/api/deals/{deal_id} status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:31 INFO request id=2d7d4700442044d8bfb38f3a163033f2 method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:31 INFO request id=d0d18e4caa494a719c905f83ac4f45ff method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:31 INFO request id=8e10ac26a9da411ab43722c0a04297a5 method=GET path=/api/organizations/{organization_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:31 INFO request id=e04d99fa93244038932a2f38318add85 method=GET path=/api/deals status=200 duration_ms=7
+[WebServer] 2026-11-26 13:25:31 INFO request id=ca74b2779ca54520910bdae7e775bf95 method=GET path=/api/contacts status=200 duration_ms=8
+[WebServer] 2026-11-26 13:25:31 INFO request id=fe6d421aa3004e2695f3a2a3997310d8 method=GET path=/api/organizations/{organization_id} status=200 duration_ms=6
+[WebServer] 2026-11-26 13:25:31 INFO request id=4c124a2b96594c4db6ee2b593498dc72 method=GET path=/api/contacts status=200 duration_ms=10
+[WebServer] 2026-11-26 13:25:31 INFO request id=2aac4a64e518496286115c00e9b64467 method=GET path=/api/deals status=200 duration_ms=10
+[WebServer] 2026-11-26 13:25:31 INFO request id=5f50cb1b461f4224beea90a1f86bbe43 method=GET path=/api/organizations/{organization_id}/timeline status=200 duration_ms=11
+[WebServer] 2026-11-26 13:25:31 INFO request id=45e9854a9839466d89ffabeaf559a882 method=GET path=/api/activities status=200 duration_ms=11
+  ok 37 e2e\record-pages.spec.ts:5:1 › AC3 R50–R52 the record pages link to each other (1.4s)
+[WebServer] 2026-11-26 13:25:32 INFO request id=809f5b90f942458196b17e3bb1deae94 method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:32 INFO request id=48855f6ac8344bf981064f867bdd7485 method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:33 INFO request id=bb90978a864d449e960bf878bde01577 method=GET path=/api/organizations/{organization_id} status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:33 INFO request id=f539863e30ff43d782db416dd27bf908 method=GET path=/api/contacts status=200 duration_ms=6
+[WebServer] 2026-11-26 13:25:33 INFO request id=ff63b62dd90047db98a32f772557482a method=GET path=/api/deals status=200 duration_ms=7
+[WebServer] 2026-11-26 13:25:33 INFO request id=57d9daebd7d941ed8bc2bf12e3732ed7 method=GET path=/api/activities status=200 duration_ms=8
+[WebServer] 2026-11-26 13:25:33 INFO request id=cb14968b8c5543afa3f70eb820bc82bf method=GET path=/api/organizations/{organization_id}/timeline status=200 duration_ms=2
+  ok 38 e2e\record-pages.spec.ts:30:1 › R50 R54 the organization's timeline combines its contacts' and deals' entries (1.3s)
+[WebServer] 2026-11-26 13:25:34 INFO request id=c0f6615aedf947beb72f24e0580651e1 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:34 INFO request id=30a1a7a0fa4a4d37a0287250e8eceed0 method=GET path=/api/deals/{deal_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:34 INFO request id=90051aa4ce2c424dbad2e0e7cfe7b8f4 method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:34 INFO request id=90014d75832f426a89d007e0ea0dd8af method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=2
+  ok 39 e2e\record-pages.spec.ts:50:1 › R52 the deal page warns when a deal is late (1.3s)
+[WebServer] 2026-11-26 13:25:35 INFO request id=ecd721b78df647668ea934164af8e327 method=GET path=/api/organizations/{organization_id} status=404 duration_ms=2
+[WebServer] 2026-11-26 13:25:35 INFO request id=1992b5e4b37a45b3bcd0c80b530705b6 method=GET path=/api/organizations/{organization_id} status=404 duration_ms=3
+[WebServer] 2026-11-26 13:25:35 INFO request id=8a259111cc93456db44a7fdaf75d3aca method=GET path=/api/contacts status=200 duration_ms=12
+[WebServer] 2026-11-26 13:25:35 INFO request id=912092248ff449e29ea6c2e71b78a980 method=GET path=/api/contacts status=200 duration_ms=12
+[WebServer] 2026-11-26 13:25:35 INFO request id=f7e7d9210b5342219692a312e3c6ce34 method=GET path=/api/deals status=200 duration_ms=14
+[WebServer] 2026-11-26 13:25:35 INFO request id=61595f1b99e14f4ebad42f46fa57adce method=GET path=/api/deals status=200 duration_ms=17
+[WebServer] 2026-11-26 13:25:35 INFO request id=46d824d41bd24e68b0b7d59bb0126561 method=GET path=/api/activities status=200 duration_ms=18
+[WebServer] 2026-11-26 13:25:35 INFO request id=22b6406e0ae44f2fa79b9fcc5d76a197 method=GET path=/api/activities status=200 duration_ms=13
+[WebServer] 2026-11-26 13:25:35 INFO request id=472e4f2a61404396b326766ce20a44ac method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:36 INFO request id=2f062625ffae4625bdb61775867bde89 method=GET path=/api/contacts/{contact_id} status=404 duration_ms=3
+[WebServer] 2026-11-26 13:25:36 INFO request id=8a5b4dbc27214224b19b05c22c2be2ca method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:25:36 INFO request id=0491c06ebb5b4601b6d3c585144b11bc method=GET path=/api/deals status=200 duration_ms=5
+[WebServer] 2026-11-26 13:25:36 INFO request id=ad67bc09b2ed4e579d746acd710a749e method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:36 INFO request id=6af452730cb94f1c9a04a0aa492c2396 method=GET path=/api/deals/{deal_id} status=404 duration_ms=2
+[WebServer] 2026-11-26 13:25:36 INFO request id=28760e03068544df99cc0df7635d6ab4 method=GET path=/api/activities status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:36 INFO request id=2954af4527ce420d9d72137b5a1ca699 method=GET path=/api/deals status=200 duration_ms=2
+  ok 40 e2e\record-pages.spec.ts:60:1 › R56 a record that doesn't exist says so, with a link back to the list (2.3s)
+[WebServer] 2026-11-26 13:25:37 INFO request id=f6d34a55cc48455facb700a9ada69898 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:37 INFO request id=6743c0572e5e4e0db38a080a8ad2cc47 method=GET path=/api/organizations/{organization_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:37 INFO request id=d9fe09edc0714b02819354132fd3a00e method=GET path=/api/contacts status=200 duration_ms=5
+[WebServer] 2026-11-26 13:25:37 INFO request id=2926dd74d01940eeb220917e66847f1e method=GET path=/api/activities status=200 duration_ms=7
+[WebServer] 2026-11-26 13:25:37 INFO request id=0e0453a0a2a94c789a665a2988732fa6 method=GET path=/api/deals status=200 duration_ms=8
+[WebServer] 2026-11-26 13:25:37 INFO request id=804041e1a9e04e46a006f7576dd66a27 method=GET path=/api/organizations/{organization_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:37 INFO request id=396a8ad1d8854060959d2da2454a36aa method=DELETE path=/api/organizations/{organization_id} status=204 duration_ms=2
+[WebServer] 2026-11-26 13:25:38 INFO request id=3b915c2706e247509dbb7e2347bbe32f method=GET path=/api/organizations/{organization_id} status=404 duration_ms=3
+[WebServer] 2026-11-26 13:25:38 INFO request id=c5fb8d01a1ee4df5ade3936b2a07949b method=GET path=/api/contacts status=200 duration_ms=5
+[WebServer] 2026-11-26 13:25:38 INFO request id=94e9a467bdf84b1aa7354cfcc49fc592 method=GET path=/api/activities status=200 duration_ms=7
+[WebServer] 2026-11-26 13:25:38 INFO request id=c5c4d89ed690494a9c3db04ea9998e09 method=GET path=/api/deals status=200 duration_ms=7
+  ok 41 e2e\record-pages.spec.ts:74:1 › R56 a record deleted while its page is open says so (1.7s)
+[WebServer] 2026-11-26 13:25:39 INFO request id=c318d938674440798eb1b4006333712b method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:39 INFO request id=cc4d863e8dbb4255877393e70d6566b9 method=GET path=/api/deals/{deal_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:39 INFO request id=9f0d5ecd52614205a82069873d368e64 method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:39 INFO request id=7a192c99551d4c2d929e60a6a4de5142 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:39 INFO request id=4f9dd7824b2f4fb8ad6bdbb2e0d62eec method=GET path=/api/deals/{deal_id}/delete-impact status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:39 INFO request id=f6e0d557b2fb4783b2c4a7bb16c9b486 method=DELETE path=/api/deals/{deal_id} status=204 duration_ms=2
+[WebServer] 2026-11-26 13:25:39 INFO request id=ae5d09f0a69b4dc7a30d4e319f6d3ac8 method=GET path=/api/activities status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:39 INFO request id=f4deee25419d4c76ae0cb6d1f50b8966 method=GET path=/api/deals status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:39 INFO request id=1f69de4cfd4244aeaa27f76fbca16bbb method=GET path=/api/deals status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:40 INFO request id=cb190e7088cd4b78be7f85a8a39bf7f0 method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:40 INFO request id=d5c9d37756ee4b7686ed1675b0cde57f method=GET path=/api/contacts/{contact_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:40 INFO request id=93339bbef2df4deeaecfa42d89c37409 method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:25:40 INFO request id=ae13f3996e79443daa3433cf32a6dd7b method=GET path=/api/deals status=200 duration_ms=5
+[WebServer] 2026-11-26 13:25:40 INFO request id=ae30a8c76d624521a6ae652d740387da method=GET path=/api/contacts/{contact_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:40 INFO request id=060c5d6bc441483c9e2647632cf474c2 method=GET path=/api/contacts/{contact_id}/delete-impact status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:40 INFO request id=3080d17b093c49f2bda4327be03e6814 method=DELETE path=/api/contacts/{contact_id} status=204 duration_ms=2
+[WebServer] 2026-11-26 13:25:40 INFO request id=a41b41ca34cb404db8ff8de56a6b75fc method=GET path=/api/deals status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:40 INFO request id=53e18e9846884d97ae1197388e69d917 method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:25:40 INFO request id=c605810153534db882ea90150df6c213 method=GET path=/api/contacts status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:40 INFO request id=ac952ccbb2b04224a62c03a60348c1ee method=GET path=/api/contacts status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:41 INFO request id=0dfe85cc2d634de595627ccd7deaeaeb method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:41 INFO request id=345bd18c510b46429d4c67e5b7db6544 method=GET path=/api/organizations/{organization_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:41 INFO request id=d0847d1b9a654f74a44d70ab0179c2c6 method=GET path=/api/contacts status=200 duration_ms=5
+[WebServer] 2026-11-26 13:25:41 INFO request id=1e4b33045f9f4afda4fc4e408e5e4576 method=GET path=/api/activities status=200 duration_ms=7
+[WebServer] 2026-11-26 13:25:41 INFO request id=2ef00e6d75b24792a74df41f5abe4133 method=GET path=/api/deals status=200 duration_ms=8
+[WebServer] 2026-11-26 13:25:41 INFO request id=52f2d65d3b3f496b91d0679c3b0cbf13 method=GET path=/api/organizations/{organization_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:41 INFO request id=c5b86f87d367412c9d65d6686c721c7f method=GET path=/api/organizations/{organization_id}/delete-impact status=200 duration_ms=1
+[WebServer] 2026-11-26 13:25:41 INFO request id=9d9174a9fac34a3281005c3feacf2bfe method=DELETE path=/api/organizations/{organization_id} status=204 duration_ms=2
+[WebServer] 2026-11-26 13:25:41 INFO request id=58d418d9fa48455d937dfb656c0d949e method=GET path=/api/contacts status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:41 INFO request id=6197c5d83747426eb613ba78578f07d1 method=GET path=/api/deals status=200 duration_ms=5
+[WebServer] 2026-11-26 13:25:41 INFO request id=412154e81de74d9782838c37e344b197 method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:25:41 INFO request id=6333d93a95114edaa84bfed4aa8eef17 method=GET path=/api/organizations status=200 duration_ms=2
+  ok 42 e2e\record-pages.spec.ts:94:1 › R30 deleting from a record's page goes back to its list, with no 404 (2.9s)
+[WebServer] 2026-11-26 13:25:42 INFO request id=bfc49055b43741818516c28d64fbb158 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:42 INFO request id=ba1c93943dc84666bda3a61ceeddbac5 method=POST path=/api/organizations status=201 duration_ms=3
+[WebServer] 2026-11-26 13:25:42 INFO request id=edfe8a097c0c44bf86702299d06f7376 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:42 INFO request id=75361b42080f4011841557034c4b2232 method=POST path=/api/organizations status=201 duration_ms=3
+[WebServer] 2026-11-26 13:25:42 INFO request id=25aafbf58f354f0a931453c82c7713a8 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:42 INFO request id=9bbd0d10374f4ba49fadd24811098229 method=GET path=/api/organizations/{organization_id} status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:42 INFO request id=42083bcf000248838b02ebacd2a83a7d method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:25:42 INFO request id=6a2f0503305c4e8c95ee0d1bfcf9fcac method=GET path=/api/deals status=200 duration_ms=7
+[WebServer] 2026-11-26 13:25:42 INFO request id=cd7da6d3517d4071b10241283b72ce97 method=GET path=/api/contacts status=200 duration_ms=8
+[WebServer] 2026-11-26 13:25:42 INFO request id=95692b7587614989a4a184f3d474ca0b method=GET path=/api/organizations/{organization_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:43 INFO request id=92219d801f554cacbadaef05bb182d53 method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:43 INFO request id=046b796d16944b56b8296e6b612b4f12 method=GET path=/api/organizations status=200 duration_ms=2
+  ok 43 e2e\security.spec.ts:18:1 › SEC-6 V-S08 script text in a name is shown as text and never runs (2.0s)
+[WebServer] 2026-11-26 13:25:44 INFO request id=854e1050c4b04557a499701d29229277 method=GET path=/api/organizations status=200 duration_ms=1
+[WebServer] 2026-11-26 13:25:44 INFO request id=5cf0e531354a4ca6a8a4cd67c755b27c method=POST path=/api/organizations status=422 duration_ms=1
+[WebServer] 2026-11-26 13:25:44 INFO request id=aae30621869f44bc86b7359f4f22ac07 method=POST path=/api/organizations status=422 duration_ms=0
+[WebServer] 2026-11-26 13:25:44 INFO request id=5592f274510f4ec3a9983f6b8e330d15 method=POST path=/api/organizations status=422 duration_ms=0
+[WebServer] 2026-11-26 13:25:44 INFO request id=24b9787f9e6c46219a464bd892c1c4c7 method=POST path=/api/organizations status=422 duration_ms=1
+[WebServer] 2026-11-26 13:25:44 INFO request id=90f7213f8dd348eda404f6212e71c283 method=GET path=/api/organizations status=200 duration_ms=1
+[WebServer] 2026-11-26 13:25:45 INFO request id=3260583e6c7446cdad1a08e1065d10d9 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:45 INFO request id=6e78b72e79254263b589e50cb4f6ed57 method=POST path=/api/organizations status=201 duration_ms=3
+[WebServer] 2026-11-26 13:25:45 INFO request id=6177b19f092c4f67aea4b022da8a3215 method=GET path=/api/organizations status=200 duration_ms=2
+  ok 44 e2e\security.spec.ts:57:1 › SEC-6 V-S09 a javascript: website is refused by the form and by the API (2.0s)
+[WebServer] 2026-11-26 13:25:46 INFO request id=f2e8ca8eb2604eaaae4ff0b7a63abd20 method=GET path=/api/dashboard status=200 duration_ms=8
+[WebServer] 2026-11-26 13:25:46 INFO request id=068a886cd4ba4cd6b3c345c76e43943a method=GET path=/api/dashboard status=200 duration_ms=9
+  ok 45 e2e\security.spec.ts:122:1 › SEC-1 V-S10 the API and the web server listen on 127.0.0.1 only (1.3s)
+[WebServer] 2026-11-26 13:25:47 INFO request id=90313a5cdfe14ff290c2e6a0117c2428 method=GET path=/api/dashboard status=200 duration_ms=6
+  ok 46 e2e\start.spec.ts:5:1 › AC1 R4 opens on the dashboard with sample data (1.3s)
+[WebServer] 2026-11-26 13:25:49 INFO request id=1867d23087024c04af1cd14713995b49 method=GET path=/api/dashboard status=200 duration_ms=6
+[WebServer] 2026-11-26 13:25:49 INFO request id=09f6c5615cd1476c8ff4ec79eb7a8b48 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:49 INFO request id=7ce3e718c1744232b37a9433a90c682b method=GET path=/api/deals status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:49 INFO request id=1e2ed8a06bb74068bafd5c585f6ce1df method=GET path=/api/deals status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:49 INFO request id=a215c160ef1f456a9a35eb6d6c39b22e method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:49 INFO request id=c75e3f31452b4cda8d93c5c3992048f0 method=GET path=/api/organizations status=200 duration_ms=1
+  ok 47 e2e\start.spec.ts:36:1 › AC1 every section shows the sample data (1.6s)
+[WebServer] 2026-11-26 13:25:50 INFO request id=88763cea01a64f69b02144ced4cf038e method=GET path=/api/dashboard status=200 duration_ms=5
+  ok 48 e2e\theme.spec.ts:34:1 › R91 R94 the app starts in light mode, with the light tokens (1.3s)
+[WebServer] 2026-11-26 13:25:52 INFO request id=a832d1215d26472a87f27b274b0d6103 method=GET path=/api/dashboard status=200 duration_ms=9
+[WebServer] 2026-11-26 13:25:52 INFO request id=94baf8e1a6f24a26b25845291c09916d method=GET path=/api/dashboard status=200 duration_ms=10
+[WebServer] 2026-11-26 13:25:52 INFO request id=165105744648400d86c67ab2cbca8fe8 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:52 INFO request id=bb63d589006048c8a793e0f912c6e45e method=GET path=/api/deals status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:52 INFO request id=812c7874f7564ba6816d14104f4a09cc method=GET path=/api/deals status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:53 INFO request id=4ca7df1bb397417fa627a79c016b7be7 method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:54 INFO request id=239633d1876643f68ea17176c3a6c446 method=GET path=/api/organizations status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:54 INFO request id=3997940e1aca43b491cea89855fde3a6 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:54 INFO request id=24ee5d7cf61c464ba36e01d602e65e44 method=GET path=/api/deals/{deal_id} status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:54 INFO request id=02060ede1c4d40e6b2a23a04aa9f0b90 method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:54 INFO request id=e37694d7152042539fe480986ac14c14 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=2
+  ok 49 e2e\theme.spec.ts:45:1 › R90 the toggle is in the top bar on every section and on a record page (3.9s)
+[WebServer] 2026-11-26 13:25:55 INFO request id=c8d776d90e5e48f68e7066fe9e4aecd4 method=GET path=/api/dashboard status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:56 INFO request id=fa98efc987f8420c84f0d87ffa6246fc method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:57 INFO request id=cdc43efd183c4bd19e54abf273561b5e method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:57 INFO request id=da69d316ac0e436e801e1d3192818c4f method=GET path=/api/deals/{deal_id}/delete-impact status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:57 INFO request id=48957fcbf2d844ffa37111a0cef05b72 method=GET path=/api/contacts status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:57 INFO request id=7ba9828c55a048dbb2ab5217930a385b method=GET path=/api/organizations status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:57 INFO request id=bd87fc218b1e44fa971b561c8a026d5a method=GET path=/api/deals/{deal_id} status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:57 INFO request id=4a488d4090b64c61b73924cb1a443d6f method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:57 INFO request id=50920b0dd8d94043b1827ca2a5d1d896 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=2
+  ok 50 e2e\theme.spec.ts:56:1 › R90 R95 switching to dark changes every surface at once, on each kind of screen (2.8s)
+[WebServer] 2026-11-26 13:25:58 INFO request id=532181f289b3445683fd604bf10609c2 method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:25:58 INFO request id=9d86ec86c254405ba3f103c3c44c2517 method=GET path=/api/contacts/{contact_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:25:58 INFO request id=a5159217d49d4eaea7ff03c39f58c0c7 method=GET path=/api/deals status=200 duration_ms=5
+[WebServer] 2026-11-26 13:25:58 INFO request id=f9a0c3a75831489cb07cc8a827fe0ae8 method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:25:58 INFO request id=d75be5b4230b4f758b87e6fa6bfb2e38 method=GET path=/api/contacts/{contact_id}/timeline status=200 duration_ms=2
+  ok 51 e2e\theme.spec.ts:106:1 › R90 changing mode keeps the page and what's typed in its forms (1.4s)
+[WebServer] 2026-11-26 13:26:00 INFO request id=40ccbad68aab4b199613506bca856b3a method=GET path=/api/deals status=200 duration_ms=3
+[WebServer] 2026-11-26 13:26:00 INFO request id=f23185caa9004e4392699d83fc3b40ba method=GET path=/api/deals status=200 duration_ms=3
+[WebServer] 2026-11-26 13:26:00 INFO request id=3f14b83932f542fb81f8a77e734afeab method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:26:01 INFO request id=f74b532d32574d0a8571ba48f36beefb method=GET path=/api/deals status=200 duration_ms=2
+  ok 52 e2e\theme.spec.ts:125:1 › R92 the choice is remembered after a reload, and applied before the page is drawn (2.3s)
+[WebServer] 2026-11-26 13:26:02 INFO request id=a0f1e65f6d3f47f5b742241f89395c5e method=GET path=/api/deals status=200 duration_ms=3
+[WebServer] 2026-11-26 13:26:02 INFO request id=d0dbe63c8f174ffa9eb5300f69a3435f method=GET path=/api/deals status=200 duration_ms=3
+  ok 53 e2e\theme.spec.ts:160:1 › R90 NFR-7 the toggle works from the keyboard, with its focus ring showing (1.3s)
+[WebServer] 2026-11-26 13:26:03 INFO request id=0bf5cd87f8164dfc9734f988f2150b26 method=GET path=/api/dashboard status=200 duration_ms=9
+[WebServer] 2026-11-26 13:26:03 INFO request id=8187531bea074ee98e847b1ddb1ed933 method=GET path=/api/dashboard status=200 duration_ms=9
+  ok 54 e2e\theme.spec.ts:178:1 › R93 with site data blocked, the app starts light and the toggle switches both ways, with no errors (1.4s)
+[WebServer] 2026-11-26 13:26:05 INFO request id=f3de4a7f2d8e4e35bac49d8f5b5c552d method=GET path=/api/dashboard status=200 duration_ms=8
+[WebServer] 2026-11-26 13:26:05 INFO request id=7e0390b2f71e4e3c8725040dd06f2502 method=GET path=/api/dashboard status=200 duration_ms=9
+[WebServer] 2026-11-26 13:26:05 INFO request id=7fb73563d0474567a57a226150b2eec1 method=GET path=/api/dashboard status=200 duration_ms=5
+  ok 55 e2e\theme.spec.ts:203:1 › NFR-7 chart tooltip text is in ink, not the series colors, in both modes (2.1s)
+[WebServer] 2026-11-26 13:26:07 INFO request id=dde159a6f9624b07854dc22bd529cd63 method=GET path=/api/dashboard status=200 duration_ms=4
+  ok 56 e2e\theme.spec.ts:223:1 › R90 the toggle's icon is 18px square in both modes, inside a 36px button (1.3s)
+[WebServer] 2026-11-26 13:26:08 INFO request id=56f77ea299154a9e8ab494403bfd0172 method=GET path=/api/deals status=200 duration_ms=3
+[WebServer] 2026-11-26 13:26:08 INFO request id=896cdf19e0904ecca70b7884a52898b5 method=GET path=/api/deals status=200 duration_ms=3
+  ok 57 e2e\theme.spec.ts:234:1 › R90 changing mode keeps the scroll position (1.3s)
+[WebServer] 2026-11-26 13:26:09 INFO request id=f5e165ac3c3f460082e8500d369110f8 method=GET path=/api/deals status=200 duration_ms=3
+[WebServer] 2026-11-26 13:26:09 INFO request id=2070dbc76d134846b1266dcda7ca171d method=GET path=/api/dashboard status=200 duration_ms=8
+[WebServer] 2026-11-26 13:26:09 INFO request id=9fa044e34de244c8b13b42bc7eabdb63 method=GET path=/api/contacts status=200 duration_ms=1
+[WebServer] 2026-11-26 13:26:10 INFO request id=70a4ef33dfa44d5389bf4871d6635bf2 method=GET path=/api/contacts status=200 duration_ms=2
+[WebServer] 2026-11-26 13:26:10 INFO request id=8cfd6b569745480792bce77c40a3bdcf method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:26:10 INFO request id=909270c2e1a3431ebb65ff82bfa83a4d method=POST path=/api/deals/{deal_id}/move status=200 duration_ms=4
+[WebServer] 2026-11-26 13:26:10 INFO request id=251a250dbd054985b8b8cc9306ae216e method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:26:10 INFO request id=a278b83d409b4c3ea5adf96a787c0546 method=GET path=/api/deals/{deal_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:26:10 INFO request id=0da3370d5b3545a0b1b55d575a1f143d method=GET path=/api/activities status=200 duration_ms=4
+[WebServer] 2026-11-26 13:26:10 INFO request id=fa0c3458042b48cca74feca2e90bcc3b method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:26:11 INFO request id=aba9b6077d0a4e33b2b3ed46002d57a7 method=GET path=/api/contacts/{contact_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:26:11 INFO request id=2b65ecc9f9d64cb88812b041cc42fca9 method=GET path=/api/deals status=200 duration_ms=4
+[WebServer] 2026-11-26 13:26:11 INFO request id=3cc242a0fc3d43b6842484ffadfd562f method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:26:11 INFO request id=2f23dd4cd5f74b6889e443e26ea4661b method=GET path=/api/contacts/{contact_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:26:11 INFO request id=05706a1f389d405b920697c6e95752a6 method=GET path=/api/dashboard status=200 duration_ms=5
+[WebServer] 2026-11-26 13:26:11 INFO request id=9db85353ad794d52b84f9948b4215543 method=GET path=/api/deals/{deal_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:26:11 INFO request id=d86ea53a13f645bda5bd9ad6118514f9 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=4
+[WebServer] 2026-11-26 13:26:11 INFO request id=8bd209763a4d436cb0c31f17cfa2e7bf method=GET path=/api/activities status=200 duration_ms=5
+  ok 58 e2e\won-deal.spec.ts:29:1 › AC6 WF-6 R16–R18 R77 winning a deal (2.6s)
+[WebServer] 2026-11-26 13:26:12 INFO request id=b26d6293a4f143d391eae2e630501d10 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:26:12 INFO request id=eaf5722fb2f246fd9eb01215b3611077 method=POST path=/api/deals/{deal_id}/move status=200 duration_ms=4
+[WebServer] 2026-11-26 13:26:12 INFO request id=989c986c882646e8b4128a75738f9fb7 method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:26:12 INFO request id=52c3ec2929704fb7a3d3f09a13dbfd38 method=POST path=/api/deals/{deal_id}/move status=200 duration_ms=3
+[WebServer] 2026-11-26 13:26:12 INFO request id=10c0f4a00cb643cdaebea1ed62edbd2f method=GET path=/api/deals status=200 duration_ms=2
+[WebServer] 2026-11-26 13:26:13 INFO request id=4d18ed2722224f29be23941565986f13 method=GET path=/api/deals/{deal_id} status=200 duration_ms=4
+[WebServer] 2026-11-26 13:26:13 INFO request id=52588f60399b45a999b4a5aa762c2222 method=GET path=/api/activities status=200 duration_ms=3
+[WebServer] 2026-11-26 13:26:13 INFO request id=e47601683517438f9f7d17db3dfad462 method=GET path=/api/deals/{deal_id}/timeline status=200 duration_ms=2
+[WebServer] 2026-11-26 13:26:13 INFO request id=30c9ac82e22446f6b7df030cd7e2ed13 method=GET path=/api/contacts/{contact_id} status=200 duration_ms=3
+[WebServer] 2026-11-26 13:26:13 INFO request id=e264204b03c045f089918e1d7d373cb9 method=GET path=/api/deals status=200 duration_ms=4
+[WebServer] 2026-11-26 13:26:13 INFO request id=df4a62a251c942c5849fddf696e075e3 method=GET path=/api/activities status=200 duration_ms=5
+[WebServer] 2026-11-26 13:26:13 INFO request id=3641c092fa4c45dcba07a5147392e7d4 method=GET path=/api/contacts/{contact_id}/timeline status=200 duration_ms=2
+  ok 59 e2e\won-deal.spec.ts:81:1 › WF-7 R24 reopening a won deal keeps its close date and the customer status (2.0s)
+
+  59 passed (2.3m)
+
+All tests passed: backend, backend-core-coverage, frontend, e2e.
+
+=== Summary (npm run check, full) ===
+
+  PASS  Prettier (frontend)               1.1s
+  PASS  Prettier (e2e, scripts)           0.7s
+  PASS  ESLint (frontend)                 2.3s
+  PASS  tsc (frontend app)                2.5s
+  PASS  tsc (frontend config)             0.8s
+  PASS  ruff format (backend)             0.1s
+  PASS  ruff check (backend)              0.1s
+  PASS  ty (backend)                      0.2s
+  PASS  .env is git-ignored               0.0s
+  PASS  gitleaks (git history)            0.7s
+  PASS  gitleaks (working tree)           0.4s
+  PASS  Change folder matches branch      0.4s
+  PASS  No skipped tests                  0.4s
+  PASS  All tests, coverage gates       183.0s
+
+All 14 checks passed.
+exit=0

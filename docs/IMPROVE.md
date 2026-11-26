@@ -6,7 +6,7 @@ How the coding-agent harness (`AGENTS.md`, `docs/REVIEW.md`, the checks in `npm 
 
 Use only what is recorded. Don't infer a failure or a recurrence that isn't in one of these:
 
-- the latest review report in `docs/reviews/` and the state of each finding on the branch
+- the latest review report, in the change's folder (`docs/changes/<branch name>/review-<n>.md`, REVIEW.md 12) or, for earlier changes, in `docs/reviews/`, and the state of each finding on the branch
 - `docs/build_logs.log`: defects, failed checks, and the harness notes below
 - human corrections: what the engineer changed, refused or asked for again
 - check and hook output, and CI results if there ever is CI (there is none today)

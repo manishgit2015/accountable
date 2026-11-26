@@ -126,8 +126,9 @@ h2 {
   align-items: center;
   gap: 8px;
 }
-/* The mode toggle: a 36px square secondary button (spec 3.9 Components, R90) */
-.theme-toggle {
+/* The mode toggle: a 36px square secondary button (spec 3.9 Components, R90). Two classes, so its padding
+   beats .btn's below; with .btn's 14px each side, the 18px icon was squeezed to 8px (review REV-008). */
+.btn.theme-toggle {
   width: 36px;
   padding: 0;
   justify-content: center;

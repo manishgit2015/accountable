@@ -136,6 +136,7 @@ Ask:
 - Could the code be wrong while every test passes?
 - Are important negative cases missing?
 - When a rule applies at several entry points (every save path while offline, REL-7; deleting from a table row and from the record's own page, R30), is each entry point implemented and tested, not just the first one? Both earlier escapes were this shape (REV-001, and the R30 defect in the Phase 5 walkthrough).
+- Would each new test fail if the behavior broke the way it really would (the browser API itself throwing, a rendered size or color, an empty file being scanned), or only if a stubbed method did? Is the probe that proved it recorded in the build log? Four of the mvp-darkmode change's escapes were this shape.
 - Were any assertions or acceptance criteria weakened?
 - Are new tests named by requirement ID (ENG-7)?
 
@@ -187,7 +188,7 @@ Metrics, tracing, alerts and feature flags aren't applicable (ADR-014).
 5. Check that each changed requirement maps to code and a test (plan section 4.6).
 6. Run the checks yourself, in section 13C's order, and record their real results.
 7. Write up each finding with its evidence and severity.
-8. Report without changing application code.
+8. Report without changing application code. Save the report in the change's folder as `docs/changes/<branch name>/review-<n>.md` (1 for the first review, 2 for the re-review, and so on), so `docs/IMPROVE.md` has it as evidence.
 9. After fixes, review the affected changes again.
 
 ## 13. Report format
@@ -223,6 +224,7 @@ Run each command and give its real result: passed, failed, not run, or couldn't 
 | The quality gate: formatting, lint, complexity, types, secrets (gitleaks), all tests, and the coverage thresholds (80% overall, 90% of lines in `rules.py` and `services/`) | `npm run check` (its summary names each check) |
 | Security | `npm run audit`, plus the V-S cases inside `npm test` |
 | Performance | `npm run test:perf`, when the change touches lists, timelines, the dashboard or the board |
+| Visual comparisons | `node scripts/run-tests.mjs visual`, when the change touches styles or has baselines in its folder. It isn't part of `npm run check`, because its screenshots depend on the machine. |
 
 ### D. Outstanding risks
 

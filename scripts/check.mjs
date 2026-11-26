@@ -18,6 +18,7 @@ const node = process.execPath;
 const bin = (...path) => join(root, "node_modules", ...path);
 const prettier = bin("prettier", "bin", "prettier.cjs");
 const tsc = bin("typescript", "bin", "tsc");
+const conventions = join(root, "scripts", "check-conventions.mjs");
 
 const mode = process.argv[2] ?? "full";
 if (!["full", "quick", "static"].includes(mode)) {
@@ -44,6 +45,9 @@ const staticChecks = [
   [".env is git-ignored", "git", ["check-ignore", "--quiet", ".env"], root],
   ["gitleaks (git history)", "gitleaks", ["git", "--no-banner", "--redact", "."], root],
   ["gitleaks (working tree)", "gitleaks", ["dir", "--no-banner", "--redact", "."], root],
+  // Conventions from the mvp-darkmode reviews (docs/IMPROVE.md): see scripts/check-conventions.mjs.
+  ["Change folder matches branch", node, [conventions, "change-folder"], root],
+  ["No skipped tests", node, [conventions, "no-skipped-tests"], root],
 ];
 const runTests = join(root, "scripts", "run-tests.mjs");
 const testChecks = {

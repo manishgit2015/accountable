@@ -1,6 +1,6 @@
 # Plan: dark mode
 
-Status: approved by the engineer on 25 Nov 2026, and restructured the same day into four sections with the same content. Phases 1 to 3 (T0–T2) are built and committed (`ead0cb4`, `31de085`, `15e1f61`). Phases 4 to 8 (T3–T7) are built on 26 Nov 2026 and not committed yet. The product owner approved the dark palette on 26 Nov 2026, so every phase is done.
+Status: approved by the engineer on 25 Nov 2026, and restructured the same day into four sections with the same content. Phases 1 to 3 (T0–T2) are built and committed (`ead0cb4`, `31de085`, `15e1f61`). Phases 4 to 8 (T3–T7) were built on 26 Nov 2026 and committed in `2c0841d`, with the first independent review's fixes. The product owner approved the dark palette on 26 Nov 2026; they approved the retaken screenshots, with the first review's `--line` change and the second's full-size toggle icon (REV-008), the same day.
 
 This plan builds what `intent.md` sets out and `docs/spec.md` describes:
 
@@ -180,6 +180,8 @@ Every test goes through `e2e/fixtures.ts`, so a console error or a request outsi
 6. **R90, NFR-7:** the toggle can be reached with Tab, its focus ring shows in both modes, and Space and Enter switch it.
 7. **R93** (review REV-001): with reading `window.localStorage` made to throw, as when site data is blocked, the app starts light and the toggle switches both ways, with no console error.
 8. **NFR-7** (review REV-004): chart tooltip items on both charts are in `--ink`, in both modes.
+9. **R90** (second review REV-008): the toggle is 36px square and its icon 18px square, in both modes.
+10. **R90** (second review REV-012): with the deals table scrolled to 600px, switching mode in either direction leaves the scroll position at 600px.
 
 **`e2e/keyboard.spec.ts` (V-E11, phase 8)**
 
@@ -204,10 +206,10 @@ These are outside `npm test`, because font rendering differs between machines.
 
 | Requirement | Code | Test |
 |---|---|---|
-| R90 Toggle | `ThemeToggle.tsx`, `TopBar.tsx` | `ThemeToggle.test.tsx`, V-E13 steps 2–4 and 6 |
+| R90 Toggle | `ThemeToggle.tsx`, `TopBar.tsx`, `global.css` | `ThemeToggle.test.tsx`, V-E13 steps 2–4, 6, 9 and 10 |
 | R91 Default light | `theme.ts`, `index.html` | `theme.test.ts`, V-E13 step 1 |
 | R92 Remembered | `theme.ts`, `index.html` | `theme.test.ts`, V-E13 step 5 |
-| R93 Storage not available | `theme.ts`, `index.html`, `ThemeToggle.tsx` | `theme.test.ts`, `ThemeToggle.test.tsx` |
+| R93 Storage not available | `theme.ts`, `index.html`, `ThemeToggle.tsx` | `theme.test.ts`, `ThemeToggle.test.tsx`, V-E13 step 7 |
 | R94 Light mode unchanged | `tokens.css`, `global.css` | The V-M04 baseline comparison, V-E13 step 1 |
 | R95 Everything follows | `tokens.css`, `global.css`, chart files | V-E13 step 3, V-M04, the walkthrough |
 | NFR-7 Contrast in both modes | `tokens.css` | `tokens.test.ts`, the walkthrough |

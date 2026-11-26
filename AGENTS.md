@@ -28,6 +28,11 @@ Read `docs/spec.md` first. It describes the whole product as it stands today, an
 - `npm run check` is the quality gate: formatting (Prettier, ruff format), lint (ESLint with the TypeScript, React Hooks and accessibility rules; ruff), a complexity limit of 15 per function, types (tsc, ty), a secrets scan (gitleaks), and `npm test` with unit test coverage of at least 80%, and 90% of the lines in `backend/app/rules.py` and `services/`. It runs every check, prints a summary and exits nonzero if any failed. Run it before you say a change is done, don't claim it passed unless you ran it, and fix what it finds without weakening a rule; if a rule doesn't suit the project, ask the engineer first.
 - `npm run check:quick` runs the same without the end-to-end tests, for quick feedback while working. `npm run lint` runs only the checks that aren't tests.
 - `npm run format` fixes the formatting.
+- `npm run check` also checks two conventions: the current branch has its change folder, `docs/changes/<branch>/intent.md`, and no test is skipped, focused or left as a to-do (`scripts/check-conventions.mjs`).
+- Prove each new test with a probe: break the code the way it would really break, run the test and see it fail, then restore the code and see it pass. Record the probe in the build log. "The way it would really break" means, for example, making the browser API itself fail rather than a method you stubbed, and checking a file's contents aren't empty before scanning them.
+- When the spec states something a person sees (a size, a color, a position, a scroll position), assert it in Playwright from the rendered page. jsdom has no layout, and a check by eye can miss it.
+- When you walk through screens by eye (AC9), keep what a reviewer needs to repeat it: save the screenshots under `docs/evidence/<date>-<change>/`, and keep the script that took them there too, or in the change's tests, rather than deleting it.
+- Run `npm run check` in the foreground. The Stop hook runs `npm run check:quick` when you stop, and two runs at once share coverage files and test ports, so both can fail.
 - Record evidence for each task of the current change's `plan.md` in `docs/build_logs.log`.
 
 ## On Windows

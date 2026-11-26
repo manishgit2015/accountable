@@ -1758,3 +1758,84 @@ The product owner chose to keep the branch name `mvp-darkmode`. AGENTS.md names 
   docs/changes/dark-mode/ and the change `dark-mode`; this log is append-only, so they stay as written.
   Not changed: course/ (the course's own instructions), docs/evidence/2026-11-26-dark-mode/ (evidence named by
   date and feature), and e2e/visual/dark-mode.spec.ts's file name (named after the feature).
+----------------------------------------------------------------------
+mvp-darkmode  Fixes from the second independent review (re-review of 2c0841d)
+Date: 2026-11-26
+Review: a fresh agent, on HEAD 2c0841d with a clean tree. Earlier findings: REV-001 to REV-006 Fixed, REV-007
+  Partly fixed (routine runs no longer overwrite the approved screenshots; the R94 proof is still six screens at
+  1440px, now stated). New: REV-008 (P1), REV-009 to REV-012 (P2). Its runs: npm run check passed
+  (388 / 253 / 57), audit 0 vulnerabilities, test:perf 4 of 4, visual 8 of 8. Decision CHANGES REQUIRED.
+  I confirmed REV-008 (global.css: .theme-toggle's padding: 0 at line 132, .btn's padding: 0 14px after it at
+  142, both single classes) and REV-009 (#5B7A85 on #F0F4F5 = 4.15:1). The engineer asked for all five fixed.
+REV-008 (P1): the selector is now .btn.theme-toggle, so its padding wins. New V-E13 step 9: the toggle is 36x36
+  and its svg 18x18, in both modes. Probe: the old selector -> failed with "width": 8 (expected 18); restored
+  -> passed. I'd seen the small icon in the phase 5 close-up and put it down to lucide's drawing; it was this.
+REV-012 (P2): new V-E13 step 10: the deals table scrolled to 600px, the toggle clicked through the element
+  (Playwright's click would scroll it into view), scrollY still 600 after each switch. Passed. Not probed.
+REV-009 (P2): tokens.test.ts checks --ink-muted on --page in light mode too; KNOWN_LIGHT_GAPS now pins
+  "--ink-muted on --page: 4.15:1" with the Raspberry gap. 9 passed. Spec 17.1 names where it shows.
+Screenshots: ACCOUNTABLE_SCREENSHOTS=1 node scripts/run-tests.mjs visual dark-mode -> 8 passed; md5: all four
+  approved screenshots changed (the icon), all six baselines unchanged. Checked by eye: an 18px moon in light
+  mode, an 18px sun in dark mode.
+REV-010 (P2): ADR-019 now says the --line change (REV-003) and the full-size icon (REV-008) await the product
+  owner's look at the retaken screenshots, marked [Assumption]; STATUS.md "Next" has the item.
+REV-011 (P2): plan status line and 4.5 rows (R90, R93), plan 4.2 steps 9 and 10; STATUS.md: the commit
+  state, "For developers" on the visual suite (R94 comparison, run by hand before merge;
+  ACCOUNTABLE_SCREENSHOTS), and a "Next" item for this change.
+Harness note: the toggle's padding lost to .btn's at equal specificity, shrinking its icon, and my close-up check dismissed the small icon as the icon's design - caught by the second independent review - two-class selector, a size check in V-E13, and the screenshots retaken.
+mvp-darkmode  Product owner approval of the retaken screenshots
+Date: 2026-11-26
+The product owner approved the four retaken screenshots in docs/changes/mvp-darkmode/: the dark --line #62828e
+  (REV-003) and the toggle's 18px icon (REV-008). Recorded in ADR-019 (the [Assumption] removed), plan.md's
+  status and docs/STATUS.md "Next". Still open: the merge target, and the visual suite run before merge.
+----------------------------------------------------------------------
+mvp-darkmode  Harness improvement (docs/IMPROVE.md)
+Date: 2026-11-26
+Evidence read: the two independent reviews (REV-001 to REV-012), the 12 harness notes in this change's entries
+  of this log, the Stop hook's failures, and the engineer's corrections (keep the branch name mvp-darkmode;
+  approve the palette, then the retaken screenshots; fix the secondary-button focus ring). The reviews had
+  been given in the session only; docs/reviews/ held only the MVP's. Saved word for word as
+  docs/changes/mvp-darkmode/review-1.md and review-2.md.
+Patterns:
+  1. Tests that passed while not checking the thing (5 times; 4 got past the agent): ?raw CSS read as ""
+     (caught by a probe); V-E11 counting any shadow as focus (walkthrough); R93 tests stubbing methods, not
+     the throwing property (review 1, REV-001); dark checks behind it.skipIf (review 1, REV-006); the toggle
+     icon's size, untestable in jsdom and hidden in the visual check (review 2, REV-008). Root cause: tests
+     not probed against the real failure mode, and layout checked in jsdom or by eye.
+  2. Change folder not matching the branch (REV-002), with agent reports naming the wrong branch.
+  3. A walkthrough a reviewer couldn't repeat (both reviews: the throwaway test was deleted).
+  4. The Stop hook's check:quick colliding with a background npm run check (twice in one session).
+  Seen once and already caught by an existing check, so no new control: Node types in the app tsconfig (tsc),
+  the root Prettier config (npm run check; npm run format exists), leftover coverage/.tmp (Prettier), a
+  disabled "Next" as a test target and a throwaway helper's bug (the test runs).
+Applied:
+  - scripts/check-conventions.mjs, run by scripts/check.mjs as two new checks (in check, check:quick and lint):
+    "Change folder matches branch" (docs/changes/<branch>/intent.md; passes on main and a detached HEAD)
+    and "No skipped tests" (it/test/describe .skip/.only/.todo/.fixme/.skipIf/.runIf; pytest skip and xfail
+    markers; in frontend/src, e2e and backend/tests).
+  - AGENTS.md "Checking your work": the two checks; prove each new test with a probe against the real failure
+    and record it; assert what a person sees in Playwright, not jsdom or by eye; keep walkthrough
+    screenshots and their script under docs/evidence/; run npm run check in the foreground.
+  - docs/REVIEW.md: a Pass 6 question on tests that only fail for a stubbed method; workflow step 8 saves the
+    report as docs/changes/<branch>/review-<n>.md; 13C lists the visual suite.
+  - docs/IMPROVE.md: evidence includes the change folder's review reports.
+Proposed, for the engineer (not applied): run the R94 light comparison in npm run check, or in a pre-merge
+  step, despite its machine dependence. Both reviews flagged it as outside the gate.
+Verification:
+  - change-folder: on mvp-darkmode -> passed; with "dark-mode" (REV-002's state) -> failed, exit 1; with
+    "main" -> passed.
+  - no-skipped-tests: on the repo -> passed (none today); on probe files with it.skipIf(...) (REV-006's
+    pattern), test.only and @pytest.mark.skip -> failed, all three listed.
+  - Through the gate: a frontend/src/zz-probe.test.ts with it.skip -> npm run lint "FAIL No skipped tests";
+    removed -> PASS. The first lint run also failed Prettier (e2e, scripts) on the new script: formatted
+    with frontend/.prettierrc.
+  - npm run check -> exit 0, "All 14 checks passed" (388 backend, 253 frontend, 59 e2e). Output:
+    docs/evidence/2026-11-26-dark-mode/npm-run-check-improve.txt.
+Remaining risks: the R94 comparison stays outside the gate; the probe rule needs judgment, so only reviews
+  check it; the skip check matches by text, so a skip written another way (a variable alias) would pass.
+Harness note: the new check script wasn't formatted with the gate's Prettier config - caught by npm run lint - formatted with frontend/.prettierrc.
+mvp-darkmode  Harness improvement: decision on the proposal
+Date: 2026-11-26
+The engineer decided the R94 light-mode comparison (node scripts/run-tests.mjs visual) stays outside
+  npm run check, because its screenshots depend on the machine. It stays a by-hand step before merging, as
+  REVIEW.md 13C and docs/STATUS.md ("For developers", "Next") already say. Recorded in docs/STATUS.md.
