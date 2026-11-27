@@ -8,8 +8,8 @@ Accountable is a business management system for a small business. Today it's a s
 
 - **What it does:** five sections (Dashboard, Organizations, Contacts, Deals, Pipeline) over four kinds of record (organization, contact, deal, activity), each showing who added and last changed it. Deals move through six stages, New to Won and Lost, on a drag-and-drop pipeline. The dashboard works out sales figures, charts and follow-ups from the data. A search box in the top bar finds any organization, contact or deal, and a menu under your initials holds the theme (Light, Dark or System) and signing out. It follows the brand, and a new database starts with sample data (section 1.3).
 - **Who uses it:** a small team, each person signing in with an email and password through Supabase Auth. Everyone works on the same data and can do everything. People are added in Supabase's dashboard, and there's no sign-up (section 3.11).
-- **How it runs:** hosted, as one Render web service where FastAPI serves the built React app and the API, with the data in Postgres on Supabase through SQLAlchemy Core. In development, `npm run dev` starts the two development servers on `127.0.0.1`, against the local SQLite file or `DATABASE_URL`. It needs the internet, for Supabase, but the tests don't (sections 7, 8, 10 and 14).
-- **How it's proven:** the acceptance criteria AC1–AC15 and success measures SC1–SC5 (section 1.4), each requirement traced to its verification cases (sections 2 and 13). The tests run on SQLite with a test sign-in key, never touching Supabase (section 13.2).
+- **How it runs:** hosted, as one Render web service where FastAPI serves the built React app and the API, with the data in Postgres on Supabase through SQLAlchemy Core. In development, `npm run dev` starts the two development servers on `127.0.0.1`, against Supabase's Postgres in `DATABASE_URL`, which every start but a test needs. It needs the internet, for Supabase, but the tests don't (sections 7, 8, 10 and 14).
+- **How it's proven:** the acceptance criteria AC1–AC15 and success measures SC1–SC5 (section 1.4), each requirement traced to its verification cases (sections 2 and 13). The tests run on a temporary SQLite file with a test sign-in key, and refuse to start if pointed at Supabase (section 13.2).
 
 ## Index
 
@@ -64,7 +64,7 @@ Section numbers and IDs are the same as before the spec was split, so a referenc
 | OBS-1–OBS-6, DEP-1–DEP-11 | `specs/operations.md` |
 | V cases | `specs/testing.md` |
 | ENG-1–ENG-12 | `specs/engineering.md` |
-| A-1–A-11, ADR-001–ADR-026, E-1–E-8, D and C IDs, and the known gaps | `specs/governance.md` |
+| A-1–A-11, ADR-001–ADR-028, E-1–E-9, D and C IDs, and the known gaps | `specs/governance.md` |
 
 ## Keeping the spec current
 

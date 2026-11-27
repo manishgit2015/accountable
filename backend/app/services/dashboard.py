@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import Connection, and_, case, func, select
+from sqlalchemy import Connection, and_, case, func, literal, select
 from sqlalchemy.sql.elements import ColumnElement
 
 from app import rules
@@ -84,7 +84,9 @@ def open_by_stage(conn: Connection) -> list[OpenStage]:
 def months(conn: Connection, today: date) -> list[MonthFigures]:
     """R71, R72: revenue won, deals won and deals lost in each of the last 12 months, by closed_at."""
     starts = month_starts(today)
-    month = func.substr(deals.c.closed_at, 1, 7)
+    # "YYYY-MM". The 1 and 7 are written into the SQL rather than bound, so SELECT and GROUP BY hold the same
+    # expression: Postgres can't match two expressions with separate parameters, and refuses the query (V-B19).
+    month = func.substr(deals.c.closed_at, literal(1, literal_execute=True), literal(7, literal_execute=True))
     rows = conn.execute(
         select(
             month.label("month"),

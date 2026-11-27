@@ -1,7 +1,11 @@
 // The single verification entry point: `npm test` (ENG-7, spec 13.2).
 // Runs pytest, then Vitest, then Playwright, stopping at the first failure with a nonzero exit.
 // Every run gets a temporary database and the test ports (DEP-1). The real database,
-// backend/data/accountable.db, is refused (RK-23).
+// backend/data/accountable.db, is refused (RK-23). So is Supabase (ADR-027, spec 13.2): the run refuses
+// to start when DATABASE_URL is set or ACCOUNTABLE_TEST_DB isn't a file, drops the Supabase settings,
+// and sets test mode (ACCOUNTABLE_TEST_AUTH_KEYS, SEC-17), in which the backend never reads .env and
+// refuses DATABASE_URL. Every test path goes through here: npm test, check, check:quick, test:perf,
+// the visual suite and the Stop hook.
 //
 // Usage: npm test [-- backend|frontend|e2e ...] [-- extra args for that one suite]
 //   npm test                     all three suites
@@ -19,6 +23,7 @@
 // Node built-ins only, and no shell, so it behaves the same on Windows, macOS and Linux.
 
 import { spawnSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -44,6 +49,22 @@ const extra = perf || visual || named ? args.slice(1) : args;
 const backendCoverage = coverage ? ["--cov"] : [];
 const frontendCoverage = coverage ? ["--coverage"] : [];
 
+function refuse(message) {
+  console.error(message);
+  process.exit(2);
+}
+
+// Never print either value: DATABASE_URL holds the database password (SEC-9).
+if ((process.env.DATABASE_URL ?? "").trim()) {
+  refuse(
+    "Refusing to run the tests with DATABASE_URL set. The tests only use a temporary local SQLite file, " +
+      "never Supabase: unset DATABASE_URL in this terminal and run them again.",
+  );
+}
+if (/^[a-z][a-z0-9+.-]*:\/\//i.test(process.env.ACCOUNTABLE_TEST_DB ?? "")) {
+  refuse("Refusing to run the tests: ACCOUNTABLE_TEST_DB must be a local file path, not a database address.");
+}
+
 const tempDir = mkdtempSync(join(tmpdir(), "accountable-test-"));
 const testDb = resolve(process.env.ACCOUNTABLE_TEST_DB || join(tempDir, "test.db"));
 if (testDb.toLowerCase() === DEFAULT_DB.toLowerCase()) {
@@ -51,8 +72,11 @@ if (testDb.toLowerCase() === DEFAULT_DB.toLowerCase()) {
   process.exit(2);
 }
 
+const { DATABASE_URL: _url, SUPABASE_URL: _supabase, SUPABASE_PUBLISHABLE_KEY: _key, ...inherited } = process.env;
 const env = {
-  ...process.env,
+  ...inherited,
+  // Test mode (SEC-17): a key made for this run. Until test sign-in exists it only marks test mode.
+  ACCOUNTABLE_TEST_AUTH_KEYS: randomBytes(32).toString("hex"),
   ACCOUNTABLE_DB: testDb,
   ACCOUNTABLE_API_PORT: "8001",
   ACCOUNTABLE_WEB_PORT: "5174",

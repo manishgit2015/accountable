@@ -8,6 +8,7 @@ in the connection hook below (decision E-1, checked by test_db.py).
 from __future__ import annotations
 
 import sqlite3
+import ssl
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
@@ -29,10 +30,18 @@ from sqlalchemy import (
     create_engine,
     event,
 )
+from sqlalchemy.engine import URL, make_url
+from sqlalchemy.exc import DBAPIError, InterfaceError
 
+from app.config import Settings
 from app.rules import ACTIVITY_TYPES, CONTACT_STATUSES, MAX_VALUE, STAGES
 
 BUSY_TIMEOUT_MS = 5000
+
+# Postgres through Supabase's session pooler (spec 6.3, REL-6, REL-13).
+POSTGRES_POOL_SIZE = 5
+POSTGRES_TIMEOUT_S = 10
+LOCK_TIMEOUT_MS = 5000
 
 # Spec 6.3. Each must be set outside a transaction, so the hook runs them in autocommit mode.
 CONNECTION_PRAGMAS = (
@@ -155,6 +164,70 @@ def create_db_engine(db_path: Path) -> Engine:
     )
     event.listen(engine, "connect", _on_connect)
     return engine
+
+
+def postgres_url(database_url: str) -> URL:
+    """DATABASE_URL for the pg8000 driver. Its query (such as sslmode) is dropped: TLS is set below."""
+    return make_url(database_url).set(drivername="postgresql+pg8000", query={})
+
+
+def tls_context() -> ssl.SSLContext:
+    """TLS that encrypts the connection without checking the server's certificate (ADR-028).
+
+    The engineer's decision: like libpq's sslmode=require, no CA file is needed. The traffic and the
+    password are encrypted, but a man in the middle wouldn't be detected (accepted risk, spec 16.2).
+    """
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    return context
+
+
+def create_postgres_engine(database_url: str) -> Engine:
+    """An engine for Postgres on Supabase. Builds the pool but doesn't connect (V-B02)."""
+    return create_engine(
+        postgres_url(database_url),
+        connect_args={
+            "ssl_context": tls_context(),
+            "timeout": POSTGRES_TIMEOUT_S,
+            "startup_params": {"options": f"-c lock_timeout={LOCK_TIMEOUT_MS}"},
+            "application_name": "accountable",
+        },
+        pool_size=POSTGRES_POOL_SIZE,
+        max_overflow=0,
+        pool_timeout=POSTGRES_TIMEOUT_S,
+        # A connection lost while idle is replaced on the next request, rather than failing it (REL-13).
+        pool_pre_ping=True,
+        hide_parameters=True,
+    )
+
+
+def engine_for(settings: Settings) -> Engine:
+    """The app's engine: Postgres when DATABASE_URL is set, otherwise the SQLite file."""
+    if settings.database_url:
+        return create_postgres_engine(settings.database_url)
+    return create_db_engine(settings.db_path)
+
+
+def describe_database(settings: Settings) -> str:
+    """The database for logs and messages: the SQLite path, or the Postgres host with no user or password (OBS-4)."""
+    if not settings.database_url:
+        return str(settings.db_path)
+    url = make_url(settings.database_url)
+    return f"Postgres at {url.host}:{url.port or 5432}"
+
+
+def is_unreachable(exc: BaseException) -> bool:
+    """The database couldn't be reached, or the connection was lost (REL-13), as opposed to a locked row."""
+    return isinstance(exc, DBAPIError) and (exc.connection_invalidated or isinstance(exc, InterfaceError))
+
+
+def is_locked(exc: BaseException) -> bool:
+    """A lock held past busy_timeout (SQLite) or lock_timeout (Postgres) (REL-6)."""
+    if not isinstance(exc, DBAPIError):
+        return False
+    text = str(exc.orig).lower()
+    return "locked" in text or "lock timeout" in text
 
 
 @contextmanager

@@ -231,10 +231,21 @@ def _history_times(end: datetime, steps: int, rng: random.Random) -> list[dateti
     return times
 
 
-def load_sample_data(conn: Connection, now: datetime) -> dict[str, int]:
-    """Replace every row with the sample data, on the caller's transaction. Returns the counts."""
+class NotEmptyError(Exception):
+    """Sample data would be added to a database that already holds records (E-8)."""
+
+
+def load_sample_data(conn: Connection, now: datetime, *, replace: bool = True) -> dict[str, int]:
+    """Put the sample data in, on the caller's transaction. Returns the counts.
+
+    `replace=True` (`npm run seed`, local SQLite only) first deletes every row. `replace=False` (a new
+    database's first start, which may be Supabase) deletes nothing, and refuses a database that has records.
+    """
     rng = random.Random(RANDOM_SEED)
-    clear_all(conn)
+    if replace:
+        clear_all(conn)
+    elif any(counts(conn).values()):
+        raise NotEmptyError("The database already has records, so sample data wasn't added.")
     stamp = lambda moment: moment.isoformat(timespec="seconds")  # noqa: E731
     created = stamp(now - timedelta(days=420))
 

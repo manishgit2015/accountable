@@ -4,8 +4,10 @@
     python -m app.cli clear [--yes]
 
 Each asks "Type yes to continue" unless `--yes` is given, then runs in one transaction. Exit
-codes: 0 when done, 1 when not confirmed, 2 on error. The database file is never deleted, and
-both work while the app is running (WAL and the busy timeout let them share the file).
+codes: 0 when done, 1 when not confirmed, 2 on error. They work only on a local SQLite file: when
+DATABASE_URL is set (in the environment or `.env`), both refuse before asking and change nothing, so
+the team's data on Supabase is never replaced or wiped (R4, E-6, E-8). The database file is never
+deleted, and both work while the app is running (WAL and the busy timeout let them share the file).
 """
 
 from __future__ import annotations
@@ -75,6 +77,12 @@ def main(
         settings = load_settings()
     except ConfigError as exc:
         print(f"Accountable can't {args.command}: {exc}", file=err)
+        return FAILED
+    if settings.database_url:
+        print(
+            f"npm run {args.command} only works on a local database. It won't change the team's data on Supabase.",
+            file=err,
+        )
         return FAILED
     if not args.yes and not _confirmed(args.command, ask):
         print("Nothing was changed.", file=out)

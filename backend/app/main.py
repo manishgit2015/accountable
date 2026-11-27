@@ -17,7 +17,7 @@ from fastapi.routing import APIRoute
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import APP_VERSION, BACKEND_DIR, ConfigError, FixedClock, Settings, load_settings
-from app.db import create_db_engine, transaction, upgrade_to_head
+from app.db import describe_database, engine_for, transaction, upgrade_to_head
 from app.errors import UnexpectedErrorMiddleware, error_response, register_error_handlers
 from app.logging import RequestContextMiddleware, configure_logging, log
 from app.routers import activities, contacts, dashboard, deals, health, organizations
@@ -44,7 +44,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="Accountable", version=APP_VERSION, docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     app.state.clock = settings.clock
-    app.state.engine = create_db_engine(settings.db_path)
+    app.state.engine = engine_for(settings)
 
     # Added innermost first, so a request passes: request ID and logging, security, errors.
     app.add_middleware(UnexpectedErrorMiddleware)
@@ -81,21 +81,24 @@ def prepare_database(settings: Settings) -> tuple[str | None, str | None, bool]:
     """Bring the database to the latest schema, and fill a new one with the sample data (R4).
 
     Returns the revision before and after, and whether sample data was loaded. Never deletes,
-    resets or reseeds an existing file (REL-9): only a database this call created is seeded.
+    resets or reseeds an existing database (REL-9, E-8): only a database this call created is
+    seeded, and only by adding rows.
     """
-    from app.seed import load_sample_data
+    from app.seed import NotEmptyError, load_sample_data
 
-    engine = create_db_engine(settings.db_path)
+    engine = engine_for(settings)
     try:
         before, after = upgrade_to_head(engine)
         if before is not None:
             return before, after, False
         with transaction(engine) as conn:
-            load_sample_data(conn, settings.clock.now())
+            load_sample_data(conn, settings.clock.now(), replace=False)
         return before, after, True
+    except NotEmptyError as exc:
+        raise StartupError(f"{exc} Nothing was changed ({describe_database(settings)}).") from exc
     except SQLAlchemyError as exc:
         raise StartupError(
-            f"Couldn't open or upgrade the database at {settings.db_path} ({type(exc).__name__}). "
+            f"Couldn't reach, open or upgrade the database ({describe_database(settings)}, {type(exc).__name__}). "
             "It was left unchanged. See backend/logs/accountable.log, and the runbook in docs/STATUS.md."
         ) from exc
     finally:
@@ -105,6 +108,7 @@ def prepare_database(settings: Settings) -> tuple[str | None, str | None, bool]:
 def run() -> None:
     try:
         settings = load_settings()
+        settings.require_database()
         configure_logging(settings)
         check_port_free(settings.api_port)
         before, after, seeded = prepare_database(settings)
@@ -118,8 +122,10 @@ def run() -> None:
 
     new_database = before is None
     log.info("Accountable %s starting. Open %s", APP_VERSION, settings.web_address)
-    log.info("database %s (schema %s%s)", settings.db_path, after, ", new" if new_database else "")
+    log.info("database %s (schema %s%s)", describe_database(settings), after, ", new" if new_database else "")
     log.info("sample data loaded: %s", "yes" if seeded else "no")
+    if settings.test_mode:
+        log.warning("test mode: ACCOUNTABLE_TEST_AUTH_KEYS is set, so only a local SQLite file is used (SEC-17)")
     if isinstance(settings.clock, FixedClock):
         log.warning("clock fixed at %s by ACCOUNTABLE_FIXED_NOW (tests only)", settings.clock.now().isoformat())
     log.info("API on http://%s:%s%s", HOST, settings.api_port, " (reload on)" if settings.reload else "")

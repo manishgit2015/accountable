@@ -14,8 +14,14 @@ const visual = process.env.ACCOUNTABLE_VISUAL === "1";
 if (!testDb) {
   throw new Error("Run the end-to-end tests with `npm test`, which gives them a temporary database.");
 }
+// Never Supabase (ADR-027, spec 13.2): the servers start only in test mode, which npm test sets, and never
+// with DATABASE_URL. The backend refuses the same, so this is the first of two locks.
+if (!process.env.ACCOUNTABLE_TEST_AUTH_KEYS || (process.env.DATABASE_URL ?? "").trim()) {
+  throw new Error("Run the end-to-end tests with `npm test`: they need test mode and never use DATABASE_URL.");
+}
 
 const env = {
+  ACCOUNTABLE_TEST_AUTH_KEYS: process.env.ACCOUNTABLE_TEST_AUTH_KEYS,
   ACCOUNTABLE_DB: testDb,
   ACCOUNTABLE_API_PORT: apiPort,
   ACCOUNTABLE_WEB_PORT: webPort,

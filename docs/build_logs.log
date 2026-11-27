@@ -1941,3 +1941,111 @@ The engineer approved installing @mermaid-js/mermaid-cli (12.2.0, from npm) to e
   - Checked each PNG by eye: the container diagram reads left to right with the three boundaries; the
     runtime diagram first stacked its groups in reverse, so it was changed to top-to-bottom with the groups
     defined prod, test, local, which shows development, tests and production left to right.
+
+mvp-multiuser  Part D: Supabase for real use, a local SQLite file for tests (plan.md D1-D7)
+Date: 2026-11-27
+Decisions (the engineer, 27 Nov 2026, in intent.md): part of mvp-multiuser; any start that isn't a test needs
+  DATABASE_URL (no SQLite fallback); test mode is ACCOUNTABLE_TEST_AUTH_KEYS; pg8000 driver, python-dotenv for
+  .env; TLS verified against Supabase's CA in backend/certs/supabase-ca.crt; first start on Supabase allowed once.
+  The engineer's own uncommitted pyproject additions (supabase, flask, dotenv) were left as they are.
+Found before starting: nothing read DATABASE_URL or .env, so the tests were safe only because the app never
+  looked. Supabase's public schema is empty (read-only list_tables via the Supabase MCP).
+D1-D4 code: config.py (database_url, test_mode, .env read only outside test mode, environment wins over .env,
+  test mode refuses DATABASE_URL and backend/data/accountable.db, require_database), db.py (engine_for, pg8000
+  engine with verified TLS, pool 5, no overflow, pre-ping, 10 s timeout, lock_timeout 5000 as a start-up option,
+  describe_database with the host only, is_unreachable, is_locked moved here and matching Postgres "lock
+  timeout"), errors.py (503 database_unavailable), main.py (real start needs DATABASE_URL, logs the host,
+  test-mode warning), seed.py (replace=False adds only and refuses a database with records), cli.py (seed and
+  clear refuse DATABASE_URL before asking, exit 2), perfdata.py (test mode only), migrations/env.py (engine_for).
+D5 guards: scripts/run-tests.mjs (refuses DATABASE_URL and an address in ACCOUNTABLE_TEST_DB, drops SUPABASE_URL
+  and SUPABASE_PUBLISHABLE_KEY, sets a random ACCOUNTABLE_TEST_AUTH_KEYS), playwright.config.ts (refuses without
+  test mode or with DATABASE_URL), conftest.py (refuses DATABASE_URL, test mode under bare pytest, every test
+  reads a missing .env, settings fixture in test mode).
+Tests: backend/tests/test_database_choice.py, 24 tests (V-B18). test_perfdata.py's RK23 assertion now matches
+  the config refusal.
+Probes, test code (each broken the way it would really break, the matching tests run, then restored):
+  P1 test mode accepts DATABASE_URL: fails / passes again. P2 test mode reads .env: fails / passes.
+  P3 seed and clear accept DATABASE_URL: fails / passes. P4 a lost database answers 500: fails / passes.
+  P5 a real start without DATABASE_URL: fails / passes. P6 TLS skips the host name: fails / passes.
+  P7 a first start clears tables: fails / passes. P8 the log shows the whole DATABASE_URL: fails / passes.
+  P9 no lock_timeout option: fails / passes.
+Probes, test paths pointed at Supabase: DATABASE_URL=postgresql://postgres@db.<project ref>.supabase.co:5432/
+  postgres (the real project's host, from the Supabase MCP's project URL, with no password). Every one stopped
+  before any connection:
+  npm test (all), npm test -- backend, npm test -- e2e, npm run test:perf, the visual suite: exit 2, "Refusing
+    to run the tests with DATABASE_URL set."
+  ACCOUNTABLE_TEST_DB=<that address> npm test -- backend: exit 2, "must be a local file path".
+  npm run check:quick (the Stop hook's command): the unit-test check failed with the same refusal (exit 1).
+  uv run pytest directly: exit 4, conftest's UsageError. Playwright directly, with DATABASE_URL or without
+    test mode: exit 1. The backend in test mode with DATABASE_URL: exit 1, "both set". perfdata outside test
+    mode: exit 2.
+Not done: D6, the first start on Supabase. backend/certs/supabase-ca.crt isn't there yet, and the engineer chose
+  to leave the first start for later. So a real connection (verified TLS to the pooler host, lock_timeout
+  passing through Supavisor) hasn't been tried. Until the CA file is saved, npm run dev stops with "Supabase's CA
+  certificate is missing".
+A probe that read .env through a script, to try TLS against the pooler, was refused by the permission
+  classifier, and wasn't retried another way.
+Gate: npm run check (foreground) passed, all 14 checks: 412 backend, 253 frontend, 59 e2e, backend coverage 98%.
+
+mvp-multiuser  Part D: TLS without a certificate check (ADR-028 changed)
+Date: 2026-11-27
+The engineer decided no CA certificate is needed: the connection is encrypted with TLS but Supabase's
+  certificate isn't checked (like sslmode=require); the database password in DATABASE_URL is the protection.
+  The man-in-the-middle risk is recorded in spec 16.2. SUPABASE_PUBLISHABLE_KEY isn't used by the database
+  connection; it's for sign-in, a later part.
+Code: db.tls_context() takes no file (CERT_NONE, no host name check); config.py loses SUPABASE_CA_FILE and
+  Settings.db_ca_file. Tests: the two CA tests are replaced by
+  test_ADR028_the_connection_is_tls_without_a_ca_file_or_certificate_check (23 tests in the file).
+Probe: ssl_context replaced by None (no TLS at all): the ADR028 test fails; restored: it passes.
+Docs: data 6.3, operations DEP-2 (the CA runbook row removed), REL-9, SEC-9, V-B18, governance ADR-028 and
+  16.2, intent, plan, STATUS.
+
+mvp-multiuser  Part D, D6: first start on Supabase (the engineer said "Yes, run it", 27 Nov 2026)
+Date: 2026-11-27
+Run: the backend alone (uv run --no-sync --directory backend python -m app.main), with no DATABASE_URL or
+  test mode in the terminal, so DATABASE_URL came from .env. Ports 8000 and 5173 were free first.
+Start-up lines (no user or password in any of them):
+  database Postgres at aws-0-ap-southeast-2.pooler.supabase.com:5432 (schema 0001_initial, new)
+  sample data loaded: yes
+  GET /api/health -> {"status":"ok","database":"ok","schema_version":"0001_initial"}
+During the load, pg_stat_activity (read-only, Supabase MCP) showed one connection through Supavisor in one
+  transaction, inserting row by row. Supavisor replaces application_name, so it showed "Supavisor".
+Afterwards (read-only count): 12 organizations, 40 contacts, 45 deals, 150 activities, 150 stage changes,
+  alembic_version 0001_initial. Nothing was deleted (E-8). The backend was stopped, and port 8000 is free.
+Finding: it's slow from this computer to the Sydney pooler. Migrating and loading the sample data took about
+  8.5 minutes (about 700 single-row round trips in one transaction), and the first two health checks took
+  9.5 s and 3.7 s (a new pooled connection plus pre-ping). NFR-1–NFR-3 haven't been measured against Supabase.
+  A first start now only happens on an empty database, so the load won't repeat, but request latency needs
+  checking (V-P01 on Postgres, or V-M07).
+Not checked: whether lock_timeout passes through Supavisor (no way to see it without text SQL from the app).
+
+mvp-multiuser  Part D: dashboard 500 on Supabase (reported by the engineer)
+Date: 2026-11-27
+Symptom: GET /api/dashboard -> 500, pg8000 ProgrammingError 42803 "column deals.closed_at must appear in the
+  GROUP BY clause". Cause: services/dashboard.py months() selected and grouped by func.substr(closed_at, 1, 7);
+  SQLAlchemy binds 1 and 7 separately in SELECT and in GROUP BY, so Postgres sees two different expressions.
+  SQLite doesn't mind, and the automated tests run only on SQLite (the known gap in spec 16.2).
+Fix: the 1 and 7 are literal(..., literal_execute=True), so both clauses hold substr(deals.closed_at, 1, 7).
+Test: test_R71_VB19_months_groups_by_the_same_expression_it_selects_on_postgres (test_dashboard.py) compiles the
+  statement for the Postgres dialect and compares the two expressions.
+Probe: the old func.substr(closed_at, 1, 7) put back: V-B19 fails ('...%(param_2)s::INTEGER)' !=
+  'substr(deals.closed_at, 1, 7)'); restored: it passes.
+Wider check, read-only: every SELECT run by GET /api/dashboard, the four lists, and the organization, contact
+  and deal pages with their timelines and delete-impact (13 requests, 28 distinct statements) was captured on
+  a temporary SQLite copy in test mode, compiled for Postgres with the values inlined, and run on Supabase
+  through the Supabase MCP as one SELECT of row counts. All 28 ran; the month query returned 12 rows.
+  Statements 12-27 were sent with shortened column lists (same joins, WHERE and subqueries). Not covered: the
+  writes (POST, PATCH, /move, DELETE), which would change the team's data, so V-M08 still stands for them.
+Gate: npm run check (foreground) passed, all 14 checks: 412 backend, 253 frontend, 59 e2e, coverage 98%.
+
+mvp-multiuser  Sample data loaded into the recreated Supabase database
+Date: 2026-11-27
+The engineer said the Supabase database was deleted and recreated, and asked for the sample data again. The
+  Supabase MCP refused reads ("You do not have permission"), probably still pointing at the old project, so
+  the empty state was left to the app's own check: a first start seeds only a database with no schema, adding
+  rows only, and refuses one with records (E-8).
+Run: the backend alone, DATABASE_URL from .env. Start-up: "database Postgres at aws-1-ap-south-1.pooler.supabase.com
+  :5432 (schema 0001_initial, new)", "sample data loaded: yes".
+Through the API: organizations 12, contacts 40, deals 45, activities 150; dashboard 200.
+Timing (the new project is in ap-south-1): health 0.63 s, lists 0.14-0.19 s, dashboard 0.68 s, against 11.3 s
+  for the dashboard on the old ap-southeast-2 project. The backend was stopped afterwards.

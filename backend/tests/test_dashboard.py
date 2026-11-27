@@ -217,3 +217,30 @@ def test_R70_win_rate_is_a_whole_percentage_by_count(client: TestClient, won: in
         body = {"name": "d", "organization_id": org, "contact_id": jo, "stage": stage, "value": 1}
         client.post("/api/deals", json={**body, "close_date": "2026-11-01"})
     assert client.get("/api/dashboard").json()["summary"]["win_rate"] == {"won": won, "lost": lost, "percent": percent}
+
+
+def test_R71_VB19_months_groups_by_the_same_expression_it_selects_on_postgres() -> None:
+    """Postgres refuses GROUP BY when the grouped expression has its own bound values (error 42803).
+    The automated tests run only on SQLite, so the statement is compiled for Postgres and compared."""
+    import re
+    from datetime import date
+    from typing import cast
+
+    from sqlalchemy import Connection
+    from sqlalchemy.dialects import postgresql
+
+    from app.services import dashboard
+
+    seen = []
+
+    class Recorder:
+        def execute(self, statement):  # type: ignore[no-untyped-def]
+            seen.append(statement)
+            return []
+
+    dashboard.months(cast(Connection, Recorder()), date(2026, 11, 21))
+    sql = str(seen[0].compile(dialect=postgresql.dialect(), compile_kwargs={"render_postcompile": True}))
+    selected = re.search(r"SELECT (substr\(.+?\)) AS month", sql)
+    grouped = re.search(r"GROUP BY (substr\(.+?\))\s*$", sql)
+    assert selected and grouped, sql
+    assert selected.group(1) == grouped.group(1) == "substr(deals.closed_at, 1, 7)"

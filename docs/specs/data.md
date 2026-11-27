@@ -6,7 +6,7 @@ Part of the Accountable spec: [`docs/spec.md`](../spec.md) has the summary and t
 
 ### 6.1 Entities
 
-All tables live in one database. That's Postgres on Supabase when `DATABASE_URL` is set, for the hosted app and for a developer working against it, and otherwise one SQLite file, whose path defaults to `backend/data/accountable.db` and can be changed with `ACCOUNTABLE_DB`. The tests always use their own SQLite files (section 13.2). The same table definitions, through SQLAlchemy Core, serve both (ADR-020). The types below are SQLite's: on Postgres, SQLAlchemy uses the matching types, and the values stored are the same.
+All tables live in one database. Every start for real use, `npm run dev` as well as the hosted app, uses Postgres on Supabase from `DATABASE_URL`, and refuses to start without it (ADR-027). A SQLite file is used only by the tests, each on a temporary file (section 13.2), and by `npm run seed` and `npm run clear`, whose file defaults to `backend/data/accountable.db` and can be changed with `ACCOUNTABLE_DB` (R4). The same table definitions, through SQLAlchemy Core, serve both (ADR-020). The types below are SQLite's: on Postgres, SQLAlchemy uses the matching types, and the values stored are the same.
 
 | Table | Columns and constraints |
 |---|---|
@@ -40,7 +40,7 @@ Every SQLite connection sets:
 - `synchronous = FULL`, so committed writes survive a power cut (REL-1)
 - `busy_timeout = 5000`
 
-Postgres connections go through Supabase's session pooler (a `pooler.supabase.com` address on port 5432) over TLS, from a pool of at most 5 connections, with a 10-second connect timeout and a 5-second `lock_timeout`, so a locked row answers 503 `busy` as on SQLite (REL-6). Postgres commits are durable by default (REL-1).
+Postgres connections go through Supabase's session pooler (a `pooler.supabase.com` address on port 5432) with the pg8000 driver (E-9), over TLS that encrypts the connection without checking the server's certificate, so no CA file is needed (ADR-028), from a pool of at most 5 connections (no overflow, each checked before use so a dropped one is replaced, REL-13), with a 10-second timeout and a 5-second `lock_timeout` set as a connection option rather than text SQL (E-1), so a locked row answers 503 `busy` as on SQLite (REL-6). Any query string in `DATABASE_URL`, such as `sslmode`, is ignored, since the backend sets TLS itself. Postgres commits are durable by default (REL-1).
 
 ### 6.4 Positions
 

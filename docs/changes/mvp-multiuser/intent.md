@@ -44,3 +44,29 @@ A small team shares one Accountable on the web. Everyone signs in and works on t
 4. Search finds an organization, a contact and a deal by part of a name, in any case.
 5. The menu's theme choice is remembered, and System follows the device's setting.
 6. The built app runs on this computer the way Render runs it, signed in against Supabase.
+
+## Part: the database (Supabase for real use, a local SQLite file for tests)
+
+Added 27 Nov 2026, with the engineer's answers. Its plan is `plan.md` in this folder. Sign-in, search and the user menu come in later parts.
+
+**Problem.** Nothing reads `DATABASE_URL` yet: `config.py` reads only `ACCOUNTABLE_DB`, `db.py` builds only a SQLite engine, and the app never reads `.env`. The tests are safe today only because of that. Once the app reads `.env`, a test run could reach the team's data unless every test path refuses to.
+
+**Outcome.** Every start for real use (`npm run dev`, and later `npm run start` and Render) connects to the team's Postgres on Supabase from `DATABASE_URL`. Every test and validation path (`npm test`, `npm run check`, `npm run check:quick`, `npm run test:perf`, the visual suite and the Stop hook's checks) uses only a temporary local SQLite file, and refuses to start if it's pointed at Supabase.
+
+**Decisions (the engineer, 27 Nov 2026)**
+
+- **This is part of `mvp-multiuser`**, not a change of its own.
+- **Any start that isn't a test needs Supabase.** `npm run dev` refuses to start without `DATABASE_URL`, with no fallback to the SQLite file. SQLite stays for the tests, and for `npm run seed` and `npm run clear`, which work only on a local SQLite file (E-6).
+- **"Started for real use" means started without test mode.** Test mode is `ACCOUNTABLE_TEST_AUTH_KEYS` being set (SEC-17), which only the test runs set. In test mode the app never reads `.env` and refuses `DATABASE_URL`. Sign-in itself comes in a later part.
+- **The settings come from `.env`** on this computer (and from Render's settings later). A variable already set in the environment wins over `.env`.
+- **The driver is pg8000.** It's pure Python, so Windows Application Control has no DLL to block. `python-dotenv` reads `.env`. The engineer's own uncommitted additions to `pyproject.toml` (`supabase`, `flask`, `dotenv`) are left as they are.
+- **TLS without a certificate check** (changed by the engineer later on 27 Nov 2026): the connection is encrypted, no CA file is needed, and the database password is the protection. *Replaced:* TLS is verified against Supabase's CA certificate. The engineer downloads it to `backend/certs/supabase-ca.crt` (it's public, not a secret). The backend checks the certificate and the host name, and refuses to connect otherwise.
+- **When Supabase can't be reached:** start-up stops with one clear line (REL-9). While the app runs, requests answer 503 `database_unavailable` (REL-13).
+- **First start on Supabase:** the agent may start the app against Supabase once, which creates the tables and loads the sample data into the empty database (R4, DEP-4). After that, nothing deletes its records (E-8).
+
+**Success criteria**
+
+1. With `DATABASE_URL` in `.env`, `npm run dev` connects to Supabase over TLS, and logs the Postgres host without the user or password.
+2. A probe that points a test run at the Supabase URL fails before any connection is made, for each test path.
+3. `npm run seed` and `npm run clear` refuse when `DATABASE_URL` is set, before asking.
+4. `npm run check` passes, run in the foreground.

@@ -1,8 +1,8 @@
 """The error format and codes of spec 5.2 (REL-6).
 
 Every error body is {"error": {"code", "message", "fields"?, "request_id"}}. A database that
-stays locked becomes 503 "busy". Anything unexpected becomes a generic 500, with the stack
-trace only in the log.
+stays locked becomes 503 "busy", one that can't be reached 503 "database_unavailable" (REL-13).
+Anything unexpected becomes a generic 500, with the stack trace only in the log.
 """
 
 from __future__ import annotations
@@ -14,9 +14,9 @@ from typing import TYPE_CHECKING, Any
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.db import is_locked, is_unreachable
 from app.logging import current_request_id, log
 from app.schemas import MISSING_MESSAGES
 
@@ -32,6 +32,7 @@ MESSAGES = {
     "unsupported_media_type": "Send the request as JSON.",
     "validation_failed": "Check the highlighted fields.",
     "busy": "Accountable is busy. Try again.",
+    "database_unavailable": "Accountable can't reach its database. Try again in a minute.",
     "internal": "Something went wrong. Try again, and check the terminal if it keeps happening.",
     "method_not_allowed": "That action isn't available here.",
 }
@@ -90,10 +91,6 @@ def validation_fields(errors: Sequence[Mapping[str, Any]]) -> dict[str, str]:
     return fields
 
 
-def is_locked(exc: BaseException) -> bool:
-    return isinstance(exc, OperationalError) and "locked" in str(exc.orig).lower()
-
-
 async def _app_error(_: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, AppError)
     return error_response(exc.status, exc.code, exc.message, exc.fields)
@@ -122,7 +119,7 @@ def register_error_handlers(app: FastAPI) -> None:
 
 
 class UnexpectedErrorMiddleware:
-    """Innermost of the app's middleware: a locked database is 503, anything else unexpected is 500.
+    """Innermost of the app's middleware: a locked or unreachable database is 503, anything else unexpected 500.
 
     The stack trace goes to the log with the request ID, never to the response (V-S07).
     """
@@ -151,6 +148,9 @@ class UnexpectedErrorMiddleware:
             if is_locked(exc):
                 log.warning("database busy id=%s", current_request_id())
                 status, code = 503, "busy"
+            elif is_unreachable(exc):
+                log.warning("database unreachable id=%s (%s)", current_request_id(), type(exc).__name__)
+                status, code = 503, "database_unavailable"
             else:
                 log.exception("unexpected error id=%s", current_request_id())
                 status, code = 500, "internal"

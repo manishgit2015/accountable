@@ -45,7 +45,7 @@ def test_RK23_refuses_the_real_database(monkeypatch: pytest.MonkeyPatch, capsys:
     monkeypatch.setenv("ACCOUNTABLE_DB", str(DEFAULT_DB_PATH))
     monkeypatch.setattr(perfdata, "create_db_engine", lambda _path: pytest.fail("must not open the real database"))
     assert perfdata.main([]) == 2
-    assert "refuses the real database" in capsys.readouterr().err
+    assert "never uses" in capsys.readouterr().err  # config refuses it in test mode (ADR-027)
 
 
 def test_NFR13_main_fills_the_database_it_is_given(

@@ -5,8 +5,9 @@ generates twice that (NFR-13) into its temporary database:
 
     python -m app.perfdata [--scale 2]
 
-It replaces every row in the database named by ACCOUNTABLE_DB, in one transaction, and refuses
-the real database (backend/data/accountable.db), so it can never overwrite the user's data.
+It replaces every row in the database named by ACCOUNTABLE_DB, in one transaction. It runs only in
+test mode, where settings refuse DATABASE_URL and the real file (backend/data/accountable.db), so it
+can never overwrite real data, on Supabase or on this computer (ADR-027).
 Like seed.py, deals are walked through their stages with rules.py, so stage history,
 probability, close dates, closed_at and customer status fit together. The generator is
 deterministic (a fixed random seed) and dates are relative to the clock.
@@ -23,7 +24,7 @@ from typing import Any
 from sqlalchemy import Connection, insert, update
 
 from app import rules
-from app.config import DEFAULT_DB_PATH, ConfigError, load_settings
+from app.config import ConfigError, load_settings
 from app.db import (
     activities,
     contacts,
@@ -274,8 +275,8 @@ def main(argv: list[str] | None = None) -> int:
     except ConfigError as exc:
         print(f"perfdata: {exc}", file=sys.stderr)
         return 2
-    if settings.db_path.resolve() == DEFAULT_DB_PATH.resolve():
-        print(f"perfdata refuses the real database ({DEFAULT_DB_PATH}). Set ACCOUNTABLE_DB.", file=sys.stderr)
+    if not settings.test_mode or settings.database_url:
+        print("perfdata only runs in test mode (npm run test:perf), on a temporary SQLite file.", file=sys.stderr)
         return 2
     engine = create_db_engine(settings.db_path)
     try:

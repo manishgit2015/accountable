@@ -3,11 +3,11 @@ This project will use the following high level technical stack:
 1. Node.js 26, the current LTS (24 or later works) / TypeScript for the frontend, using React and Vite, in `frontend/`
 2. Python 3.12 for the backend using uv, with FastAPI, in `backend/`, with `pyproject.toml` and `uv.lock` at the repo root
 
-The frontend gets its data from the backend's JSON API. The backend keeps the data in a local SQLite database file, using SQLAlchemy Core with no raw SQL, and fills it with the sample data when the database is new.
+The frontend gets its data from the backend's JSON API. The backend keeps the data in Postgres on Supabase (the pg8000 driver), using SQLAlchemy Core with no raw SQL, and fills it with the sample data when the database is new. The tests use temporary SQLite files instead.
 
 Prefer popular, well-supported libraries to custom code, such as for the data tables, the charts and the drag-and-drop pipeline. Don't hand-roll what a mature library does well.
 
-For now it runs locally. Later, Supabase will provide sign-in and the database, and the app will be deployed to Render.
+Supabase provides the database, and sign-in (being built), and the app will be deployed to Render.
 
 Commands are npm scripts in a `package.json` at the repo root, with `frontend/` as an npm workspace, so they work the same on Mac, Linux and Windows:
 

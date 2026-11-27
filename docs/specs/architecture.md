@@ -8,9 +8,10 @@ Part of the Accountable spec: [`docs/spec.md`](../spec.md) has the summary and t
 
 ```
  Development (npm run dev)
- Browser (React app) ──HTTP──▶ Vite dev server 127.0.0.1:5173 ──proxy /api──▶ FastAPI 127.0.0.1:8000 ──▶ SQLite file (WAL),
-                                                                                                          or Postgres if DATABASE_URL
- seed / clear CLI ──▶ local SQLite file only
+ Browser (React app) ──HTTP──▶ Vite dev server 127.0.0.1:5173 ──proxy /api──▶ FastAPI 127.0.0.1:8000 ──TLS──▶ Postgres on Supabase
+                                                                                                          (DATABASE_URL, required)
+ seed / clear CLI ──▶ local SQLite file only (refuse when DATABASE_URL is set)
+ Tests (npm test, check, test:perf, visual) ──▶ a temporary SQLite file only, in test mode (refuse DATABASE_URL)
 
  Hosted (Render, one web service)
  Browser (React app) ──HTTPS──▶ FastAPI on Render: the built page and /api ──TLS──▶ Postgres on Supabase (session pooler)
