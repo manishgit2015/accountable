@@ -2334,3 +2334,42 @@ REV-002 (P2, DEP-4, E-8): open. Migration 0002 and the Postgres-only SQL (the us
   V-M07 and V-M08 wait for SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY in .env.
 Spec: SEC-13 (security.md) and DEP-4 (operations.md) describe the fixes.
 Gate: npm run check (foreground) passed, all 16 checks: 538 backend, 283 frontend, 67 e2e, coverage 98%.
+
+mvp-multiuser  Harness improvement (docs/IMPROVE.md)
+Date: 2026-11-28
+Evidence read: review-1.md (REV-001 to REV-003, the state of each on the branch: 001 and 003 fixed in a7935a6,
+  002 open), this change's entries in this log, the Stop hook's check:quick failure of 28 Nov, and the
+  engineer's corrections (the dashboard 500 they reported, the TLS decision replaced, phase 6 left out, .env
+  missing two settings). No CI. Report: docs/changes/mvp-multiuser/improve-1.md.
+Harness note: SQLite batch migration with foreign keys on deleted every activity - caught by the agent's V-B13 test - foreign keys off for migrations and links checked before commit.
+Harness note: Alembic committed its own transaction, so a failed link check couldn't roll back - caught by the agent's rollback test - the app opens the transaction.
+Harness note: the dashboard's GROUP BY bound its substr arguments separately and failed on Postgres (42803) - caught by the engineer in real use - literal values and test V-B19.
+Harness note: the users row was read then written, so two first requests gave 503 - caught by the e2e run's V-E00, intermittently - one upsert and a two-thread test.
+Harness note: with the built page served, an unknown /api POST answered 405 - caught by the Stop hook (a test reading the real frontend/dist) - the route takes every method, tests isolated from the build.
+Harness note: the bundle check matched the bare sb_secret_ prefix in the Supabase client - caught by the check itself - it now matches a key.
+Harness note: unauthenticated tokens could trigger unlimited, lock-holding key fetches (REV-001) - caught by the independent review - one fetch per 30 s, outside the lock.
+Harness note: migrations and the first sample data load ran in separate transactions (REV-003) - caught by the independent review - one transaction.
+Harness note: tests A8, P4, S1 and S3 passed with the code broken - caught by the agent's probes - each test strengthened and re-probed.
+Harness note: probes A2, P4 and REV-003's S1 failed for the wrong reason (a bad argument, a syntax error, a missing import) - caught by the agent reading the failure - rewritten and re-run.
+Harness note: code edited through Python or shell strings lost its escapes, five times - caught by the next test, Prettier or the parser - rewritten with the edit tools.
+Harness note: Python's write_text wrote CRLF line endings on Windows - caught by git's warning - converted to LF.
+Harness note: the 2x perfdata test sat near the 1 s limit under coverage and load - caught by V-U01 - the test does less work and still proves the doubling.
+Harness note: no harness notes were written while building this change - caught by nothing until this cycle - written here, and a rule added.
+Patterns: (1) Postgres never exercised automatically, so its differences got past the tests twice (the
+  dashboard GROUP BY, REV-002). (2) Weak tests exposed by probes, four times, all before review: the last
+  cycle's probe rule worked, so no new control. (3) Probes that prove nothing, three times. (4) Code edited
+  through strings, six times counting CRLF, each caught by an existing check, but a cycle lost each time.
+  (5) Harness notes not kept. Seen once and caught by an existing check or test, so no new control: the
+  migration cascade, Alembic's commit, the race, the 405, the bundle check, the CRLF, the 1 s limit, and
+  REV-001 and REV-003, which the review caught.
+Applied (AGENTS.md, all three judgment rules, since none can be detected mechanically without false alarms):
+  a probe counts only when its test fails for the reason it targets; change code with backslash escapes with
+  the edit tools, never through Python or shell strings, and watch for CRLF from write_text; add a harness
+  note at once when a check, hook, probe or review catches a mistake.
+Proposed, for the engineer (not applied, as each needs approval under IMPROVE.md): run the backend's queries
+  and migrations against a local, throwaway Postgres in the test runs (never Supabase), a new tool on every
+  machine that runs the gate; and a second Supabase project for development (spec 16.5).
+Verification: the rules can't be probed mechanically; their evidence is the recurrences above, and the next
+  cycle checks issues 10, 11 and 14 again.
+  npm run check (foreground) after the change: passed, all 16 checks (538 backend, 283 frontend, 67 e2e).
+Harness note: the Stop hook's check:quick failed once on the unit tests (not reproduced on a rerun); the likely cause, test_dashboard.py's data fixture, took 0.84 s to set up under coverage, near NFR-15's 1 s, because walking the shared clock through the year made each request a new day for the users row's last_seen_at, and so one more commit - caught by the Stop hook - the fixture gives the users row its own clock at today (test_attribution.py still checks the daily update); setup now under 0.4 s with coverage, and check:quick passes (16 checks).

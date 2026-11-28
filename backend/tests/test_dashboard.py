@@ -6,6 +6,8 @@ from datetime import datetime
 import pytest
 from fastapi.testclient import TestClient
 
+from app.config import FixedClock
+from app.people import Directory
 from tests.conftest import PRIYA
 
 MONTHS = ["2025-12", *(f"2026-{m:02d}" for m in range(1, 12))]
@@ -35,7 +37,13 @@ def test_R78_an_empty_database_gives_zeros_and_none_yet(client: TestClient) -> N
 
 @pytest.fixture
 def data(client: TestClient, clock) -> dict:
-    """Deals walked through their stages at known moments, and follow-ups around today (Sat 21 Nov 2026)."""
+    """Deals walked through their stages at known moments, and follow-ups around today (Sat 21 Nov 2026).
+
+    The person's users row keeps its own clock at today: walking the shared clock through the year would
+    otherwise make each request a new day for last_seen_at, and an extra commit (test_attribution.py checks
+    that daily update). This keeps the fixture under NFR-15's 1 second."""
+    app = client.app  # type: ignore[attr-defined]
+    app.state.directory = Directory(app.state.engine, FixedClock(clock.now()))
     org = client.post("/api/organizations", json={"name": "Acme Ltd"}).json()["id"]
     jo = client.post("/api/contacts", json={"name": "Jo", "organization_id": org}).json()["id"]
     ids: dict[str, int] = {"org": org, "jo": jo}

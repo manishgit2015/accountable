@@ -30,7 +30,8 @@ Read `docs/spec.md` first: a short summary of the whole product and the index of
 - `npm run check:quick` runs the same without the end-to-end tests, for quick feedback while working. `npm run lint` runs only the checks that aren't tests.
 - `npm run format` fixes the formatting.
 - `npm run check` also checks two conventions: the current branch has its change folder, `docs/changes/<branch>/intent.md`, and no test is skipped, focused or left as a to-do (`scripts/check-conventions.mjs`).
-- Prove each new test with a probe: break the code the way it would really break, run the test and see it fail, then restore the code and see it pass. Record the probe in the build log. "The way it would really break" means, for example, making the browser API itself fail rather than a method you stubbed, and checking a file's contents aren't empty before scanning them.
+- Prove each new test with a probe: break the code the way it would really break, run the test and see it fail, then restore the code and see it pass. Record the probe in the build log. "The way it would really break" means, for example, making the browser API itself fail rather than a method you stubbed, and checking a file's contents aren't empty before scanning them. A probe counts only when its test fails for the reason it targets: read the failure, and change only the behavior under test, never a name, an import or the syntax the code needs (a crash or a NameError proves nothing).
+- When a check, a hook, a probe or a review catches your mistake, add the `Harness note:` line (format in `docs/IMPROVE.md`) to the task's build log entry at once, not at the end of the change.
 - When the spec states something a person sees (a size, a color, a position, a scroll position), assert it in Playwright from the rendered page. jsdom has no layout, and a check by eye can miss it.
 - When you walk through screens by eye (AC9), keep what a reviewer needs to repeat it: save the screenshots under `docs/evidence/<date>-<change>/`, and keep the script that took them there too, or in the change's tests, rather than deleting it.
 - Run `npm run check` in the foreground. The Stop hook runs `npm run check:quick` when you stop, and two runs at once share coverage files and test ports, so both can fail.
@@ -40,6 +41,7 @@ Read `docs/spec.md` first: a short summary of the whole product and the index of
 
 - Windows Application Control on this machine blocks some Python tools' `.exe` launchers (`pip-audit.exe`, `coverage.exe`): run them as `uv run python -m <tool>`. PowerShell blocks `npm.ps1`: use `npm.cmd`.
 - Git Bash and Node disagree about paths (`/tmp` isn't the same folder for both), and inline shell strings lose backslashes. Put test inputs with Windows paths, and scripts longer than a few lines, in files in a temporary folder outside the repository, and pass paths as arguments.
+- Change code that holds backslash escapes (`\n`, `\r`, regular expressions) with the file edit tools, never by writing it through a Python or shell string, which turns the escapes into real line breaks or control characters. Python's `write_text` also writes CRLF here: write bytes, or use the edit tools. Read the changed lines afterwards.
 
 ## Hooks
 
