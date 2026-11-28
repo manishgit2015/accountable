@@ -3,12 +3,16 @@
 // - The test fails on any browser console error or uncaught page error (R7).
 // - The test fails on any request that leaves 127.0.0.1 or localhost (R2, NFR-4).
 // - The browser's clock is fixed, so "today" is the same in every run (spec 13.2).
+// - The test is signed in as Priya Shah, a test person (SEC-17), unless it sets `signedInAs` to another one,
+//   or to null to start signed out. A test's own API calls go through `request`, which sends the token too.
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { test as base, expect, type Locator, type Page } from "@playwright/test";
+
+import { PRIYA, signInBrowser, testToken } from "./signIn";
 
 /**
  * Saturday 21 November 2026, 14:30 local time: the same moment as the backend tests' clock, and the e2e
@@ -58,12 +62,32 @@ export interface Guards {
   allowConsoleError: (pattern: RegExp) => void;
 }
 
-export const test = base.extend<{ guards: Guards }>({
+export const test = base.extend<{ guards: Guards; signedInAs: string | null; token: string | null }>({
+  signedInAs: [PRIYA, { option: true }],
+  token: async ({ signedInAs, playwright, baseURL }, use) => {
+    if (!signedInAs) return use(null);
+    const context = await playwright.request.newContext();
+    try {
+      await use(await testToken(context, baseURL ?? "", signedInAs));
+    } finally {
+      await context.dispose();
+    }
+  },
+  // Playwright's own API client, at the app's address and sending the signed-in person's token (R101).
+  request: async ({ playwright, token, baseURL }, use) => {
+    const context = await playwright.request.newContext({
+      baseURL,
+      extraHTTPHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    await use(context);
+    await context.dispose();
+  },
   guards: [
-    async ({ page }, use) => {
+    async ({ page, token }, use) => {
       const allowed: RegExp[] = [];
       resetDatabase();
       await page.clock.setFixedTime(FIXED_NOW);
+      if (token) await signInBrowser(page.context(), token, FIXED_NOW);
 
       const problems: string[] = [];
       page.on("console", (message) => {

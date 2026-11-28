@@ -12,7 +12,8 @@ from typing import Any
 from sqlalchemy import Connection, Row, Select, func, insert, select, update
 
 from app import rules
-from app.db import activities, contacts, deals, organizations, stage_changes
+from app.db import activities, contacts, deals, organizations, stage_changes, users
+from app.people import display_name
 from app.schemas import (
     Activity,
     ActivityCreate,
@@ -52,6 +53,48 @@ def _changes(body: Any) -> dict[str, Any]:
     return values
 
 
+# Who added and changed a record (R110–R114) ----------------------------------------------------------
+
+_added = users.alias("added_by_user")
+_changed = users.alias("changed_by_user")
+
+
+def with_people(query: Select[*tuple[Any, ...]], table: Any) -> Select[*tuple[Any, ...]]:
+    """The query, with the name and email of who added and who last changed each row (R111, R114)."""
+    return (
+        query.add_columns(
+            _added.c.name.label("created_by_name"),
+            _added.c.email.label("created_by_email"),
+            _changed.c.name.label("updated_by_name"),
+            _changed.c.email.label("updated_by_email"),
+        )
+        .outerjoin(_added, table.c.created_by == _added.c.id)
+        .outerjoin(_changed, table.c.updated_by == _changed.c.id)
+    )
+
+
+def person_ref(person_id: str | None, name: str | None, email: str | None) -> dict[str, str] | None:
+    """{id, name} as R105 shows them, or None for sample data (R113)."""
+    if person_id is None:
+        return None
+    return {"id": person_id, "name": display_name(name, email or "")}
+
+
+def people_fields(data: dict[str, Any]) -> dict[str, Any]:
+    """Turns with_people's columns into created_by and updated_by."""
+    for role in ("created_by", "updated_by"):
+        data[role] = person_ref(data.get(role), data.pop(f"{role}_name", None), data.pop(f"{role}_email", None))
+    return data
+
+
+def created(now: datetime, by: str) -> dict[str, str]:
+    return {"created_at": stamp(now), "created_by": by, "updated_at": stamp(now), "updated_by": by}
+
+
+def changed(now: datetime, by: str) -> dict[str, str]:
+    return {"updated_at": stamp(now), "updated_by": by}
+
+
 # Organizations (R10, R44) --------------------------------------------------------------------------
 
 _open = deals.c.stage.in_(rules.OPEN_STAGES)
@@ -69,43 +112,41 @@ def _organization_query() -> Select[*tuple[Any, ...]]:
         .where(deals.c.organization_id == organizations.c.id, _open)
         .scalar_subquery()
     )
-    return select(
+    query = select(
         organizations,
         contact_count.label("contact_count"),
         open_deal_count.label("open_deal_count"),
         open_value.label("open_value"),
     )
+    return with_people(query, organizations)
 
 
 def list_organizations(conn: Connection) -> list[Organization]:
     rows = conn.execute(_organization_query().order_by(func.lower(organizations.c.name), organizations.c.id))
-    return [Organization.model_validate(row._asdict()) for row in rows]
+    return [Organization.model_validate(people_fields(row._asdict())) for row in rows]
 
 
 def get_organization(conn: Connection, organization_id: int) -> Organization:
     row = conn.execute(_organization_query().where(organizations.c.id == organization_id)).first()
     if row is None:
         raise NotFound
-    return Organization.model_validate(row._asdict())
+    return Organization.model_validate(people_fields(row._asdict()))
 
 
-def create_organization(conn: Connection, body: OrganizationCreate, now: datetime) -> Organization:
+def create_organization(conn: Connection, body: OrganizationCreate, now: datetime, by: str) -> Organization:
     values = body.model_dump()
-    new_id = conn.execute(
-        insert(organizations).values(**values, created_at=stamp(now), updated_at=stamp(now))
-    ).inserted_primary_key
+    new_id = conn.execute(insert(organizations).values(**values, **created(now, by))).inserted_primary_key
     assert new_id is not None
     return get_organization(conn, new_id[0])
 
 
 def update_organization(
-    conn: Connection, organization_id: int, body: OrganizationUpdate, now: datetime
+    conn: Connection, organization_id: int, body: OrganizationUpdate, now: datetime, by: str
 ) -> Organization:
     _require(conn, organizations, organization_id)
     values = _changes(body)
-    conn.execute(
-        update(organizations).where(organizations.c.id == organization_id).values(**values, updated_at=stamp(now))
-    )
+    where = organizations.c.id == organization_id
+    conn.execute(update(organizations).where(where).values(**values, **changed(now, by)))
     return get_organization(conn, organization_id)
 
 
@@ -113,21 +154,22 @@ def update_organization(
 
 
 def _contact_query() -> Select[*tuple[Any, ...]]:
-    return select(contacts, organizations.c.name.label("organization_name")).outerjoin(
+    query = select(contacts, organizations.c.name.label("organization_name")).outerjoin(
         organizations, contacts.c.organization_id == organizations.c.id
     )
+    return with_people(query, contacts)
 
 
 def list_contacts(conn: Connection) -> list[Contact]:
     rows = conn.execute(_contact_query().order_by(func.lower(contacts.c.name), contacts.c.id))
-    return [Contact.model_validate(row._asdict()) for row in rows]
+    return [Contact.model_validate(people_fields(row._asdict())) for row in rows]
 
 
 def get_contact(conn: Connection, contact_id: int) -> Contact:
     row = conn.execute(_contact_query().where(contacts.c.id == contact_id)).first()
     if row is None:
         raise NotFound
-    return Contact.model_validate(row._asdict())
+    return Contact.model_validate(people_fields(row._asdict()))
 
 
 def _check_organization(conn: Connection, organization_id: int) -> str:
@@ -138,21 +180,19 @@ def _check_organization(conn: Connection, organization_id: int) -> str:
     return name
 
 
-def create_contact(conn: Connection, body: ContactCreate, now: datetime) -> Contact:
+def create_contact(conn: Connection, body: ContactCreate, now: datetime, by: str) -> Contact:
     _check_organization(conn, body.organization_id)  # required on create, for leads too (R11)
-    new_id = conn.execute(
-        insert(contacts).values(**body.model_dump(), created_at=stamp(now), updated_at=stamp(now))
-    ).inserted_primary_key
+    new_id = conn.execute(insert(contacts).values(**body.model_dump(), **created(now, by))).inserted_primary_key
     assert new_id is not None
     return get_contact(conn, new_id[0])
 
 
-def update_contact(conn: Connection, contact_id: int, body: ContactUpdate, now: datetime) -> Contact:
+def update_contact(conn: Connection, contact_id: int, body: ContactUpdate, now: datetime, by: str) -> Contact:
     _require(conn, contacts, contact_id)
     values = _changes(body)
     if "organization_id" in values:  # a link is checked only when it's sent (R34)
         _check_organization(conn, values["organization_id"])
-    conn.execute(update(contacts).where(contacts.c.id == contact_id).values(**values, updated_at=stamp(now)))
+    conn.execute(update(contacts).where(contacts.c.id == contact_id).values(**values, **changed(now, by)))
     return get_contact(conn, contact_id)
 
 
@@ -160,7 +200,7 @@ def update_contact(conn: Connection, contact_id: int, body: ContactUpdate, now: 
 
 
 def _deal_query() -> Select[*tuple[Any, ...]]:
-    return (
+    query = (
         select(
             deals,
             organizations.c.name.label("organization_name"),
@@ -169,10 +209,11 @@ def _deal_query() -> Select[*tuple[Any, ...]]:
         .outerjoin(organizations, deals.c.organization_id == organizations.c.id)
         .outerjoin(contacts, deals.c.contact_id == contacts.c.id)
     )
+    return with_people(query, deals)
 
 
 def deal_from_row(row: Row[Any], today: date) -> Deal:
-    data = row._asdict()
+    data = people_fields(row._asdict())
     data["expected_revenue"] = rules.expected_revenue(data["value"], data["probability"])
     data["is_late"] = rules.is_late(data["stage"], date.fromisoformat(data["close_date"]), today)
     return Deal.model_validate(data)
@@ -210,7 +251,7 @@ def _check_contact_matches(conn: Connection, organization_id: int | None, contac
         raise Invalid({"contact_id": f"Choose a contact from {org_name}."})
 
 
-def create_deal(conn: Connection, body: DealCreate, now: datetime) -> Deal:
+def create_deal(conn: Connection, body: DealCreate, now: datetime, by: str) -> Deal:
     from app.services.moves import top_of_column
 
     _check_contact_matches(conn, body.organization_id, body.contact_id)
@@ -226,8 +267,7 @@ def create_deal(conn: Connection, body: DealCreate, now: datetime) -> Deal:
             close_date=day(effects.close_date),
             position=top_of_column(conn, effects.stage, now),  # R65, R67: the top of its column
             closed_at=stamp(effects.closed_at) if effects.closed_at else None,
-            created_at=stamp(now),
-            updated_at=stamp(now),
+            **created(now, by),
         )
     ).inserted_primary_key
     assert new_id is not None
@@ -238,7 +278,7 @@ def create_deal(conn: Connection, body: DealCreate, now: datetime) -> Deal:
     return get_deal(conn, new_id[0], now.date())
 
 
-def update_deal(conn: Connection, deal_id: int, body: DealUpdate, now: datetime) -> Deal:
+def update_deal(conn: Connection, deal_id: int, body: DealUpdate, now: datetime, by: str) -> Deal:
     from app.services.moves import change_stage
 
     current = conn.execute(select(deals).where(deals.c.id == deal_id)).first()
@@ -253,35 +293,39 @@ def update_deal(conn: Connection, deal_id: int, body: DealUpdate, now: datetime)
         )
     stage = values.pop("stage", None)
     probability = values.pop("probability", None)
-    conn.execute(update(deals).where(deals.c.id == deal_id).values(**values, updated_at=stamp(now)))
+    conn.execute(update(deals).where(deals.c.id == deal_id).values(**values, **changed(now, by)))
     if stage is not None or probability is not None:
         # One code path for stage effects, shared with /move (R15–R18, R67).
-        change_stage(conn, deal_id, stage or current.stage, now, probability=probability, to_top=True)
+        change_stage(conn, deal_id, stage or current.stage, now, by, probability=probability, to_top=True)
     return get_deal(conn, deal_id, now.date())
 
 
 # Activities (R13, R53, R55) ------------------------------------------------------------------------
 
 
+def _activity_query() -> Select[*tuple[Any, ...]]:
+    return with_people(select(activities), activities)
+
+
 def _activity(row: Row[Any]) -> Activity:
-    data = row._asdict()
+    data = people_fields(row._asdict())
     data["done"] = bool(data["done"])
     return Activity.model_validate(data)
 
 
 def list_activities(conn: Connection) -> list[Activity]:
-    rows = conn.execute(select(activities).order_by(activities.c.occurred_at.desc(), activities.c.id.desc()))
+    rows = conn.execute(_activity_query().order_by(activities.c.occurred_at.desc(), activities.c.id.desc()))
     return [_activity(row) for row in rows]
 
 
 def get_activity(conn: Connection, activity_id: int) -> Activity:
-    row = conn.execute(select(activities).where(activities.c.id == activity_id)).first()
+    row = conn.execute(_activity_query().where(activities.c.id == activity_id)).first()
     if row is None:
         raise NotFound
     return _activity(row)
 
 
-def create_activity(conn: Connection, body: ActivityCreate, now: datetime) -> Activity:
+def create_activity(conn: Connection, body: ActivityCreate, now: datetime, by: str) -> Activity:
     if body.contact_id is not None:
         _require(conn, contacts, body.contact_id, field="contact_id", message="That contact doesn't exist.")
     if body.deal_id is not None:
@@ -295,19 +339,20 @@ def create_activity(conn: Connection, body: ActivityCreate, now: datetime) -> Ac
             occurred_at=stamp(body.occurred_at or now),  # defaults to now, and may be in the future (R13)
             follow_up_date=day(body.follow_up_date) if body.follow_up_date else None,
             done=int(body.done),
+            **created(now, by),
         )
     ).inserted_primary_key
     assert new_id is not None
     return get_activity(conn, new_id[0])
 
 
-def update_activity(conn: Connection, activity_id: int, body: ActivityUpdate) -> Activity:
+def update_activity(conn: Connection, activity_id: int, body: ActivityUpdate, now: datetime, by: str) -> Activity:
     _require(conn, activities, activity_id)
     values = _changes(body)
     if "done" in values:
         values["done"] = int(values["done"])
     if values:
-        conn.execute(update(activities).where(activities.c.id == activity_id).values(**values))
+        conn.execute(update(activities).where(activities.c.id == activity_id).values(**values, **changed(now, by)))
     return get_activity(conn, activity_id)
 
 

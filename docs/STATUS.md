@@ -2,7 +2,7 @@ The MVP is released as `v0.1.0` (22 Nov 2026), built from `docs/changes/mvp/plan
 
 ## Using Accountable
 
-Accountable runs on your own computer only. Nothing leaves it, and it works without the internet once installed.
+Accountable is a CRM a small team shares. Everyone signs in with an email and password, and everyone works on the same data, which lives in Postgres on Supabase. It needs the internet, for Supabase. (Change `mvp-multiuser`; the tests still run offline.)
 
 ### Install (once)
 
@@ -10,63 +10,68 @@ Accountable runs on your own computer only. Nothing leaves it, and it works with
 2. **uv** (it runs the Python backend and downloads Python 3.12 for you). Follow https://docs.astral.sh/uv/getting-started/installation/: on Windows `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`, on macOS and Linux `curl -LsSf https://astral.sh/uv/install.sh | sh`. Open a new terminal afterwards. Check with `uv --version`.
 3. **Google Chrome**, only if you run the tests.
 4. Get the code: `git clone <repository>` and `cd accountable`.
+5. **`.env`** at the top of the repository (git ignores it), with three settings from the team's Supabase project:
+   - `DATABASE_URL`: the session pooler address, with the database password (dashboard: Connect, Session pooler). The password is the one secret (SEC-9).
+   - `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` (dashboard: Project Settings, API). The key is meant for browsers and isn't secret.
 
-The first `npm run dev` installs the rest itself (the npm packages, the Python packages and Python 3.12), so the first run needs the internet. Later runs don't.
+The first `npm run dev` installs the rest itself (the npm packages, the Python packages and Python 3.12), then checks the three settings and names any that's missing.
 
 ### Run
 
-- `npm run dev`, then open **http://127.0.0.1:5173**. It connects to the team's Postgres on Supabase, and needs `DATABASE_URL` in `.env` first (the session pooler address from Supabase's dashboard, with the database password; change `mvp-multiuser`, ADR-027). Without it, it stops with one line saying so. The first run on a new database loads the sample data.
+- `npm run dev`, then open **http://127.0.0.1:5173** and sign in. It uses the team's data on Supabase: there's no local copy to fall back to (ADR-027). The first start on an empty database creates the tables and loads the sample data.
+- `npm run build`, then `npm run start`, runs it the way Render does: one process serving the built page and the API at **http://127.0.0.1:8000** (DEP-9).
 - On Windows, if PowerShell says "running scripts is disabled", type `npm.cmd` instead of `npm` (for example `npm.cmd run dev`).
 - Stop it with Ctrl+C in that terminal (on Windows, answer `Y` to "Terminate batch job").
-- The app listens on 127.0.0.1 only (ports 8000 for the API and 5173 for the page), so other computers can't reach it.
-- Optional settings: `ACCOUNTABLE_DB` (the SQLite file `npm run seed` and `npm run clear` use), `ACCOUNTABLE_API_PORT`, `ACCOUNTABLE_WEB_PORT`, `ACCOUNTABLE_LOG_LEVEL` (default `INFO`) and `ACCOUNTABLE_RELOAD=1` (restart the backend when its code changes, for development).
+- On this computer it listens on 127.0.0.1 only (ports 8000 and 5173), so other computers can't reach it. Hosted, Render runs it at its onrender.com address (`render.yaml`, DEP-8).
+- Optional settings: `ACCOUNTABLE_API_PORT`, `ACCOUNTABLE_WEB_PORT`, `ACCOUNTABLE_LOG_LEVEL` (default `INFO`), `ACCOUNTABLE_RELOAD=1` (restart the backend when its code changes, for development) and `ACCOUNTABLE_DB` (the SQLite file `npm run seed` and `npm run clear` use).
 
-### Sample data and starting fresh
+### Signing in and people
 
-- These work only on a local SQLite file. When `DATABASE_URL` is set (in `.env` too), both refuse before asking and change nothing, so the team's data on Supabase is never replaced or wiped.
-- `npm run seed` replaces **all** data with the sample data.
-- `npm run clear` deletes **all** data, to start with your real data.
-- Both ask "Type yes to continue" first, and change nothing unless you type `yes`. Add `-- --yes` to skip the question (`npm run clear -- --yes`). They work while the app is running; reload the page afterwards.
+- Signing in uses Supabase Auth. There's no sign-up or password reset in the app: whoever runs Accountable adds each person in Supabase's dashboard (Authentication, Users, Add user, with "Auto Confirm User"), and sets their display name as `name` in the user metadata. Keep "Allow new users to sign up" turned off.
+- The menu under your initials, at the end of the top bar, holds the theme (Light, Dark or System) and Sign out. The theme belongs to the browser, not the person.
+- Each record keeps who added it and who last changed it. The screens don't show it yet (spec 17.1).
 
-### Back up and restore
+### Sample data, backups and the team's data
 
-Your data is in the `backend/data/` folder: `accountable.db`, and while the app runs also `accountable.db-wal` and `accountable.db-shm`. The `-wal` file can hold your latest changes, so always copy the whole folder, never the `.db` file alone.
-
-- **Back up:** stop the app (Ctrl+C), then copy the `backend/data/` folder somewhere safe, for example `backend/data-backup-2026-11-22/` or another drive.
-- **Restore:** stop the app, delete or rename `backend/data/`, put the copied folder back as `backend/data/`, then `npm run dev`.
-- **Before upgrading** (pulling a new version), back up first. Database upgrades only go forward, so restoring the copy is the way back.
-- Accountable doesn't make backups itself.
+- The team's data is only on Supabase. Nobody deletes its records except one at a time in the app: no `npm run clear`, reseeding, or emptying tables in Supabase's dashboard (E-8).
+- `npm run seed` and `npm run clear` work only on a local SQLite file, for trying things out. When `DATABASE_URL` is set (in `.env` too) both refuse before asking and change nothing. Both ask "Type yes to continue" first; add `-- --yes` to skip the question.
+- **Backups:** Supabase keeps them (dashboard: Database, Backups); the free plan keeps few. Accountable doesn't make backups itself. Restoring one replaces everything there, so only whoever runs Accountable does it, to undo a bad change.
+- **Before upgrading:** database upgrades only go forward and run at start-up, so check there's a recent Supabase backup first.
 
 ### Logs
 
-- Every request is logged to the terminal and to `backend/logs/accountable.log` (rotated at 5 MB, keeping 3 old files). Lines never contain your data: only the time, a request ID, the method, the path pattern, the status and the time taken.
+- Every request is logged to the terminal and to `backend/logs/accountable.log` (rotated at 5 MB, keeping 3 old files). Lines never contain your data or a token: only the time, a request ID, the method, the path pattern, the status and the time taken.
 - When the app shows an error with "Reference: 9f2c", search the log for `9f2c` to find that request.
-- Start-up logs the address, the database path, the schema version and whether sample data was loaded.
-- `http://127.0.0.1:5173/api/health` answers `{"status":"ok",...}` when the app and its database are working.
+- Start-up logs the address, the database (the Postgres host, never the user or password), the schema version and whether sample data was loaded.
+- `/api/health` answers `{"status":"ok",...}` when the app and its database are working. It needs no sign-in.
 
 ### When something goes wrong (runbook)
 
 | Symptom | Action |
 |---|---|
+| "Accountable needs DATABASE_URL, SUPABASE_URL, ... in .env" | Add the named settings to `.env` (see Install), then run `npm run dev` again |
 | "Port 8000 (or 5173) is already in use" | Close the other copy of Accountable, or the program using that port, and run `npm run dev` again. On Windows, a copy left running can be found with `Get-NetTCPConnection -LocalPort 8000,5173 -State Listen` and stopped in Task Manager. |
 | "uv not found" or "node not found" (or "needs Node.js 24") | Install them as in "Install" above, open a new terminal, and run `npm run dev` again. |
 | "running scripts is disabled" in PowerShell | Use `npm.cmd run dev`. |
+| Nobody can sign in | Check `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` in `.env` (or Render's settings), and Supabase's status page. Look for 401s in the log. |
+| "Email or password is wrong" for someone who should get in | Check they're in Supabase's Authentication, Users, and confirmed; set a new password there if needed |
+| "Your session has ended. Sign in again." | Sign in again: the session ran out, or the person was removed in Supabase |
+| "Accountable can't reach its database" | Check Supabase's dashboard: a free project is paused after a week without use, and needs restoring there |
+| "Accountable is busy" | Wait a moment and try again |
+| Accountable won't start | Read the one line it printed, and look in `backend/logs/accountable.log`. The database is left as it was. |
 | "Can't reach Accountable" in the browser | Check the terminal running `npm run dev`. Restart it if it stopped. |
-| "Accountable is busy" | Wait a moment and try again. If it keeps happening, check nothing else has the database file open (a database viewer, a sync tool). |
-| The database won't open | Stop the app, copy `backend/data/` somewhere safe, and look in `backend/logs/accountable.log` for the error. |
 | The first run fails while installing | Check the internet connection and run `npm run dev` again. It only installs what's missing. |
-| Starting again from the sample data | `npm run seed` |
-| Starting with real data | `npm run clear` |
-| Backing up | Stop the app and copy the `backend/data/` folder, which holds the database and its `-wal` file |
-| Restoring | Stop the app and put the copied folder back as `backend/data/` |
+| The hosted app is slow to open | Render's free plan was asleep: wait up to a minute |
 
 ### For developers
 
-- `npm test` runs every test (pytest, Vitest, Playwright in the installed Chrome) on a temporary database and the test ports 8001 and 5174. It never touches `backend/data/accountable.db`. `npm test -- backend`, `-- frontend` or `-- e2e` runs one suite.
-- `npm run check` runs every check (formatting, lint, complexity, types, gitleaks, and `npm test` with 80% unit coverage) and fails if any fails. `npm run check:quick` skips the end-to-end tests, and `npm run lint` skips all tests. `npm run format` fixes formatting. gitleaks must be installed (`winget install Gitleaks.Gitleaks`, or `brew install gitleaks`).
+- `npm test` runs every test (pytest, Vitest, Playwright in the installed Chrome) in test mode: a temporary SQLite database, the test ports 8001 and 5174, and the test sign-in (test people such as `priya@test.example`, password `test`). It never reads `.env`, and refuses to start with `DATABASE_URL` set, so it never reaches Supabase (ADR-027). Unit tests over 1 second fail (NFR-15). `npm test -- backend`, `-- frontend` or `-- e2e` runs one suite.
+- `npm run dev:test` starts the app the same way, for looking around or the ui-check agent, at http://127.0.0.1:5174.
+- `npm run check` runs every check (formatting, lint, complexity, types, gitleaks, a frontend build checked for secrets, and `npm test` with 80% unit coverage) and fails if any fails. `npm run check:quick` skips the end-to-end tests, and `npm run lint` skips all tests. `npm run format` fixes formatting. gitleaks must be installed (`winget install Gitleaks.Gitleaks`, or `brew install gitleaks`).
 - Git's pre-commit hook (lefthook, installed by `npm install`) formats the staged files, then runs lint, types and gitleaks; skip it once with `LEFTHOOK=0 git commit`. Claude Code's hooks are in `.claude/settings.json`: `npm run check:quick` when the agent finishes a turn (blocks once on failure), and no edits to `.env`.
 - `npm run audit` checks the npm and Python dependencies for known vulnerabilities.
 - `npm run test:perf` times the app at 2× the expected data volume (V-P01).
+- `node scripts/run-tests.mjs visual multiuser-screens` saves every screen in both modes, with the sign-in screen and the user menu, to `docs/evidence/2026-11-28-mvp-multiuser/` (V-M04).
 - `node scripts/run-tests.mjs visual` saves 1440px screenshots of the dashboard and pipeline to `docs/evidence/2026-11-22-visual/`, for comparing with mockup 1 (V-M04). It also runs `e2e/visual/dark-mode.spec.ts`: six light-mode screens compared pixel for pixel with the baselines in `docs/changes/mvp-darkmode/baseline/` (R94), which isn't part of `npm run check`, so run it by hand before merging a change that touches styles. With `ACCOUNTABLE_SCREENSHOTS=1` it also replaces the approved dark-mode screenshots in `docs/changes/mvp-darkmode/`; without it, they go to `test-results/`.
 
 ## Done
@@ -140,6 +145,8 @@ Your data is in the `backend/data/` folder: `accountable.db`, and while the app 
 
 - 2026-11-27: Change `mvp-multiuser`, part D (the database), uncommitted. `npm run dev` now connects to Postgres on Supabase from `DATABASE_URL` in `.env` (pg8000, TLS without a certificate check, a pool of 5, 10 s timeout, 5 s `lock_timeout`), and refuses to start without it. Every test path (`npm test`, `check`, `check:quick` and the Stop hook, `test:perf`, the visual suite) runs in test mode on a temporary SQLite file. In test mode `.env` is never read and `DATABASE_URL` is refused by the test runner, Playwright's config, pytest's conftest and the backend; probes pointing each path at the Supabase host all stopped before connecting. `npm run seed`, `npm run clear` and perfdata refuse `DATABASE_URL`. A lost database answers 503 `database_unavailable`. New `test_database_choice.py` (V-B18), ADR-027, ADR-028 and E-9 in the spec. `npm run check` passes (412 backend, 253 frontend, 59 e2e). The engineer then dropped the certificate check (ADR-028): no CA file is needed. The first start on Supabase (plan D6) worked: it created the tables (schema `0001_initial`) and loaded the sample data (12 organizations, 40 contacts, 45 deals, 150 activities). It is slow from this computer to the Sydney pooler: the load took about 8.5 minutes and the first health checks took several seconds, so request times against Supabase still need measuring. Evidence in `docs/build_logs.log`.
 - 2026-11-27: Fixed the dashboard on Supabase (500, Postgres error 42803). The monthly figures grouped by `substr(closed_at, 1, 7)` with its 1 and 7 sent as separate parameters in SELECT and GROUP BY, which SQLite accepts and Postgres refuses. They're now written into the SQL. New test V-B19 compiles the query for Postgres. All 28 SELECTs the GET endpoints run were captured on SQLite and run read-only on Supabase without error. Writes (create, edit, move, delete) aren't checked on Postgres yet (V-M08). `npm run check` passes.
+- 2026-11-27: Change `mvp-multiuser`, plan approved (phases 0-8), phases 1-4 built, uncommitted. Every API route but health needs a Supabase or test token (`app/auth.py`), every record keeps who added and last changed it (migration `0002_people`, which on SQLite now runs with foreign keys off and the links checked, after the tests caught a table copy deleting activities), `GET /api/search` matches with `casefold()`, and the browser signs in with Supabase Auth, or with the test sign-in in test mode, behind a sign-in screen. Unit tests over 1 second fail the run (NFR-15). `npm run check` passes (502 backend, 282 frontend, 65 e2e). Next: phase 5 (the user menu and System theme). Migration `0002` hasn't run on Supabase yet: the plan does that in phase 8, after a backup. Evidence and probes in `docs/build_logs.log`.
+- 2026-11-28: Change `mvp-multiuser`, phase 5 (the user menu with Light, Dark and System, and Sign out) and phase 7 (the backend serves the built page, `npm run build` and `npm run start`, Render settings, `render.yaml`, the built frontend checked for secrets in `npm run check`, `npm run dev:test` for the ui-check agent) built, uncommitted. The engineer left phase 6 (showing who added a record, and the search box) out of this change: spec 17.1 lists it. `npm run check` passes (533 backend, 283 frontend, 67 e2e). **Before `npm run dev` works again**, `.env` needs `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` (Supabase dashboard, Project Settings, API); `npm run dev` says so. Next: phase 8, the checks by hand, including migration `0002` on Supabase after a backup.
 
 ## Release notes: v0.1.0 (22 Nov 2026)
 

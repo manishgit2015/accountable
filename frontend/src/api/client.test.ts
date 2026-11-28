@@ -7,6 +7,8 @@ import { createElement, type ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ApiError, MESSAGES, REQUEST_TIMEOUT_MS, apiRequest, convertKeys, toCamel, toSnake } from "./client";
+import { setSession } from "../lib/session";
+import { fakeSession } from "../test/session";
 import * as q from "./queries";
 import type { Deal } from "./types";
 
@@ -41,7 +43,58 @@ describe("apiRequest", () => {
     expect(result).toEqual({ contactCount: 0 });
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(init.body).toBe('{"name":"Acme","job_title":"x"}');
-    expect(init.headers).toEqual({ "Content-Type": "application/json" });
+    expect(init.headers).toEqual({ "Content-Type": "application/json", Authorization: "Bearer test-token" });
+  });
+
+  it("R102 sends the signed-in person's token with every request, reads and changes alike", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => jsonResponse(200, []));
+    vi.stubGlobal("fetch", fetchMock);
+    await apiRequest("GET", "/api/deals");
+    await apiRequest("PATCH", "/api/deals/1", { body: { value: 5 } });
+    await apiRequest("DELETE", "/api/deals/1");
+    for (const [, init] of fetchMock.mock.calls as [string, RequestInit][]) {
+      expect((init.headers as Record<string, string>).Authorization).toBe("Bearer test-token");
+    }
+  });
+
+  it("R101 sends no token once signed out", async () => {
+    setSession(fakeSession({ status: "signed-out", token: null }));
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, []));
+    vi.stubGlobal("fetch", fetchMock);
+    await apiRequest("GET", "/api/deals");
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).toEqual({ Accept: "application/json" });
+  });
+
+  it("R108 a 401 ends the session, and is an error like any other", async () => {
+    const current = fakeSession();
+    setSession(current);
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(jsonResponse(401, { error: { code: "unauthorized", message: "Sign in to continue." } })),
+    );
+    await expect(apiRequest("GET", "/api/deals")).rejects.toMatchObject({ status: 401, code: "unauthorized" });
+    expect(current.end).toHaveBeenCalledTimes(1);
+    expect(current.getState()).toEqual({ status: "signed-out", token: null, ended: true });
+  });
+
+  it("R101 other errors keep the session", async () => {
+    const current = fakeSession();
+    setSession(current);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(403, { error: { code: "forbidden_origin" } })));
+    await expect(apiRequest("POST", "/api/deals", { body: {} })).rejects.toMatchObject({ status: 403 });
+    expect(current.end).not.toHaveBeenCalled();
+  });
+
+  it("REL-13 a lost database shows the backend's message", async () => {
+    const message = "Accountable can't reach its database. Try again in a minute.";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse(503, { error: { code: "database_unavailable", message } })),
+    );
+    await expect(apiRequest("GET", "/api/deals")).rejects.toMatchObject({ code: "database_unavailable", message });
   });
 
   it("spec 5.2 reads the error format, with camelCase field names and the request ID", async () => {
@@ -170,14 +223,18 @@ describe("read hooks", () => {
   });
 
   it("REL-5 retries a failed read once, but not a 404", async () => {
+    // Fake timers move React Query's 1-second retry delay forward at once (NFR-15).
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
     const calls = stubApi(() => jsonResponse(500, { error: { code: "internal", message: "x" } }));
     const { result } = renderHook(() => q.useDeals(), { wrapper: wrapperFor(q.createQueryClient()) });
-    await waitFor(() => expect(result.current.isError).toBe(true), { timeout: 4000 });
+    await act(() => vi.advanceTimersByTimeAsync(1500));
+    expect(result.current.isError).toBe(true);
     expect(calls).toHaveLength(2);
 
     const missing = stubApi(() => jsonResponse(404, { error: { code: "not_found", message: "x" } }));
     const second = renderHook(() => q.useDeal(9), { wrapper: wrapperFor(q.createQueryClient()) });
-    await waitFor(() => expect(second.result.current.isError).toBe(true));
+    await act(() => vi.advanceTimersByTimeAsync(1500));
+    expect(second.result.current.isError).toBe(true);
     expect(missing).toHaveLength(1);
   });
 

@@ -11,6 +11,7 @@ from pydantic import BaseModel, ValidationError
 
 from app.errors import validation_fields
 from app.schemas import Activity, ActivityCreate, ActivityUpdate, Dashboard, FollowUp, TimelineEntry
+from tests.conftest import PRIYA
 
 
 def problems(model: type[BaseModel], data: dict) -> dict[str, str]:
@@ -84,6 +85,10 @@ def test_spec53_activity_timeline_and_dashboard_shapes() -> None:
         "occurred_at",
         "follow_up_date",
         "done",
+        "created_at",
+        "created_by",
+        "updated_at",
+        "updated_by",
     ]
     assert list(TimelineEntry.model_fields) == [
         "kind",
@@ -94,6 +99,7 @@ def test_spec53_activity_timeline_and_dashboard_shapes() -> None:
         "description",
         "at",
         "source",
+        "added_by",
     ]
     assert list(FollowUp.model_fields)[-1] == "source"
     assert list(Dashboard.model_fields) == [
@@ -163,6 +169,10 @@ def test_R13_R53_log_on_a_contact_defaults_to_now_and_not_done(client: TestClien
         "occurred_at": "2026-11-21T14:30:00",
         "follow_up_date": None,
         "done": False,
+        "created_at": "2026-11-21T14:30:00",
+        "created_by": {"id": PRIYA.id, "name": "Priya Shah"},
+        "updated_at": "2026-11-21T14:30:00",
+        "updated_by": {"id": PRIYA.id, "name": "Priya Shah"},
     }
     assert client.get("/api/activities").json() == [activity]
 

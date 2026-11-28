@@ -5,6 +5,8 @@
 // baselines, because the toggle goes there (T3). The comparison hides the toggle first, so that group has
 // the same box as before and the mask covers exactly the same pixels: anything else that changed still
 // fails. The toggle's own look is checked in the screenshots in both modes, and by eye.
+// mvp-multiuser (R94): the toggle became the user menu button, at the end of the same group. The comparison
+// hides it instead, so the group still holds only "Add deal", as in the baselines, and the mask is unchanged.
 // The product owner also approved one more light-mode change: a focused secondary button now shows the focus
 // ring (spec 3.9; the baselines show the delete dialog's Cancel, which the dialog focuses, without it). The
 // comparison puts back the old unfocused look on that one rule; V-E11 checks the ring itself.
@@ -26,7 +28,7 @@ async function expectLightUnchanged(page: Page, name: string, fullPage = true): 
   await expect(page.locator("html")).not.toHaveAttribute("data-theme");
   await page.addStyleTag({
     content:
-      ".theme-toggle { display: none !important; } .btn-secondary:focus-visible { box-shadow: var(--shadow) !important; }",
+      ".user-button { display: none !important; } .btn-secondary:focus-visible { box-shadow: var(--shadow) !important; }",
   });
   // threshold 0: any change in any pixel's color fails, not only a visible one (Playwright's default is 0.2).
   await expect(page).toHaveScreenshot(baseline(name), {
@@ -94,7 +96,11 @@ const shotPath = (name: string) => (replaceApproved ? `${CHANGE_DIR}${name}` : t
 for (const mode of ["light", "dark"] as const) {
   test(`V-M04 dashboard and pipeline in ${mode} mode`, async ({ page }) => {
     await page.goto("/");
-    if (mode === "dark") await page.getByRole("button", { name: "Dark mode" }).click();
+    if (mode === "dark") {
+      await page.getByRole("button", { name: /^Account menu, / }).click();
+      await page.getByRole("menuitemradio", { name: "Dark" }).click();
+      await page.keyboard.press("Escape");
+    }
     await expect(page.getByText("Recent activity")).toBeVisible();
     await page.mouse.move(0, 0);
     await page.screenshot({

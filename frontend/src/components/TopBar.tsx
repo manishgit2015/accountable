@@ -2,7 +2,7 @@ import { Plus } from "lucide-react";
 import { NavLink } from "react-router";
 
 import { Button } from "./Button";
-import { ThemeToggle } from "./ThemeToggle";
+import { UserMenu } from "./UserMenu";
 
 /** The five sections, in top bar order. Routes and tabs both come from this list. */
 export const SECTIONS = [
@@ -13,7 +13,7 @@ export const SECTIONS = [
   { path: "/organizations", label: "Organizations" },
 ] as const;
 
-/** The floating top bar: wordmark, tabs, the mode toggle and "Add deal" (spec 3.9 Layout). */
+/** The floating top bar: wordmark, tabs, "Add deal" and the user menu (spec 3.9 Layout, R106). */
 export function TopBar({ onAddDeal }: { onAddDeal?: () => void }) {
   return (
     <header className="topbar">
@@ -31,12 +31,12 @@ export function TopBar({ onAddDeal }: { onAddDeal?: () => void }) {
         ))}
       </nav>
       <div className="topbar-right">
-        <ThemeToggle />
         {/* Disabled only when no handler is given (the app always gives one). */}
         <Button variant="primary" onClick={onAddDeal} disabled={!onAddDeal}>
           <Plus size={16} aria-hidden="true" />
           Add deal
         </Button>
+        <UserMenu />
       </div>
     </header>
   );

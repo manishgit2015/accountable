@@ -7,7 +7,7 @@ Part of the Accountable spec: [`docs/spec.md`](../spec.md) has the summary and t
 | ID | Journey | Steps | End state |
 |---|---|---|---|
 | WF-1 | First run, for a developer | Install Node and uv (documented), clone, put the Supabase settings in `.env`, run `npm run dev`, open the printed address, sign in | The dashboard shows sample data (AC1) |
-| WF-2 | Explore, then start for real, on a local database | Browse every section on the sample data, stop the app, run `npm run clear`, type `yes`, start again, sign in | Every screen shows its empty state and works (AC2) |
+| WF-2 | Start real work on the team's data | Sign in, browse every section on the sample data, then add the first real organization, contact and deal beside it. A sample record nobody wants is deleted on its own, with its warning (R30–R36). | The real records sit with the sample data, which stays (E-8). An empty database, which the tests use, shows each screen's empty state and works (AC2) |
 | WF-3 | Add a lead | Contacts → Add contact → organization picker → "Add organization" → save the organization → back in the contact form with it chosen → status Lead → save | The contact is in the table and on the organization's page |
 | WF-4 | Add and work a deal | Pipeline → "Add deal" in Qualified → pick organization and contact → save → the card is at the top of Qualified → drag it to Proposal | Stage and probability are updated, totals move, and the timeline shows "Moved from Qualified to Proposal" |
 | WF-5 | Log and finish a follow-up | Contact page → Log activity → Call, description, follow-up date tomorrow → save → Dashboard → Next 7 days → tick it | The timeline shows the call, and the dashboard list no longer does (AC5) |

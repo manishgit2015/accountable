@@ -17,13 +17,15 @@ def list_activities(request: Request) -> list[Activity]:
 @router.post("", status_code=201)
 def create_activity(request: Request, body: ActivityCreate) -> Activity:
     with unit_of_work(request.app.state.engine) as conn:
-        return records.create_activity(conn, body, request.app.state.clock.now())
+        return records.create_activity(conn, body, request.app.state.clock.now(), by=request.state.person.id)
 
 
 @router.patch("/{activity_id}")
 def update_activity(request: Request, activity_id: int, body: ActivityUpdate) -> Activity:
     with unit_of_work(request.app.state.engine) as conn:
-        return records.update_activity(conn, activity_id, body)
+        return records.update_activity(
+            conn, activity_id, body, request.app.state.clock.now(), by=request.state.person.id
+        )
 
 
 @router.delete("/{activity_id}", status_code=204)

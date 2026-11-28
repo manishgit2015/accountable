@@ -310,6 +310,13 @@ class OrganizationUpdate(UpdateRequest):
     notes: Notes = None
 
 
+class PersonRef(BaseModel):
+    """Who added or changed a record (R110, R111): their ID and how they're shown (R105). Read only."""
+
+    id: str
+    name: str
+
+
 class Organization(BaseModel):
     id: int
     name: str
@@ -320,7 +327,9 @@ class Organization(BaseModel):
     open_deal_count: int
     open_value: int
     created_at: str
+    created_by: PersonRef | None
     updated_at: str
+    updated_by: PersonRef | None
 
 
 # Contacts (R11) ------------------------------------------------------------------------------------
@@ -356,7 +365,9 @@ class Contact(BaseModel):
     job_title: str | None
     status: ContactStatus
     created_at: str
+    created_by: PersonRef | None
     updated_at: str
+    updated_by: PersonRef | None
 
 
 # Deals (R12, R15) ----------------------------------------------------------------------------------
@@ -407,7 +418,9 @@ class Deal(BaseModel):
     position: float
     closed_at: str | None
     created_at: str
+    created_by: PersonRef | None
     updated_at: str
+    updated_by: PersonRef | None
 
 
 class MoveResult(BaseModel):
@@ -454,6 +467,10 @@ class Activity(BaseModel):
     occurred_at: str
     follow_up_date: str | None
     done: bool
+    created_at: str
+    created_by: PersonRef | None
+    updated_at: str
+    updated_by: PersonRef | None
 
 
 # Timelines and delete impact (spec 5.3) ------------------------------------------------------------
@@ -476,6 +493,7 @@ class TimelineEntry(BaseModel):
     description: str | None  # null for a stage change
     at: str
     source: Source
+    added_by: PersonRef | None = None  # who added an activity; null for a stage change or sample data (R112)
 
 
 class OrganizationDeleteImpact(BaseModel):
@@ -560,6 +578,49 @@ class Dashboard(BaseModel):
     follow_ups: FollowUps
     recent: list[TimelineEntry]  # the 10 latest activities and stage changes (R75)
     counts: DashboardCounts
+
+
+# Search (R121, R122, section 5.3) -----------------------------------------------------------------
+
+
+class OrganizationHit(BaseModel):
+    id: int
+    name: str
+    industry: str | None
+
+
+class ContactHit(BaseModel):
+    id: int
+    name: str
+    organization_name: str | None
+
+
+class DealHit(BaseModel):
+    id: int
+    name: str
+    organization_name: str | None
+    stage: Stage
+
+
+class OrganizationHits(BaseModel):
+    total: int
+    items: list[OrganizationHit]
+
+
+class ContactHits(BaseModel):
+    total: int
+    items: list[ContactHit]
+
+
+class DealHits(BaseModel):
+    total: int
+    items: list[DealHit]
+
+
+class SearchResults(BaseModel):
+    organizations: OrganizationHits
+    contacts: ContactHits
+    deals: DealHits
 
 
 class Health(BaseModel):

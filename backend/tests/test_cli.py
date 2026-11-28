@@ -118,15 +118,22 @@ def test_REL10_seed_and_clear_work_while_the_app_has_the_database_open(
     assert client.get("/api/deals").json() == []
 
 
-def test_spec56_the_real_command_runs_with_its_exit_codes(db_path: Path) -> None:
+def _real_command(db_path: Path, *args: str, answer: str | None = None) -> subprocess.CompletedProcess[str]:
+    """`python -m app.cli`, as `npm run seed` and `npm run clear` run it. One process per test keeps each under
+    NFR-15's 1 second."""
     env = {**os.environ, "ACCOUNTABLE_DB": str(db_path)}
-    command = [sys.executable, "-m", "app.cli"]
-    done = subprocess.run([*command, "seed", "--yes"], cwd=BACKEND_DIR, env=env, capture_output=True, text=True)
+    command = [sys.executable, "-m", "app.cli", *args]
+    return subprocess.run(command, cwd=BACKEND_DIR, env=env, input=answer, capture_output=True, text=True)
+
+
+def test_spec56_the_real_seed_command_exits_0_and_says_what_it_loaded(db_path: Path) -> None:
+    done = _real_command(db_path, "seed", "--yes")
     assert done.returncode == 0, done.stderr
     assert done.stdout.strip() == LOADED
-    refused = subprocess.run(
-        [*command, "clear"], cwd=BACKEND_DIR, env=env, input="nope\n", capture_output=True, text=True
-    )
+    assert _counts(db_path)["deals"] == 45
+
+
+def test_spec56_the_real_clear_command_exits_1_without_yes_and_changes_nothing(db_path: Path) -> None:
+    refused = _real_command(db_path, "clear", answer="nope\n")
     assert refused.returncode == 1
     assert "Type yes to continue" in refused.stdout and "Nothing was changed." in refused.stdout
-    assert _counts(db_path)["deals"] == 45

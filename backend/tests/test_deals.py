@@ -11,6 +11,7 @@ from pydantic import BaseModel, ValidationError
 
 from app.errors import validation_fields
 from app.schemas import Deal, DealCreate, DealMove, DealUpdate, MoveResult
+from tests.conftest import PRIYA
 
 VALID = {
     "name": "New website",
@@ -130,7 +131,9 @@ def test_spec53_deal_response_has_the_spec_fields() -> None:
         "position",
         "closed_at",
         "created_at",
+        "created_by",
         "updated_at",
+        "updated_by",
     ]
     assert list(MoveResult.model_fields) == ["deal", "renumbered"]
 
@@ -179,7 +182,9 @@ def test_R12_R18_create_returns_the_deal_and_saves_its_first_stage_change(client
         "position": 1.0,
         "closed_at": None,
         "created_at": "2026-11-21T14:30:00",
+        "created_by": {"id": PRIYA.id, "name": "Priya Shah"},
         "updated_at": "2026-11-21T14:30:00",
+        "updated_by": {"id": PRIYA.id, "name": "Priya Shah"},
     }
     assert client.get(f"/api/deals/{deal['id']}").json() == deal
     assert _history(client, deal["id"]) == [(None, "qualified", "2026-11-21T14:30:00")]

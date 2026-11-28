@@ -126,14 +126,6 @@ h2 {
   align-items: center;
   gap: 8px;
 }
-/* The mode toggle: a 36px square secondary button (spec 3.9 Components, R90). Two classes, so its padding
-   beats .btn's below; with .btn's 14px each side, the 18px icon was squeezed to 8px (review REV-008). */
-.btn.theme-toggle {
-  width: 36px;
-  padding: 0;
-  justify-content: center;
-}
-
 /* Buttons: 36px high, 8px corners */
 .btn {
   display: inline-flex;
@@ -1214,4 +1206,121 @@ th[aria-sort] .sort-button {
 .draggable.dragging {
   /* The original stays in place, faded, while the lifted copy follows the pointer. */
   opacity: 0.35;
+}
+
+/* Sign-in screen (section 3.9 Sign-in screen, R100, R103, R104) */
+.sign-in {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 24px;
+}
+.sign-in-panel {
+  width: 400px;
+  max-width: 100%;
+  background: var(--panel);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.sign-in-title {
+  margin: 0;
+  font: 600 28px var(--sans);
+  color: var(--ink);
+}
+.sign-in-note {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink);
+}
+.sign-in-button {
+  width: 100%;
+  justify-content: center;
+}
+.sign-in-help {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.sign-in-tagline {
+  margin: 0;
+  font: italic 400 20px var(--serif);
+  color: var(--ink-muted);
+}
+
+/* User menu (R106, R90, R109, section 3.9 Components) */
+.user-button {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--midnight);
+  color: var(--on-fill);
+  font: 600 13px var(--sans);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.user-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.user-menu {
+  width: 260px;
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.user-menu-who {
+  padding: 6px 8px;
+  min-width: 0;
+}
+.user-menu-name {
+  font: 600 14px var(--sans);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.user-menu-email {
+  font: 500 12px var(--sans);
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+.user-menu-divider {
+  height: 1px;
+  background: var(--tint);
+  margin: 4px 0;
+}
+.user-menu-label {
+  padding: 2px 8px;
+  font: 500 12px var(--sans);
+  color: var(--ink-muted);
+}
+.user-menu-theme {
+  margin: 0 8px 4px;
+  align-self: flex-start;
+}
+.user-menu-theme [role="menuitemradio"] {
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: 500 13px var(--sans);
+  color: var(--ink-muted);
+  cursor: pointer;
+  outline: none;
+}
+.user-menu-theme [role="menuitemradio"][data-highlighted] {
+  box-shadow: var(--focus-ring);
+}
+.user-menu-theme [role="menuitemradio"].on {
+  background: var(--midnight);
+  color: var(--on-fill);
+  font-weight: 600;
 }

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router";
 
 import { useHealthWhileOffline, useOffline } from "./api/queries";
@@ -16,6 +17,8 @@ import { DealsPage } from "./pages/deals/DealsPage";
 import { OrganizationPage } from "./pages/organizations/OrganizationPage";
 import { OrganizationsPage } from "./pages/organizations/OrganizationsPage";
 import { PipelinePage } from "./pages/pipeline/PipelinePage";
+import { SignInPage } from "./pages/SignInPage";
+import { useSession } from "./lib/useSession";
 
 function NotFoundPage() {
   return (
@@ -28,7 +31,24 @@ function NotFoundPage() {
   );
 }
 
+/**
+ * Everything needs a signed-in person (R100, R101). Until there is one, the sign-in screen is shown in
+ * place of the page asked for, at the same address, so signing in lands on that page. Signing out, or the
+ * session ending, clears every cached answer, so the next person sees nothing of the last one's.
+ */
 export function App() {
+  const { status, ended } = useSession();
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (status === "signed-out") queryClient.clear();
+  }, [status, queryClient]);
+
+  if (status === "loading") return null;
+  if (status === "signed-out") return <SignInPage ended={ended} />;
+  return <SignedInApp />;
+}
+
+function SignedInApp() {
   const location = useLocation();
   const navigate = useNavigate();
   const offline = useOffline();

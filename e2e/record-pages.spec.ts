@@ -71,7 +71,7 @@ test("R56 a record that doesn't exist says so, with a link back to the list", as
   }
 });
 
-test("R56 a record deleted while its page is open says so", async ({ page, guards }) => {
+test("R56 a record deleted while its page is open says so", async ({ page, guards, request }) => {
   guards.allowConsoleError(/status of 404/);
   await page.goto("/organizations");
   await page
@@ -81,7 +81,7 @@ test("R56 a record deleted while its page is open says so", async ({ page, guard
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Lumen Studio");
   const id = page.url().split("/").pop();
   // Delete it as another tab would, then come back to the page.
-  const response = await page.request.delete(`/api/organizations/${id}`, {
+  const response = await request.delete(`/api/organizations/${id}`, {
     headers: { Origin: new URL(page.url()).origin },
   });
   expect(response.status()).toBe(204);

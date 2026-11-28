@@ -10,11 +10,13 @@ goes through a Clock, so tests can fix time.
 
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
 from typing import Protocol
+from urllib.parse import urlsplit
 
 from dotenv import dotenv_values
 
@@ -23,9 +25,13 @@ APP_VERSION = "0.1.0"
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_DB_PATH = BACKEND_DIR / "data" / "accountable.db"
 DEFAULT_LOG_DIR = BACKEND_DIR / "logs"
+# The built frontend (npm run build), which the backend serves with /api when it's there (section 7.4).
+DEFAULT_FRONTEND_DIST = BACKEND_DIR.parent / "frontend" / "dist"
 # The git-ignored settings file at the repository's root (DEP-2). Read at call time, so tests can move it.
 ENV_FILE = BACKEND_DIR.parent / ".env"
 TEST_MODE_VAR = "ACCOUNTABLE_TEST_AUTH_KEYS"
+# The issuer of test tokens (SEC-17). Real tokens come from SUPABASE_URL/auth/v1 (SEC-13).
+TEST_ISSUER = "accountable-test/auth/v1"
 POSTGRES_SCHEMES = ("postgresql://", "postgres://")
 
 DEFAULT_API_PORT = 8000
@@ -36,6 +42,8 @@ TEST_API_PORT = 8001
 TEST_WEB_PORT = 5174
 
 LOCAL_HOSTNAMES = ("127.0.0.1", "localhost")
+LOCAL_BIND = "127.0.0.1"
+RENDER_BIND = "0.0.0.0"  # noqa: S104 (Render only: its proxy is the one way in, SEC-1)
 
 
 class Clock(Protocol):
@@ -98,26 +106,66 @@ class Settings:
     # Postgres on Supabase (DATABASE_URL). None means the SQLite file at db_path: tests, seed and clear only.
     database_url: str | None = None
     test_mode: bool = False
+    # Supabase Auth (DEP-2): the backend checks tokens against SUPABASE_URL's signing keys (SEC-13). The
+    # publishable key is only for the browser (SEC-15), but a real start needs it too (REL-9).
+    supabase_url: str | None = None
+    supabase_publishable_key: str | None = None
+    # Test mode only: the JWK set the test run made, private keys included, to sign and check test tokens.
+    test_auth_keys: dict | None = None
+    frontend_dist: Path = DEFAULT_FRONTEND_DIST
+    # On Render (RENDER is set by Render only): listen on 0.0.0.0 on PORT, and accept the service's own address.
+    on_render: bool = False
+    public_url: str | None = None
 
-    def require_database(self) -> None:
-        """A start for real use needs Supabase: there's no fallback to the SQLite file (ADR-027)."""
-        if not self.test_mode and not self.database_url:
-            raise ConfigError("DATABASE_URL is missing. Add it to .env, or to Render's settings.")
+    def require_real_use(self) -> None:
+        """A start for real use needs Supabase's database and sign-in: no fallback (ADR-027, REL-9)."""
+        if self.test_mode:
+            return
+        for name, value in (
+            ("DATABASE_URL", self.database_url),
+            ("SUPABASE_URL", self.supabase_url),
+            ("SUPABASE_PUBLISHABLE_KEY", self.supabase_publishable_key),
+        ):
+            if not value:
+                raise ConfigError(f"{name} is missing. Add it to .env, or to Render's settings.")
+
+    @property
+    def token_issuer(self) -> str:
+        """The `iss` every accepted token must have (SEC-13, SEC-17)."""
+        return TEST_ISSUER if self.test_mode else f"{(self.supabase_url or '').rstrip('/')}/auth/v1"
 
     @property
     def allowed_ports(self) -> tuple[int, ...]:
         return tuple(dict.fromkeys((self.api_port, self.web_port, TEST_API_PORT, TEST_WEB_PORT)))
 
     @property
+    def bind_host(self) -> str:
+        """Where the backend listens: this computer only, or on Render every interface behind its proxy (SEC-1)."""
+        return RENDER_BIND if self.on_render else LOCAL_BIND
+
+    @property
+    def public_host(self) -> str | None:
+        return urlsplit(self.public_url).hostname if self.public_url else None
+
+    @property
     def allowed_hosts(self) -> frozenset[str]:
-        """Host header values accepted by the API (SEC-2)."""
-        return frozenset(f"{name}:{port}" for name in LOCAL_HOSTNAMES for port in self.allowed_ports)
+        """Host header values accepted by the API (SEC-2), and on Render the service's own address."""
+        hosts = {f"{name}:{port}" for name in LOCAL_HOSTNAMES for port in self.allowed_ports}
+        if self.public_host:
+            hosts |= {self.public_host, f"{self.public_host}:443"}
+        return frozenset(hosts)
 
     @property
     def allowed_origins(self) -> frozenset[str]:
-        """Origin header values accepted on changing requests (SEC-3)."""
-        web_ports = dict.fromkeys((self.web_port, TEST_WEB_PORT))
-        return frozenset(f"http://{name}:{port}" for name in LOCAL_HOSTNAMES for port in web_ports)
+        """Origin header values accepted on changing requests (SEC-3): the dev and test pages, the API port
+        only while the backend serves the built page there itself (`npm run start`, DEP-9), and on Render the
+        service's own address."""
+        serving_page = (self.frontend_dist / "index.html").is_file()
+        page_ports = dict.fromkeys((self.web_port, TEST_WEB_PORT, *((self.api_port,) if serving_page else ())))
+        origins = {f"http://{name}:{port}" for name in LOCAL_HOSTNAMES for port in page_ports}
+        if self.public_url:
+            origins.add(self.public_url.rstrip("/"))
+        return frozenset(origins)
 
     @property
     def web_address(self) -> str:
@@ -176,6 +224,43 @@ def _db_path(env: dict[str, str], test_mode: bool) -> Path:
     return path
 
 
+def _test_auth_keys(env: dict[str, str], test_mode: bool) -> dict | None:
+    """Test mode's JWK set, as scripts/run-tests.mjs and conftest.py make it (SEC-17). Never echoed."""
+    if not test_mode:
+        return None
+    problem = f"{TEST_MODE_VAR} must be the JWK set the test runs make, with a private key (scripts/run-tests.mjs)."
+    try:
+        keys = json.loads(env.get(TEST_MODE_VAR, ""))
+    except ValueError as exc:
+        raise ConfigError(problem) from exc
+    if not isinstance(keys, dict) or not any(isinstance(k, dict) and k.get("d") for k in keys.get("keys", [])):
+        raise ConfigError(problem)
+    return keys
+
+
+def _optional(env: dict[str, str], name: str, test_mode: bool) -> str | None:
+    """A Supabase setting, ignored in test mode, which never uses Supabase (spec 13.2)."""
+    return None if test_mode else (env.get(name, "").strip() or None)
+
+
+def _public_url(env: dict[str, str], on_render: bool) -> str | None:
+    """ACCOUNTABLE_PUBLIC_URL: the service's own https address, needed on Render for SEC-2 and SEC-3."""
+    raw = env.get("ACCOUNTABLE_PUBLIC_URL", "").strip().rstrip("/") or None
+    if raw is None:
+        if on_render:
+            raise ConfigError(
+                "ACCOUNTABLE_PUBLIC_URL is missing. Add the service's own address, such as "
+                "https://accountable.onrender.com, to Render's settings."
+            )
+        return None
+    parts = urlsplit(raw)
+    if parts.scheme != "https" or not parts.hostname or parts.path or parts.query:
+        raise ConfigError(
+            f"ACCOUNTABLE_PUBLIC_URL must be an https address like https://accountable.onrender.com, not {raw!r}."
+        )
+    return raw
+
+
 def load_settings(env_file: Path | None = None) -> Settings:
     """Read DEP-2's settings from the environment and, outside test mode, `.env` (E-2, ADR-027)."""
     env, test_mode = _environment(env_file)
@@ -183,13 +268,22 @@ def load_settings(env_file: Path | None = None) -> Settings:
     level = env.get("ACCOUNTABLE_LOG_LEVEL", "").strip().upper() or "INFO"
     if level not in ("DEBUG", "INFO", "WARNING", "ERROR"):
         raise ConfigError(f"ACCOUNTABLE_LOG_LEVEL must be DEBUG, INFO, WARNING or ERROR, not {level!r}.")
+    on_render = bool(env.get("RENDER", "").strip()) and not test_mode
+    api_port = (
+        _port(env, "PORT", DEFAULT_API_PORT) if on_render else _port(env, "ACCOUNTABLE_API_PORT", DEFAULT_API_PORT)
+    )
     return Settings(
         db_path=_db_path(env, test_mode),
-        api_port=_port(env, "ACCOUNTABLE_API_PORT", DEFAULT_API_PORT),
+        api_port=api_port,
         web_port=_port(env, "ACCOUNTABLE_WEB_PORT", DEFAULT_WEB_PORT),
         log_level=level,
         reload=_flag(env, "ACCOUNTABLE_RELOAD"),
         clock=FixedClock(fixed) if fixed else SystemClock(),
         database_url=_database_url(env, test_mode),
         test_mode=test_mode,
+        supabase_url=_optional(env, "SUPABASE_URL", test_mode),
+        supabase_publishable_key=_optional(env, "SUPABASE_PUBLISHABLE_KEY", test_mode),
+        test_auth_keys=_test_auth_keys(env, test_mode),
+        on_render=on_render,
+        public_url=_public_url(env, on_render),
     )

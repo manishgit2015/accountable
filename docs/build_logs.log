@@ -2049,3 +2049,258 @@ Run: the backend alone, DATABASE_URL from .env. Start-up: "database Postgres at 
 Through the API: organizations 12, contacts 40, deals 45, activities 150; dashboard 200.
 Timing (the new project is in ap-south-1): health 0.63 s, lists 0.14-0.19 s, dashboard 0.68 s, against 11.3 s
   for the dashboard on the old ap-southeast-2 project. The backend was stopped afterwards.
+
+mvp-multiuser  plan.md approved
+Date: 2026-11-27
+The engineer approved docs/changes/mvp-multiuser/plan.md as written (phases 0-8), with its proposals: search
+  matches with Python's casefold() (R125); sample records show "Added by Sample data" (R113, no longer an
+  assumption in users.md); pyjwt[crypto] and @supabase/supabase-js are added (ENG-5); migration 0002 runs on
+  Supabase only in phase 8, after a Supabase backup (E-8).
+
+mvp-multiuser  Phase 1, step 1: the one-second limit on unit tests (V-U01, NFR-15)
+Date: 2026-11-27
+Code: backend/tests/conftest.py fails any test whose setup plus call takes over 1 s (a pytest hook);
+  frontend/vitest.config.ts sets testTimeout 1000, and src/test/setup.ts fails a slower synchronous test too,
+  timed with process.hrtime, which fake timers never replace.
+Found by it, and fixed without changing what they prove: test_cli's real-command test (1.13 s, two
+  subprocesses) is split into one test per command (0.54 s and 0.48 s); client.test.ts "REL-5 retries a failed
+  read once" (1.0 s) and App.test.tsx's offline banner test (4.1 s) waited on real time, and now move fake
+  timers forward instead.
+Probes: a pytest test sleeping 1.1 s fails with "NFR-15: this unit test took 1.10 s"; a Vitest test busy for
+  1.1 s and one awaiting 1.1 s both fail; the probe files were removed. The rewritten tests still catch real
+  breakage: no retry (failureCount < 0) fails REL-5; no setOffline(true) on a connection error fails the
+  offline test; both pass again restored.
+Result: npm test -- unit: 413 backend, 253 frontend, all under 1 s.
+Plan note: the users row (R114) needs the users table, which migration 0002 adds in phase 2, so phase 1's
+  GET /api/me answers from the token alone and recording the users row moves to phase 2.
+
+mvp-multiuser  Phase 1: the token check, on the backend (plan steps 2-6)
+Date: 2026-11-27
+Dependency: pyjwt[crypto]>=2.10 added to pyproject.toml (approved with the plan; PyJWT 2.15.1 and cryptography
+  50.0.2 were already installed through supabase, and ES256 works under Application Control).
+Test keys: scripts/run-tests.mjs makes an ES256 key pair per run (Node crypto) as a JWK set in
+  ACCOUNTABLE_TEST_AUTH_KEYS; backend/tests/testkeys.py makes the same for a bare uv run pytest. config.py
+  parses it in test mode (refusing anything but a JWK set with a private key), reads SUPABASE_URL and
+  SUPABASE_PUBLISHABLE_KEY outside test mode only, and require_real_use() stops a real start without
+  DATABASE_URL, SUPABASE_URL or SUPABASE_PUBLISHABLE_KEY, each with REL-9's line.
+Code: app/auth.py (TokenChecker: Supabase's JWKS from SUPABASE_URL/auth/v1/.well-known/jwks.json, cached 10 min,
+  fetched again for an unknown kid, kept if Supabase is unreachable; issuer, audience authenticated, exp with
+  60 s leeway, sub and email required; the person from sub, email, user_metadata.name only; private parts of a
+  key set are dropped before checking), app/people.py (R105 name and initials), routers/me.py (GET /api/me),
+  routers/sign_in_for_tests.py (POST /api/test/sign-in, three test people, registered only in test mode),
+  errors.py (401 unauthorized, "Sign in to continue."), main.py (every router but health behind signed_in).
+Tests: backend/tests/test_auth.py (V-B15, V-B14's 401; 44 tests). conftest's client is signed in as Priya
+  Shah, and a new anonymous client sends no token. test_seed's date test uses the signed-in client.
+  test_database_choice.py: require_real_use and the test-mode JWK set (3 new tests).
+Probes (each broken, test_auth.py run, restored): A1 signature not checked -> other_key and edited_payload fail;
+  A2 audience not checked -> wrong_audience fails; A3 issuer not checked -> wrong_issuer fails; A4 keys never
+  fetched again -> the cache and new-key tests fail; A5 routes not behind sign-in -> the every-route test fails;
+  A6 test sign-in outside test mode -> its 404 test fails; A7 leeway 0 -> the drift test fails; A8 the test key
+  trusted in real use -> first PASSED, because the token was refused for its issuer, not its key: the test now
+  uses the real issuer, and fails under the probe; A9 the name ignored -> the R105 tests fail. All pass restored.
+Gate: npm run check:quick passed (all 14 checks): 455 backend, 253 frontend, coverage 98%.
+Deviation from the plan: every phase was to end with npm run check, but from phase 1 the API needs a token and
+  the browser only sends one from phase 4, so the end-to-end tests fail until then (checked: organizations.spec.ts
+  gets 401 and console errors). Phases 1-3 end on npm run check:quick; phase 4 restores npm run check.
+
+mvp-multiuser  Phase 2: who added and changed each record, on the backend
+Date: 2026-11-27
+Migration backend/migrations/versions/0002_people.py: the users table; created_by and updated_by (TEXT NULL ->
+  users, indexed) on organizations, contacts, deals and activities; activities.created_at and updated_at,
+  filled from occurred_at for existing rows, then NOT NULL. Adds only (E-8). app/db.py has the same metadata.
+Code: services/records.py records the person on every create (created_by, updated_by) and update (updated_by),
+  and joins users twice for the names (R105, R111); moves.change_stage records the mover, also on the contact
+  that becomes a customer (R17); timelines name who added each activity (added_by, R112); the dashboard's
+  follow-ups carry the people too; routers pass request.state.person.id. app/people.py's Directory writes
+  the users row before a request's own work: added on first sight, updated when the email, name or day
+  (last_seen_at) changes, and otherwise not read or written, thanks to an in-memory record (R114, 6.5).
+  Sample and performance data have no person (R113); their activities get created_at from occurred_at, or
+  now for planned ones. Updating an activity now sets updated_at too.
+Found by V-B13 and fixed (it would have lost data): on SQLite, batch mode copies a table and drops the old
+  one, and with foreign keys on, dropping deals deleted every activity (ON DELETE CASCADE) and would have
+  cleared contacts' and deals' links. db.upgrade_to_head now turns SQLite's foreign keys off for migrations,
+  runs PRAGMA foreign_key_check before committing, and rolls back on any broken link. Found while testing that:
+  Alembic commits its own transaction on a connection it's given, so the earlier conn.commit() never decided
+  anything; upgrade_to_head now opens the transaction itself, which Alembic joins. The PRAGMAs go through one
+  helper, still the only text SQL (E-1, its test updated). migrations/env.py refuses to run except through the
+  app. Postgres doesn't copy tables, so the team's Supabase data was never at this risk; spec E-1 and DEP-4
+  record the rule.
+Tests: test_attribution.py (V-B16, 32 tests); test_migrations.py: 0001 -> 0002 on a database holding data keeps
+  every row and link (V-B13), and a broken link rolls the migrations back; shape tests updated to spec 5.3's
+  fields; TestPerson renamed SignInPerson (pytest tried to collect it).
+Probes (broken, tests run, restored): M1 foreign keys left on -> the data test fails (activities 0); M2 no
+  backfill -> fails; M3 link check ignored -> the rollback test fails; M4 Alembic left to commit -> fails;
+  P1 nobody recorded on create, P2 the changer kept, P3 a move recording nobody, P5 timelines naming nobody,
+  P6 a name change not reaching the row -> each fails its test. P4 (the users row written on every request)
+  first PASSED, because the test counted only writes; it now counts reads too, and fails under the probe.
+  All pass restored.
+Gate: npm run check:quick passed (14 checks): 480 backend, 253 frontend, coverage 98%, services 99-100%.
+Not run on Supabase yet: 0002 migrates the team's database on the next real start from this working tree. The
+  plan does that in phase 8, after a Supabase backup (on Postgres it's plain ALTER TABLE, no table copies).
+
+mvp-multiuser  Phase 3: search, on the backend (GET /api/search)
+Date: 2026-11-27
+Code: services/search.py (three queries, one per kind; names matched with Python's casefold(), the engineer's
+  choice with the plan, so SQLite and Postgres agree, R125; names starting with the text first, then A-Z by
+  casefold, then oldest first; 5 per group with the full total; q trimmed, 2-200 characters or 422 with
+  "Type 2 to 200 characters to search."), routers/search.py behind sign-in, schemas for the hits (spec 5.3).
+Tests: test_search.py (V-B17, 25 tests): each kind by part of its name in any case; the exact item fields;
+  no matches; R122's order; 5 of 7 with total 7; accents and capitals (Élodie, Ürün, Straße, Strasse by
+  "Straße", SØREN); % and _ as plain characters; the length limits, exactly 2 and 200, and no q; a contact or
+  deal whose organization was deleted.
+Probes (broken, test_search.py run, restored): S1 needle lower() instead of casefold() -> first PASSED, the
+  test lacked a case where they differ; added "Strasse AG" found by "Straße", which now fails. S1b names
+  lower()ed -> fails; S2 LIKE wildcards -> fails; S3 starts-with not first -> first PASSED, the names sorted
+  the same A-Z; added Anton/Tonic/Cotton/tonnage for "ton", which now fails; S4 ten per group, S5 one
+  character, S6 no trimming, S7 total of only five -> each fails. All pass restored.
+NFR-15 in the gate: perfdata's 2x generation test took 1.22 s, then 1.03 s, under coverage with other
+  programs busy (0.40 s without coverage); the limit wasn't changed. Its per-deal query loop became one query,
+  the history is checked at scale 1, and a new test checks the perf run's default scale doubles every count
+  (perfdata.scaled_volume) without generating rows. Probe: main's default scale set to 1 -> it fails.
+Gate: npm run check:quick passed (14 checks): 502 backend, 253 frontend, coverage 98%, search.py 100%.
+Backend phases 1-3 are done; the end-to-end tests still need phase 4's sign-in in the browser.
+
+mvp-multiuser  Phase 4: signing in, in the browser
+Date: 2026-11-27
+Dependency: @supabase/supabase-js 2.119.2 (approved with the plan; npm audit: 0 vulnerabilities). Only its Auth
+  client is used.
+Code: frontend/vite.config.ts gives the browser SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY from the root .env and
+  nothing else (SEC-15), and in test mode (ACCOUNTABLE_TEST_AUTH_KEYS) neither, with VITE_TEST_SIGN_IN=1.
+  src/lib/session.ts: one Session interface; supabaseSession (signInWithPassword, getSession, onAuthStateChange
+  for renewals, signOut local; Supabase's 400 is "wrong", anything else "unreachable"); testSession (POST
+  /api/test/sign-in through src/api/testSignIn.ts, ENG-1; kept in localStorage until it runs out; works with
+  storage blocked); no Supabase client is created in test mode, and none without the settings. api/client.ts
+  sends Authorization: Bearer on every request and ends the session on a 401 (R108). pages/SignInPage.tsx
+  (section 3.9's sign-in screen, R100, R103, R104, R108's message); App.tsx shows it in place of the page asked
+  for until someone is signed in, and clears React Query's cache when the session ends. global.css: sign-in
+  styles, tokens only.
+Tests (Vitest): session.test.ts (14), SignInPage.test.tsx (6), client.test.ts (+5: the token on reads and
+  changes, none when signed out, a 401 ends the session, other errors don't, database_unavailable's message),
+  App.test.tsx (+4: signed out shows only the sign-in screen and calls no API, signing in shows the page asked
+  for, nothing while loading, an ended session says so and clears the cache). src/test/session.ts: every unit
+  test starts signed in through a fake session.
+Tests (Playwright): e2e/signIn.ts and fixtures.ts sign each test in as Priya (signedInAs, null to start signed
+  out) through the test sign-in, putting the token where the app keeps it, once per tab; only the app sends it
+  from the browser, so a test fails if the app stops. The request fixture sends it for a test's own API calls
+  (pipeline, record-pages and won-deal moved from page.request to it); perf.spec.ts signs in itself.
+  auth.spec.ts (V-E14, 6 tests): signed out every section and a record page show the sign-in screen; the API
+  answers 401 but health; wrong details; signing in lands on the page asked for and a reload keeps it; "/"
+  lands on the dashboard; a refused token ends the session with R108's message and signing in returns to the
+  page. theme.spec.ts's blocked-storage test now signs in through the screen (no session can be kept then).
+Probes, Vitest (broken, run, restored): F1 no token sent, F2 a 401 keeping the session, F3 no guard, F4 the
+  password kept, F5 test mode making a Supabase client, F6 the cache kept after sign-out, F7 "ended" lost on
+  Supabase's sign-out event, F8 a wrong password reported as unreachable -> each fails its file; all pass
+  restored. Playwright: E1 the app sending no token -> organizations.spec.ts fails 2; E2 test mode ignored in
+  the browser -> auth.spec.ts fails 4; E3 no guard -> auth.spec.ts fails 5; all pass restored.
+ADR-027 probes repeated: DATABASE_URL set -> npm test -- e2e and -- unit refuse (exit 2). With SUPABASE_URL
+  and SUPABASE_PUBLISHABLE_KEY set in the terminal, auth.spec.ts still passes with no request outside
+  localhost (the runner drops them; the browser stays in test mode).
+Gate: npm run check (foreground) passed, all 14 checks: 502 backend, 282 frontend, 65 e2e, coverage 98%.
+Moved to phase 5: V-E14's "signing out shows the sign-in screen" needs the user menu, which phase 5 builds.
+Not checked: signing in against the real Supabase Auth (V-M07, phase 8).
+
+mvp-multiuser  Phase 5: the user menu and the System theme
+Date: 2026-11-27
+Code: frontend/src/lib/theme.ts: Light, Dark and System; System follows prefers-color-scheme and its changes
+  (R96) through startTheme(), called once in main.tsx (so the sign-in screen follows it too); chooseTheme()
+  shows the mode first, then saves (R93); anything but the three saved values is Light (R91). index.html's
+  inline script applies System before the first paint (R92). components/UserMenu.tsx (Radix dropdown menu,
+  already a dependency): a 36px Midnight circle with the initials, named "Account menu, <name>"; the name and
+  email (once, when there's no display name), the Theme choice as radio items that keep the menu open (R90),
+  and Sign out (R107); Tab closes it (R109). GET /api/me through useMe(). ThemeToggle and its test removed
+  (the files are deleted, not staged); TopBar ends with the menu after "Add deal". global.css: tokens only.
+Found by the e2e run and fixed (phase 2's code): two first requests from one page (/api/me and the page's data)
+  both read, then wrote, the users row; SQLite refuses at once to turn a read into a write after another
+  commit, so one answered 503 "busy" after 9 ms (on Postgres the second insert would have been a 500). The row
+  is now one INSERT ... ON CONFLICT DO UPDATE (db.upsert_user, per dialect, in db.py, ENG-4). New test: ten
+  pairs of simultaneous first requests (two threads each) all succeed; the users-table test now expects one
+  write and no read. Probe: the old read-then-write put back -> both tests fail, 3 runs of 3; restored, pass.
+Tests (Vitest): theme.test.ts rewritten (V-F11, 12): the saved choice, invalid values, blocked storage both
+  ways, System following a fake device and its changes, choosing Light or Dark stops following, choosing
+  shows before saving, the listener removed. UserMenu.test.tsx (V-F12, 7): initials and accessible name, the
+  contents, email-only people, Dark applied, saved, checked and the menu kept open, Enter and Escape back to
+  the button, Tab closes it, Sign out ends the session.
+Tests (Playwright): theme.spec.ts rewritten for the menu (V-E13, 11): adds System following an emulated
+  prefers-color-scheme live and before first paint, the menu's keyboard use with the focus ring in both modes,
+  and the button's size, color and place and the menu's 260px width and right edge, read from the page.
+  auth.spec.ts gains signing out (R107): the sign-in screen, still signed out after a reload, the theme kept.
+  keyboard.spec.ts no longer tabs to the toggle (the pager's Next is still a secondary button).
+  e2e/visual/dark-mode.spec.ts hides the menu button where it hid the toggle, so the masked group holds only
+  "Add deal", as in the baselines.
+Found while writing them: Playwright's focus() scrolls; opening the menu and changing mode keep the scroll
+  position (checked), and closing the menu puts focus back on the button, which scrolls to it, where the
+  person opened it from (the top bar isn't sticky). The keyboard test now waits for Radix's focus on Light.
+Probes (Vitest, broken, run, restored): T1 System ignoring the device, T2 its change not followed, T3 a bad
+  saved value counting as System, T4 the menu closing on a choice, T5 Tab not closing it, T6 Sign out doing
+  nothing, T7 saving before showing -> each fails its file; all pass restored. (Playwright) X1 the inline
+  script ignoring System -> R96 fails; X2 startTheme not called -> R96 fails; X3 no Sign out -> R107 fails.
+R94 by hand: node scripts/run-tests.mjs visual dark-mode -> the six light-mode screens match the baselines
+  pixel for pixel (threshold 0), and the V-M04 screenshots in both modes were taken (to test-results).
+Gate: npm run check (foreground) passed, all 14 checks: 503 backend, 283 frontend, 67 e2e, coverage 98%.
+
+mvp-multiuser  Phase 6 left out
+Date: 2026-11-27
+The engineer left phase 6 (the browser's "Added by"/"Last changed by", names in timelines, the top-bar search)
+  out of mvp-multiuser, after phase 5. Recorded in intent.md (decision), plan.md (phase 6 marked not done) and
+  spec 17.1 (known gap: R111-R113, R120-R124, AC11, AC12; the backend for them is built and tested).
+
+mvp-multiuser  Phase 7: build, start and Render
+Date: 2026-11-27 to 2026-11-28
+Code: config.py: on Render (RENDER set, never in test mode) the bind is 0.0.0.0 and the port is PORT; a real
+  start there needs ACCOUNTABLE_PUBLIC_URL, a bare https address; its host joins SEC-2's hosts and its origin
+  SEC-3's; the API port is the app's own origin only while the backend serves the built page (npm run start).
+  main.py: serve_frontend() serves frontend/dist when it's built (files as they are, hashed assets cached,
+  index.html for any other address outside /api, nothing outside dist); uvicorn and the port check use
+  settings.bind_host. package.json: build, start, dev:test; frontend: vite build. render.yaml (DEP-8): one free
+  web service, the five settings without values (sync: false), NODE_VERSION 24. scripts/check-bundle.mjs
+  (V-S16) and two new npm run check steps: "Frontend build" and "Built frontend holds no secret".
+  ensure-installed.mjs names any of DATABASE_URL, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY missing from .env
+  (DEP-3), never a value. scripts/dev-test.mjs (npm run dev:test): test mode on the test ports with a temporary
+  database and a key pair for the session, refusing DATABASE_URL. .claude/agents/ui-check.md: it uses
+  dev:test, signs in as priya@test.example, and switches modes from the user menu. frontend/.prettierignore:
+  dist (built files, not source).
+Found and fixed: with the built page served, its route matched every address for GET, so a POST to an
+  unknown /api address (the test sign-in outside test mode) answered 405, not 404. The route now takes every
+  method and, for /api, answers 405 only when an API route has that path, otherwise 404; pages answer only GET.
+Found and decided (SEC-3, spec updated): port 8000 was asserted foreign by V-S02, written when 8000 only served
+  the API; npm run start serves the page there, so it counts as the app's own only while the page is served.
+V-S16 refined (spec testing.md and security.md updated): the bare "sb_secret_" is in Supabase's client, in
+  its own check that refuses secret keys in a browser (e.startsWith("sb_secret_")), so the check now looks
+  for a key after the prefix, a database address with a user, the DATABASE_URL and ACCOUNTABLE_TEST_AUTH_KEYS
+  names, and decodes every JWT-shaped string for role service_role.
+Tests: test_serving.py (V-S15 and section 7.4, 33 tests); test_auth.py's real-use fixture and conftest's
+  settings point frontend_dist at a missing folder, so a build in frontend/dist changes no test.
+Probes (pytest, broken, run, restored): R1 the page route GET only -> the 404/405 test fails; R2 0.0.0.0 off
+  Render; R3 the public host not accepted; R4 Render starting without a public URL; R5 files outside dist
+  readable (via %2e%2e); R6 the API port always an origin -> V-S02 fails; R7 an http public URL accepted ->
+  each fails its tests; all pass restored. check-bundle.mjs on planted builds: a sb_secret_ key, a
+  service_role JWT, a database address with a password and the DATABASE_URL name each fail it; an anon JWT
+  and the bare prefix pass; the real build passes (54 files). ensure-installed's parsing on a made-up .env text
+  (comments, export, quotes, CRLF, an empty value), and its message holds no value. dev:test with DATABASE_URL
+  set -> refuses, exit 2; without it, health ok at schema 0002_people with the sample data, test sign-in and
+  /api/me work, the page loads on 5174; stopping it freed both ports (stopping the task killed the process, so
+  its temporary folder had to be removed by hand; Ctrl+C runs the clean-up).
+Found on this computer: ensure-installed reports SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY missing from .env,
+  so npm run dev and npm run start stop until the engineer adds them (the backend's REL-9 check agrees).
+Not checked: render.yaml on Render itself (whether its Python runtime has Node 24 and uv as written): V-M07,
+  phase 8.
+Gate: npm run check (foreground) passed, all 16 checks: 533 backend, 283 frontend, 67 e2e, coverage 98%.
+
+mvp-multiuser  Phase 8: V-M04 and STATUS
+Date: 2026-11-28
+V-M04: e2e/visual/multiuser-screens.spec.ts (run: node scripts/run-tests.mjs visual multiuser-screens) took 26
+  screenshots into docs/evidence/2026-11-28-mvp-multiuser/: the sign-in screen empty and with wrong details,
+  the five sections, a deal, contact and organization page, in light and dark mode, and the open user menu at
+  1440, 1280 and 1024px in both modes, with no sideways scroll at any width. All 6 runs passed (no console
+  error). Checked by eye against the brand skill and spec 3.9: the sign-in panel (400px, 32px padding, Sea
+  Green button with Midnight text, Raspberry error line, Instrument Serif tagline), the menu button (36px
+  Midnight circle, white initials, after Add deal) and the 260px menu, right-aligned, with name, email, Theme as
+  a segmented control with the Midnight pill, and Sign out. Note for the product owner: in dark mode the
+  Midnight button is on the black top bar, so the circle's edge is faint (the spec asks for Midnight in both
+  modes; the white initials identify it). Record pages show no "Added by", as phase 6 was left out.
+STATUS.md: "Using Accountable" rewritten for the shared app: .env's three settings, sign-in, the user menu,
+  build and start, the team's data on Supabase and its backups, the logs, and a runbook for sign-in, sessions,
+  the paused project and Render's sleep; the developer notes describe test mode and dev:test.
+Blocked: ensure-installed still finds SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY missing from .env after the
+  engineer said they were added; listing .env's names to see why was refused by the permission check, so the
+  engineer is asked. V-M07, V-M08 and migration 0002 on Supabase wait for that and for the go-ahead.

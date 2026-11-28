@@ -64,6 +64,8 @@ Added 27 Nov 2026, with the engineer's answers. Its plan is `plan.md` in this fo
 - **When Supabase can't be reached:** start-up stops with one clear line (REL-9). While the app runs, requests answer 503 `database_unavailable` (REL-13).
 - **First start on Supabase:** the agent may start the app against Supabase once, which creates the tables and loads the sample data into the empty database (R4, DEP-4). After that, nothing deletes its records (E-8).
 
+- **Phase 6 left out (the engineer, 27 Nov 2026, during the build):** the browser's "Added by" and "Last changed by", names in timelines, and the top-bar search aren't built in this change. The backend for them is (phases 2 and 3). So success criteria 3 and 4 of the first section are not met by this change; spec 17.1 lists the gap.
+
 **Success criteria**
 
 1. With `DATABASE_URL` in `.env`, `npm run dev` connects to Supabase over TLS, and logs the Postgres host without the user or password.

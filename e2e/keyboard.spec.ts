@@ -203,10 +203,8 @@ test("NFR-7 secondary buttons show the focus ring in light and dark mode", async
     await page.evaluate((m) => localStorage.setItem("accountable.theme", m), mode);
     await page.reload();
     await expect(page.getByText("Showing 1–25 of 45")).toBeVisible();
-    // The mode toggle and the pager's "Next" (enabled: 45 deals make two pages) are secondary buttons, and
-    // reaching "Next" checks every stop on the way, rows and row menus included.
-    await tabTo(page, /^button "Dark mode"$/);
-    await expectFocusVisible(page);
+    // The pager's "Next" (enabled: 45 deals make two pages) is a secondary button, and reaching it checks
+    // every stop on the way: the user menu button (theme.spec.ts checks its ring), rows and row menus.
     await tabTo(page, /^button "Next"$/, { limit: 200 });
     await expectFocusVisible(page);
   }

@@ -8,6 +8,7 @@ from pydantic import BaseModel, ValidationError
 
 from app.errors import validation_fields
 from app.schemas import Contact, ContactCreate, ContactUpdate
+from tests.conftest import PRIYA
 
 
 def problems(model: type[BaseModel], data: dict) -> dict[str, str]:
@@ -83,7 +84,9 @@ def test_spec53_contact_response_has_the_spec_fields() -> None:
         "job_title",
         "status",
         "created_at",
+        "created_by",
         "updated_at",
+        "updated_by",
     ]
 
 
@@ -118,7 +121,9 @@ def test_R11_create_needs_an_organization_and_defaults_to_lead(client: TestClien
         "job_title": None,
         "status": "lead",
         "created_at": "2026-11-21T14:30:00",
+        "created_by": {"id": PRIYA.id, "name": "Priya Shah"},
         "updated_at": "2026-11-21T14:30:00",
+        "updated_by": {"id": PRIYA.id, "name": "Priya Shah"},
     }
     assert client.get(f"/api/contacts/{contact['id']}").json() == contact
 

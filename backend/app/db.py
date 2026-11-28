@@ -38,6 +38,13 @@ from app.rules import ACTIVITY_TYPES, CONTACT_STATUSES, MAX_VALUE, STAGES
 
 BUSY_TIMEOUT_MS = 5000
 
+# SQLite migrations copy a table and drop the old one (batch mode). With foreign keys on, that drop would
+# cascade: deleting a deal's activities, or clearing links to it. So migrations run with them off, and the
+# links are checked before the migration is committed (DEP-4, E-8).
+FOREIGN_KEYS_OFF = ("PRAGMA foreign_keys = OFF",)
+FOREIGN_KEYS_ON = ("PRAGMA foreign_keys = ON",)
+FOREIGN_KEY_CHECK = ("PRAGMA foreign_key_check",)
+
 # Postgres through Supabase's session pooler (spec 6.3, REL-6, REL-13).
 POSTGRES_POOL_SIZE = 5
 POSTGRES_TIMEOUT_S = 10
@@ -65,6 +72,25 @@ def _timestamps() -> list[Column[Any]]:
     return [Column("created_at", String, nullable=False), Column("updated_at", String, nullable=False)]
 
 
+def _people() -> list[Column[Any]]:
+    """Who added and who last changed a record (R110): null for sample data (R113). Users are never deleted,
+    so there's no delete rule (ADR-022)."""
+    return [
+        Column("created_by", String, ForeignKey("users.id"), index=True),
+        Column("updated_by", String, ForeignKey("users.id"), index=True),
+    ]
+
+
+users = Table(
+    "users",
+    metadata,
+    Column("id", String, primary_key=True),  # the person's Supabase user ID
+    Column("email", String, nullable=False),
+    Column("name", String),
+    Column("last_seen_at", String, nullable=False),
+)
+
+
 organizations = Table(
     "organizations",
     metadata,
@@ -74,6 +100,7 @@ organizations = Table(
     Column("industry", String),
     Column("notes", String),
     *_timestamps(),
+    *_people(),
 )
 
 contacts = Table(
@@ -87,6 +114,7 @@ contacts = Table(
     Column("job_title", String),
     Column("status", String, nullable=False, server_default="lead"),
     *_timestamps(),
+    *_people(),
 )
 contacts.append_constraint(CheckConstraint(contacts.c.status.in_(CONTACT_STATUSES), name="status"))
 
@@ -104,6 +132,7 @@ deals = Table(
     Column("position", Float, nullable=False),
     Column("closed_at", String),
     *_timestamps(),
+    *_people(),
     Index(None, "stage", "position"),
     Index(None, "closed_at"),
 )
@@ -122,6 +151,8 @@ activities = Table(
     Column("occurred_at", String, nullable=False),
     Column("follow_up_date", String),
     Column("done", Integer, nullable=False, server_default="0"),
+    *_timestamps(),
+    *_people(),
     Index(None, "occurred_at"),
     Index(None, "follow_up_date", "done"),
 )
@@ -143,14 +174,25 @@ stage_changes = Table(
 )
 
 
+def _pragmas(dbapi_connection: sqlite3.Connection, pragmas: tuple[str, ...], outside_transaction: bool = True) -> list:
+    """Run SQLite PRAGMA statements, the only text SQL in the app (E-1), and return their rows.
+
+    Most PRAGMAs must run outside a transaction, so autocommit is on while they run. Turning it on commits
+    any open transaction, so callers roll back first unless they mean to keep it.
+    """
+    if outside_transaction:
+        dbapi_connection.autocommit = True
+    rows = [row for pragma in pragmas for row in dbapi_connection.execute(pragma).fetchall()]
+    if outside_transaction:
+        # From here on the driver opens a transaction for every statement, DDL included, so a
+        # failed migration rolls back completely (REL-9) and each request is atomic (REL-2).
+        dbapi_connection.autocommit = False
+    return rows
+
+
 def _on_connect(dbapi_connection: sqlite3.Connection, _record: object) -> None:
-    """Apply spec 6.3's settings to every new connection (E-1: the only text SQL)."""
-    dbapi_connection.autocommit = True
-    for pragma in CONNECTION_PRAGMAS:
-        dbapi_connection.execute(pragma)
-    # From here on the driver opens a transaction for every statement, DDL included, so a
-    # failed migration rolls back completely (REL-9) and each request is atomic (REL-2).
-    dbapi_connection.autocommit = False
+    """Apply spec 6.3's settings to every new connection."""
+    _pragmas(dbapi_connection, CONNECTION_PRAGMAS)
 
 
 def create_db_engine(db_path: Path) -> Engine:
@@ -230,6 +272,26 @@ def is_locked(exc: BaseException) -> bool:
     return "locked" in text or "lock timeout" in text
 
 
+def upsert_user(conn: Connection, user_id: str, email: str, name: str | None, last_seen_at: str) -> None:
+    """Add a person's users row, or update it, in one statement (section 6.5, R114).
+
+    One write, not a read then a write: two first requests from the same browser would otherwise race, and
+    SQLite refuses at once to turn a read into a write after another commit (503 busy), while Postgres would
+    refuse the second insert (500). INSERT ... ON CONFLICT is written differently by each dialect.
+    """
+    if conn.dialect.name == "postgresql":
+        from sqlalchemy.dialects.postgresql import insert as dialect_insert
+    else:
+        from sqlalchemy.dialects.sqlite import insert as dialect_insert
+    values = {"email": email, "name": name, "last_seen_at": last_seen_at}
+    statement = dialect_insert(users).values(id=user_id, **values)
+    conn.execute(
+        statement.on_conflict_do_update(
+            index_elements=[users.c.id], set_={key: statement.excluded[key] for key in values}
+        )
+    )
+
+
 @contextmanager
 def transaction(engine: Engine) -> Generator[Connection]:
     """One transaction: committed if the block finishes, rolled back if it raises (REL-2)."""
@@ -257,9 +319,29 @@ def upgrade_to_head(engine: Engine) -> tuple[str | None, str | None]:
     with engine.connect() as conn:
         before = schema_version(conn)
         conn.rollback()
-        config.attributes["connection"] = conn
-        command.upgrade(config, "head")
-        conn.commit()
+        sqlite = conn.dialect.name == "sqlite"
+        raw: Any = conn.connection.dbapi_connection if sqlite else None
+        if sqlite:
+            _pragmas(raw, FOREIGN_KEYS_OFF)
+        # Our own transaction: Alembic joins one that's open instead of committing its own, so the
+        # migrations and the link check are kept or undone together.
+        migration = conn.begin()
+        try:
+            config.attributes["connection"] = conn
+            command.upgrade(config, "head")
+            if sqlite and _pragmas(raw, FOREIGN_KEY_CHECK, outside_transaction=False):
+                raise MigrationError("A migration would break links between records. Nothing was changed.")
+            migration.commit()
+        except BaseException:
+            migration.rollback()  # before foreign keys go back on, which would commit (REL-9)
+            raise
+        finally:
+            if sqlite:
+                _pragmas(raw, FOREIGN_KEYS_ON)
         after = schema_version(conn)
         conn.rollback()
     return before, after
+
+
+class MigrationError(Exception):
+    """A migration finished but left the data inconsistent, so it was rolled back."""

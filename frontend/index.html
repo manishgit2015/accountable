@@ -6,10 +6,12 @@
     <link rel="icon" href="data:," />
     <title>Accountable</title>
     <script>
-      // Apply the saved light or dark mode before the first paint, so dark mode never flashes light (R92).
-      // The same rules as readTheme and applyTheme in src/lib/theme.ts: keep the two in step.
+      // Apply the saved mode before the first paint, System included, so dark mode never flashes light (R92).
+      // The same rules as readChoice, modeFor and applyMode in src/lib/theme.ts: keep the two in step.
       try {
-        if (localStorage.getItem("accountable.theme") === "dark") document.documentElement.dataset.theme = "dark";
+        var choice = localStorage.getItem("accountable.theme");
+        var deviceDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (choice === "dark" || (choice === "system" && deviceDark)) document.documentElement.dataset.theme = "dark";
       } catch {
         // Storage blocked: light mode (R93).
       }

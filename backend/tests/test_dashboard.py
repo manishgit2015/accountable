@@ -6,6 +6,8 @@ from datetime import datetime
 import pytest
 from fastapi.testclient import TestClient
 
+from tests.conftest import PRIYA
+
 MONTHS = ["2025-12", *(f"2026-{m:02d}" for m in range(1, 12))]
 
 
@@ -160,6 +162,10 @@ def test_R76_follow_ups_are_grouped_with_a_later_count_and_their_source(client: 
         "occurred_at": "2026-11-15T10:00:00",
         "follow_up_date": "2026-11-20",
         "done": False,
+        "created_at": "2026-11-21T14:30:00",
+        "created_by": {"id": PRIYA.id, "name": "Priya Shah"},
+        "updated_at": "2026-11-21T14:30:00",
+        "updated_by": {"id": PRIYA.id, "name": "Priya Shah"},
         "source": {"kind": "deal", "id": data["late_new"], "name": "late_new"},
     }
     assert follow_ups["today"][0]["source"] == {"kind": "contact", "id": data["jo"], "name": "Jo"}

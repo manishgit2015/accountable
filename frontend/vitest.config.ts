@@ -7,6 +7,8 @@ export default defineConfig({
     include: ["src/**/*.test.{ts,tsx}"],
     setupFiles: ["src/test/setup.ts"],
     restoreMocks: true,
+    // NFR-15, V-U01: a unit test over 1 second fails (src/test/setup.ts checks synchronous ones too).
+    testTimeout: 1000,
     // Measured over every source file, not only the ones a test imports (`npm run check`, ENG-7).
     coverage: {
       provider: "v8",

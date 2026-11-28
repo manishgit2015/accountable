@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
 MESSAGES = {
     "bad_request": "The request couldn't be read. Send valid JSON.",
+    "unauthorized": "Sign in to continue.",
     "forbidden_origin": "This request isn't allowed from here.",
     "not_found": "That record doesn't exist.",
     "stale_position": "The board changed. Try again.",

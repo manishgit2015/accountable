@@ -150,15 +150,15 @@ test("R64 REL-8 a failed move puts the card and totals back and says so", async 
   await expect(page.getByTestId("open-expected")).toHaveText(totals ?? "");
 });
 
-test("REL-11 a move against a changed board reloads it and says so", async ({ page, guards }) => {
+test("REL-11 a move against a changed board reloads it and says so", async ({ page, guards, request }) => {
   guards.allowConsoleError(/status of 409/); // the stale move, on purpose
   await openBoard(page);
   // Another tab moves Proposal's top card away, so this board's neighbours are stale.
   const proposal = column(page, "Proposal");
   const top = (await names(proposal))[0] ?? "";
-  const deals = (await (await page.request.get("/api/deals")).json()) as { id: number; name: string }[];
+  const deals = (await (await request.get("/api/deals")).json()) as { id: number; name: string }[];
   const topId = deals.find((d) => d.name === top)?.id;
-  const changed = await page.request.patch(`/api/deals/${topId}`, {
+  const changed = await request.patch(`/api/deals/${topId}`, {
     headers: { Origin: new URL(page.url()).origin },
     data: { stage: "negotiation" },
   });

@@ -2,6 +2,9 @@
 // - Gives up after 10 seconds (REL-4).
 // - Reads the error format of spec 5.2, with its request ID (OBS-3).
 // - Translates snake_case from the API to camelCase, and back for request bodies (ENG-6).
+// - Sends the signed-in person's token with every request, and ends the session on a 401 (R102, R108).
+
+import { session } from "../lib/session";
 
 export const REQUEST_TIMEOUT_MS = 10_000;
 
@@ -23,6 +26,8 @@ export type ApiErrorCode =
   | "unsupported_media_type"
   | "validation_failed"
   | "busy"
+  | "database_unavailable"
+  | "unauthorized"
   | "internal"
   | "unreachable"
   | "timeout";
@@ -129,9 +134,13 @@ export async function apiRequest<T>(method: string, path: string, options: Reque
 
   let response: Response;
   try {
+    const token = session().getState().token;
+    const headers: Record<string, string> =
+      options.body === undefined ? { Accept: "application/json" } : { "Content-Type": "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
     response = await fetch(path, {
       method,
-      headers: options.body === undefined ? { Accept: "application/json" } : { "Content-Type": "application/json" },
+      headers,
       body: options.body === undefined ? undefined : JSON.stringify(convertKeys(options.body, toSnake)),
       signal: controller.signal,
     });
@@ -144,6 +153,8 @@ export async function apiRequest<T>(method: string, path: string, options: Reque
     options.signal?.removeEventListener("abort", onAbort);
   }
 
+  // The token was refused: it ran out, or the person was removed. The app shows the sign-in screen (R108).
+  if (response.status === 401) session().end();
   if (!response.ok) throw await readError(response);
   if (response.status === 204) return undefined as T;
   return convertKeys(await response.json(), toCamel) as T;

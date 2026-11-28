@@ -309,6 +309,8 @@ def load_sample_data(conn: Connection, now: datetime, *, replace: bool = True) -
         deal_spans[plan.name] = (times[0], effects.closed_at or now)
 
     for row in _activity_rows(now, rng, contact_ids, deal_ids, deal_spans):
+        # Added when it happened, or now for one planned ahead. No person: it's sample data (R113).
+        row["created_at"] = row["updated_at"] = stamp(min(row["occurred_at"], now))
         row["occurred_at"] = stamp(row["occurred_at"])
         if row.get("follow_up_date") is not None:
             row["follow_up_date"] = row["follow_up_date"].isoformat()

@@ -23,7 +23,7 @@
 // Node built-ins only, and no shell, so it behaves the same on Windows, macOS and Linux.
 
 import { spawnSync } from "node:child_process";
-import { randomBytes } from "node:crypto";
+import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -72,11 +72,19 @@ if (testDb.toLowerCase() === DEFAULT_DB.toLowerCase()) {
   process.exit(2);
 }
 
+function testAuthKeys() {
+  const { privateKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
+  const jwk = privateKey.export({ format: "jwk" });
+  const kid = `test-${randomBytes(6).toString("hex")}`;
+  return JSON.stringify({ keys: [{ ...jwk, kid, alg: "ES256", use: "sig" }] });
+}
+
 const { DATABASE_URL: _url, SUPABASE_URL: _supabase, SUPABASE_PUBLISHABLE_KEY: _key, ...inherited } = process.env;
 const env = {
   ...inherited,
-  // Test mode (SEC-17): a key made for this run. Until test sign-in exists it only marks test mode.
-  ACCOUNTABLE_TEST_AUTH_KEYS: randomBytes(32).toString("hex"),
+  // Test mode (SEC-17, ADR-025): an ES256 key pair made for this run, as a JWK set. The backend signs test
+  // tokens with it and checks them with its public part, the same check real tokens get.
+  ACCOUNTABLE_TEST_AUTH_KEYS: testAuthKeys(),
   ACCOUNTABLE_DB: testDb,
   ACCOUNTABLE_API_PORT: "8001",
   ACCOUNTABLE_WEB_PORT: "5174",

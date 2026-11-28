@@ -17,6 +17,10 @@ import { BrowserRouter } from "react-router";
 
 import { createQueryClient } from "./api/queries";
 import { App } from "./App";
+import { startTheme } from "./lib/theme";
+
+// The saved theme, and following the device while System is chosen, for the whole visit (R92, R96).
+startTheme();
 
 // Reads are retried once (not a 404), changes never (REL-5). It also tracks whether the backend answers (REL-7).
 const queryClient = createQueryClient();

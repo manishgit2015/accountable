@@ -17,7 +17,7 @@ def list_deals(request: Request) -> list[Deal]:
 @router.post("", status_code=201)
 def create_deal(request: Request, body: DealCreate) -> Deal:
     with unit_of_work(request.app.state.engine) as conn:
-        return records.create_deal(conn, body, request.app.state.clock.now())
+        return records.create_deal(conn, body, request.app.state.clock.now(), by=request.state.person.id)
 
 
 @router.get("/{deal_id}")
@@ -30,13 +30,13 @@ def get_deal(request: Request, deal_id: int) -> Deal:
 def update_deal(request: Request, deal_id: int, body: DealUpdate) -> Deal:
     """A stage change here follows the same rules as /move, through services/moves.py (R15–R18, R67)."""
     with unit_of_work(request.app.state.engine) as conn:
-        return records.update_deal(conn, deal_id, body, request.app.state.clock.now())
+        return records.update_deal(conn, deal_id, body, request.app.state.clock.now(), by=request.state.person.id)
 
 
 @router.post("/{deal_id}/move")
 def move_deal(request: Request, deal_id: int, body: DealMove) -> MoveResult:
     with unit_of_work(request.app.state.engine) as conn:
-        return moves.move(conn, deal_id, body, request.app.state.clock.now())
+        return moves.move(conn, deal_id, body, request.app.state.clock.now(), by=request.state.person.id)
 
 
 @router.delete("/{deal_id}", status_code=204)

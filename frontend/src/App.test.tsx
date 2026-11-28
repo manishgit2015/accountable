@@ -1,13 +1,16 @@
 // The app shell: the top bar's sections and "Add deal" (spec 3.9 Layout), a page for unknown addresses,
 // and the offline banner that clears itself once the backend answers again (REL-7).
 import { QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 
 import { createQueryClient, setOffline } from "./api/queries";
 import { App } from "./App";
 import { fakeApi, renderPage } from "./test/app";
+import { setSession } from "./lib/session";
+import { fakeSession } from "./test/session";
+import { FIXED_NOW } from "./test/setup";
 
 const DEAL = {
   id: 42,
@@ -112,6 +115,9 @@ describe("unknown addresses", () => {
 
 describe("offline (REL-7)", () => {
   it("shows the banner while the backend can't be reached, and clears it when health answers", async () => {
+    // Fake timers move React Query's retry delay and the 3-second health poll forward at once (NFR-15).
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
+    vi.setSystemTime(FIXED_NOW);
     let backendUp = false;
     vi.stubGlobal(
       "fetch",
@@ -130,13 +136,52 @@ describe("offline (REL-7)", () => {
         </MemoryRouter>
       </QueryClientProvider>,
     );
-    expect(
-      (await screen.findAllByText(/Can't reach Accountable/, {}, { timeout: 4000 }))[0]?.closest(".offline-banner"),
-    ).toBeInTheDocument();
+    await act(() => vi.advanceTimersByTimeAsync(1500));
+    expect(screen.getAllByText(/Can't reach Accountable/)[0]?.closest(".offline-banner")).toBeInTheDocument();
     backendUp = true;
-    await waitFor(() => expect(document.querySelector(".offline-banner")).not.toBeInTheDocument(), {
-      timeout: 5000,
-    });
+    await act(() => vi.advanceTimersByTimeAsync(3500));
+    expect(document.querySelector(".offline-banner")).not.toBeInTheDocument();
     setOffline(false);
-  }, 10_000);
+  });
+});
+
+describe("signing in (R100, R101, R107, R108)", () => {
+  it("R100 R101 signed out, any address shows the sign-in screen and asks the API for nothing", () => {
+    const sent = fakeApi();
+    setSession(fakeSession({ status: "signed-out", token: null }));
+    renderPage(<App />, { at: "/deals/42" });
+    expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Sections" })).not.toBeInTheDocument();
+    expect(sent).toEqual([]);
+  });
+
+  it("R100 signing in shows the page that was asked for", async () => {
+    fakeApi({ "GET /api/deals": [] });
+    const current = fakeSession({ status: "signed-out", token: null });
+    setSession(current);
+    renderPage(<App />, { at: "/deals" });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "priya@example.com" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "pw" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(await screen.findByRole("heading", { name: "Deals", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Deals" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("shows nothing while a saved session is looked for", () => {
+    fakeApi();
+    setSession(fakeSession({ status: "loading", token: null }));
+    const { container } = renderPage(<App />, { at: "/deals" });
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("R107 R108 when the session ends, the sign-in screen says so and nothing cached is kept", async () => {
+    fakeApi({ "GET /api/deals": [DEAL] });
+    const current = fakeSession();
+    setSession(current);
+    const { client } = renderPage(<App />, { at: "/deals" });
+    expect(await screen.findByText("Fleet renewal")).toBeInTheDocument();
+    act(() => current.end());
+    expect(screen.getByRole("status")).toHaveTextContent("Your session has ended. Sign in again.");
+    await waitFor(() => expect(client.getQueryCache().getAll()).toHaveLength(0));
+  });
 });

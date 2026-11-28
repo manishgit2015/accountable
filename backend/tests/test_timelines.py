@@ -6,6 +6,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import event
 
+from tests.conftest import PRIYA
+
 
 @pytest.fixture
 def story(client: TestClient, clock) -> dict:
@@ -66,6 +68,7 @@ def test_R52_deal_timeline_merges_activities_and_stage_changes_newest_first(clie
         "description": None,
         "at": "2026-11-05T12:00:00",
         "source": {"kind": "deal", "id": story["pilot"], "name": "Pilot"},
+        "added_by": None,  # stage changes record no person (R112)
     }
     assert entries[2] == {
         "kind": "activity",
@@ -76,6 +79,7 @@ def test_R52_deal_timeline_merges_activities_and_stage_changes_newest_first(clie
         "description": "Pilot note",
         "at": "2026-11-04T10:00:00",
         "source": {"kind": "deal", "id": story["pilot"], "name": "Pilot"},
+        "added_by": {"id": PRIYA.id, "name": "Priya Shah"},  # R112
     }
 
 

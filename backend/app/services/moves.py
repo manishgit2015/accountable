@@ -52,6 +52,7 @@ def change_stage(
     deal_id: int,
     new_stage: str,
     now: datetime,
+    by: str,
     probability: int | None = None,
     to_top: bool = False,
 ) -> bool:
@@ -79,6 +80,7 @@ def change_stage(
         "close_date": day(effects.close_date),
         "closed_at": stamp(effects.closed_at) if effects.closed_at else None,
         "updated_at": stamp(now),
+        "updated_by": by,
     }
     if effects.records_stage_change and to_top:
         values["position"] = top_of_column(conn, effects.stage, now, exclude=deal_id)
@@ -93,7 +95,7 @@ def change_stage(
         conn.execute(
             update(contacts)
             .where(contacts.c.id == current.contact_id, contacts.c.status != "customer")
-            .values(status="customer", updated_at=stamp(now))
+            .values(status="customer", updated_at=stamp(now), updated_by=by)
         )
     return effects.records_stage_change
 
@@ -125,7 +127,7 @@ def _check_neighbours(column: list[int], before_id: int | None, after_id: int | 
         raise StalePosition
 
 
-def move(conn: Connection, deal_id: int, body: DealMove, now: datetime) -> MoveResult:
+def move(conn: Connection, deal_id: int, body: DealMove, now: datetime, by: str) -> MoveResult:
     """POST /api/deals/{id}/move: the stage (if different) and the exact place, in one transaction."""
     _load(conn, deal_id)
     if deal_id in (body.before_id, body.after_id):
@@ -136,7 +138,7 @@ def move(conn: Connection, deal_id: int, body: DealMove, now: datetime) -> MoveR
     column = _column_order(conn, target, now, exclude=deal_id)
     _check_neighbours([deal_id_ for deal_id_, _ in column], body.before_id, body.after_id)
 
-    change_stage(conn, deal_id, target, now)  # R15–R18; a same-stage move adds no row
+    change_stage(conn, deal_id, target, now, by)  # R15–R18; a same-stage move adds no row
 
     positions = dict(column)
     renumbered: list[int] = []

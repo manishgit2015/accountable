@@ -28,7 +28,7 @@ from app.schemas import (
     WinRate,
     WonThisMonth,
 )
-from app.services.records import day, stamp
+from app.services.records import day, people_fields, stamp, with_people
 from app.services.timeline import recent
 
 FUNNEL_STAGES = ("new", "qualified", "proposal", "negotiation", "won")
@@ -164,24 +164,24 @@ def follow_ups(conn: Connection, today: date) -> FollowUps:
     source_name = case((activities.c.deal_id.is_not(None), deals.c.name), else_=contacts.c.name)
     week_end = day(today + timedelta(days=7))
     open_follow_ups = and_(activities.c.follow_up_date.is_not(None), activities.c.done == 0)
+    query = select(
+        activities,
+        source_kind.label("source_kind"),
+        source_id.label("source_id"),
+        source_name.label("source_name"),
+    ).select_from(
+        activities.outerjoin(deals, activities.c.deal_id == deals.c.id).outerjoin(
+            contacts, activities.c.contact_id == contacts.c.id
+        )
+    )
     rows = conn.execute(
-        select(
-            activities,
-            source_kind.label("source_kind"),
-            source_id.label("source_id"),
-            source_name.label("source_name"),
-        )
-        .select_from(
-            activities.outerjoin(deals, activities.c.deal_id == deals.c.id).outerjoin(
-                contacts, activities.c.contact_id == contacts.c.id
-            )
-        )
+        with_people(query, activities)
         .where(open_follow_ups, activities.c.follow_up_date <= week_end)
         .order_by(activities.c.follow_up_date, activities.c.occurred_at, activities.c.id)
     )
     groups: dict[str, list[FollowUp]] = {"overdue": [], "today": [], "next_7_days": []}
     for row in rows:
-        data = row._asdict()
+        data = people_fields(row._asdict())
         item = FollowUp(
             id=data["id"],
             type=data["type"],
@@ -191,6 +191,10 @@ def follow_ups(conn: Connection, today: date) -> FollowUps:
             occurred_at=data["occurred_at"],
             follow_up_date=data["follow_up_date"],
             done=bool(data["done"]),
+            created_at=data["created_at"],
+            created_by=data["created_by"],
+            updated_at=data["updated_at"],
+            updated_by=data["updated_by"],
             source=Source(kind=data["source_kind"], id=data["source_id"], name=data["source_name"]),
         )
         due = data["follow_up_date"]

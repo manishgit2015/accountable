@@ -176,3 +176,11 @@ export interface Dashboard {
 
 /** The three record types with a page, a timeline and delete-impact. */
 export type RecordKind = "organization" | "contact" | "deal";
+
+/** The signed-in person, from GET /api/me: name as R105 shows it, and their initials (R105, R106). */
+export interface Me {
+  id: string;
+  name: string;
+  email: string;
+  initials: string;
+}

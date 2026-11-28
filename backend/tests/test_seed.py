@@ -129,15 +129,16 @@ def test_R83_the_data_is_the_same_for_the_same_moment_and_moves_with_the_date(en
 @pytest.mark.parametrize(
     "now", [datetime(2027, 3, 1, 0, 30), datetime(2026, 12, 31, 23, 50), datetime(2028, 2, 29, 8, 0)]
 )
-def test_R81_coverage_holds_whatever_the_date(app, engine: Engine, clock: FixedClock, now: datetime) -> None:  # type: ignore[no-untyped-def]
+def test_R81_coverage_holds_whatever_the_date(
+    client: TestClient, engine: Engine, clock: FixedClock, now: datetime
+) -> None:
     _seed(engine, now)
     clock.at = now
-    with TestClient(app, base_url="http://127.0.0.1:8000") as client:
-        dashboard = client.get("/api/dashboard").json()
-        assert all(m["won"] >= 1 and m["lost"] >= 1 for m in dashboard["months"]), dashboard["months"]
-        deals = client.get("/api/deals").json()
-        assert all(d["created_at"] <= now.isoformat() for d in deals)
-        assert sum(d["is_late"] for d in deals) >= 4
+    dashboard = client.get("/api/dashboard").json()
+    assert all(m["won"] >= 1 and m["lost"] >= 1 for m in dashboard["months"]), dashboard["months"]
+    deals = client.get("/api/deals").json()
+    assert all(d["created_at"] <= now.isoformat() for d in deals)
+    assert sum(d["is_late"] for d in deals) >= 4
 
 
 def test_spec65_seeding_again_replaces_everything_and_clear_empties_every_table(seeded: Engine, clock) -> None:
@@ -152,11 +153,11 @@ def test_spec65_seeding_again_replaces_everything_and_clear_empties_every_table(
 
 def test_R4_REL9_only_a_database_just_created_is_seeded(tmp_path: Path, clock: FixedClock) -> None:
     settings = Settings(db_path=tmp_path / "new.db", log_dir=tmp_path / "logs", clock=clock)
-    assert prepare_database(settings) == (None, "0001_initial", True)
+    assert prepare_database(settings) == (None, "0002_people", True)
     engine = create_db_engine(settings.db_path)
     with transaction(engine) as conn:
         clear_all(conn)
-    assert prepare_database(settings) == ("0001_initial", "0001_initial", False)
+    assert prepare_database(settings) == ("0002_people", "0002_people", False)
     with engine.connect() as conn:
         assert counts(conn)["deals"] == 0  # an existing (emptied) database is never reseeded
     engine.dispose()

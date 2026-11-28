@@ -10,24 +10,41 @@ from app.config import DEFAULT_DB_PATH, FixedClock
 from app.db import activities, contacts, deals, stage_changes, transaction
 
 
-def test_NFR13_generates_twice_the_intents_volume_with_history_that_fits(engine: Engine, clock: FixedClock) -> None:
+def test_NFR13_twice_the_intents_volume_is_what_npm_run_test_perf_generates(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The perf run's default scale, 2, doubles every count. Checked without generating 13,000 rows, which
+    takes the generator about 1 second under coverage (NFR-15)."""
+    assert perfdata.scaled_volume(2) == {"organizations": 200, "contacts": 2000, "deals": 1000, "activities": 10000}
+    asked: list[int] = []
+    monkeypatch.setattr(
+        perfdata, "generate", lambda _conn, _now, scale: asked.append(scale) or perfdata.scaled_volume(scale)
+    )
+    monkeypatch.setenv("ACCOUNTABLE_DB", str(tmp_path / "perf.db"))
+    assert perfdata.main([]) == 0
+    assert asked == [2]
+    assert "200 organizations, 2000 contacts, 1000 deals, 10000 activities" in capsys.readouterr().out
+
+
+def test_NFR13_generates_the_intents_volume_with_history_that_fits(engine: Engine, clock: FixedClock) -> None:
     now = clock.now()
     with transaction(engine) as conn:
-        found = perfdata.generate(conn, now, scale=2)
-    assert found == {"organizations": 200, "contacts": 2000, "deals": 1000, "activities": 10000}
+        found = perfdata.generate(conn, now, scale=1)
+    assert found == perfdata.scaled_volume(1) == perfdata.BASE_VOLUME
     with engine.connect() as conn:
         rows = conn.execute(select(deals)).mappings().all()
         assert {row["stage"] for row in rows} == set(rules.STAGES)
+        # Each deal's latest stage change, read once in order rather than one query per deal (NFR-15).
+        history = conn.execute(
+            select(stage_changes.c.deal_id, stage_changes.c.to_stage).order_by(
+                stage_changes.c.deal_id, stage_changes.c.changed_at, stage_changes.c.id
+            )
+        )
+        last_stage = {deal_id: to_stage for deal_id, to_stage in history}
         for row in rows:
             closed = row["stage"] in ("won", "lost")
             assert (row["closed_at"] is not None) == closed
-            last = conn.execute(
-                select(stage_changes.c.to_stage)
-                .where(stage_changes.c.deal_id == row["id"])
-                .order_by(stage_changes.c.changed_at.desc(), stage_changes.c.id.desc())
-                .limit(1)
-            ).scalar_one()
-            assert last == row["stage"]  # the history ends at the deal's stage (R18)
+            assert last_stage[row["id"]] == row["stage"]  # the history ends at the deal's stage (R18)
         won_contacts = select(deals.c.contact_id).where(deals.c.stage == "won")
         not_customers = conn.execute(
             select(func.count())

@@ -91,7 +91,7 @@ def test_R13_activity_needs_exactly_one_parent(engine: Engine) -> None:
         contact_id = _contact(conn, org_id)
         deal_id = _deal(conn)
 
-    base = {"type": "call", "description": "Called", "occurred_at": NOW}
+    base = {"type": "call", "description": "Called", "occurred_at": NOW, "created_at": NOW, "updated_at": NOW}
     for parents in ({}, {"contact_id": contact_id, "deal_id": deal_id}):
         with pytest.raises(IntegrityError), db.transaction(engine) as conn:
             conn.execute(insert(db.activities).values(**base, **parents))
@@ -107,8 +107,16 @@ def test_R31_R32_R33_foreign_key_rules_are_enforced_by_the_database(engine: Engi
         org_id = _org(conn)
         contact_id = _contact(conn, org_id)
         deal_id = _deal(conn, organization_id=org_id, contact_id=contact_id)
-        conn.execute(insert(db.activities).values(type="note", description="n", occurred_at=NOW, contact_id=contact_id))
-        conn.execute(insert(db.activities).values(type="note", description="n", occurred_at=NOW, deal_id=deal_id))
+        conn.execute(
+            insert(db.activities).values(
+                type="note", description="n", occurred_at=NOW, created_at=NOW, updated_at=NOW, contact_id=contact_id
+            )
+        )
+        conn.execute(
+            insert(db.activities).values(
+                type="note", description="n", occurred_at=NOW, created_at=NOW, updated_at=NOW, deal_id=deal_id
+            )
+        )
         conn.execute(insert(db.stage_changes).values(deal_id=deal_id, to_stage="new", changed_at=NOW))
 
     with db.transaction(engine) as conn:
@@ -166,9 +174,11 @@ def test_E1_SEC5_pragma_in_the_connection_hook_is_the_only_text_sql() -> None:
         for number, line in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), 1):
             if TEXT_SQL.search(line):
                 offenders.append(f"{path.relative_to(BACKEND_DIR).as_posix()}:{number}: {line.strip()}")
-    # db.py's hook runs the statements in CONNECTION_PRAGMAS, and they're all PRAGMAs.
-    assert offenders == [f"app/db.py:{_hook_line()}: dbapi_connection.execute(pragma)"]
-    assert all(statement.startswith("PRAGMA ") for statement in db.CONNECTION_PRAGMAS)
+    # db.py's one helper runs the connection settings and the migrations' foreign key PRAGMAs, all PRAGMAs.
+    line = "rows = [row for pragma in pragmas for row in dbapi_connection.execute(pragma).fetchall()]"
+    assert offenders == [f"app/db.py:{_hook_line()}: {line}"]
+    statements = (*db.CONNECTION_PRAGMAS, *db.FOREIGN_KEYS_OFF, *db.FOREIGN_KEYS_ON, *db.FOREIGN_KEY_CHECK)
+    assert all(statement.startswith("PRAGMA ") for statement in statements)
 
 
 def _hook_line() -> int:

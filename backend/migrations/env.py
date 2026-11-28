@@ -1,15 +1,14 @@
 """Alembic environment: SQLite batch mode (ignored on Postgres), target metadata from app.db (ADR-004).
 
-The connection comes from app.db.create_db_engine, so migrations get the same settings
-(spec 6.3) and run in one transaction: a failed migration changes nothing (REL-9).
-A caller may pass its own connection in config.attributes["connection"].
+The connection always comes from app.db.upgrade_to_head, in config.attributes["connection"], so migrations
+get the same settings (spec 6.3), run in one transaction (a failed migration changes nothing, REL-9), and on
+SQLite run with foreign keys off and the links checked before commit.
 """
 
 from alembic import context
 from sqlalchemy import Connection
 
-from app.config import load_settings
-from app.db import engine_for, metadata
+from app.db import metadata
 
 config = context.config
 
@@ -22,15 +21,11 @@ def _run(connection: Connection) -> None:
 
 def run_migrations_online() -> None:
     given = config.attributes.get("connection")
-    if given is not None:
-        _run(given)
-        return
-    engine = engine_for(load_settings())
-    try:
-        with engine.connect() as connection:
-            _run(connection)
-    finally:
-        engine.dispose()
+    if given is None:
+        # app.db.upgrade_to_head runs them, with SQLite's foreign keys off so a table copy can't delete
+        # rows, and checks the links before committing (DEP-4, E-8). A bare `alembic upgrade` would skip that.
+        raise SystemExit("Run Accountable's migrations through the app: npm run dev or npm run start.")
+    _run(given)
 
 
 if context.is_offline_mode():

@@ -9,8 +9,9 @@ with `uv run pytest` directly, and every test reads a missing `.env` in place of
 
 from __future__ import annotations
 
+import json
 import os
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from datetime import datetime
 from pathlib import Path
 
@@ -23,10 +24,13 @@ import app.config as app_config
 from app.config import DEFAULT_DB_PATH, TEST_MODE_VAR, FixedClock, Settings
 from app.db import create_db_engine, upgrade_to_head
 from app.main import create_app
+from app.routers.sign_in_for_tests import TEST_PEOPLE, make_test_token
+from tests.testkeys import make_test_keys_json
 
 # Saturday 21 November 2026, 14:30 local time.
 FIXED_NOW = datetime(2026, 11, 21, 14, 30, 0)
 API_BASE = "http://127.0.0.1:8000"
+PRIYA, SAM, NONAME = TEST_PEOPLE
 APP_ORIGIN = "http://127.0.0.1:5173"
 
 
@@ -43,7 +47,29 @@ def pytest_configure(config: pytest.Config) -> None:
     if os.environ.get("DATABASE_URL", "").strip():
         raise pytest.UsageError("DATABASE_URL is set. The tests never use Supabase: unset it and run them again.")
     # `uv run pytest` without npm test: still test mode, so nothing reads .env or reaches Supabase.
-    os.environ.setdefault(TEST_MODE_VAR, "pytest")
+    # npm test sets it to the run's key pair; this makes one for a bare `uv run pytest` (SEC-17).
+    os.environ.setdefault(TEST_MODE_VAR, make_test_keys_json())
+
+
+# NFR-15, V-U01: every unit test, its fixtures' setup included, runs in under 1 second on this computer,
+# because CI runs on a much slower machine. A slower test fails the run.
+UNIT_TEST_LIMIT_S = 1.0
+_setup_seconds = pytest.StashKey[float]()
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_makereport(
+    item: pytest.Item, call: pytest.CallInfo[None]
+) -> Generator[None, pytest.TestReport, pytest.TestReport]:
+    report = yield
+    if report.when == "setup":
+        item.stash[_setup_seconds] = report.duration
+    elif report.when == "call" and report.passed:
+        seconds = report.duration + item.stash.get(_setup_seconds, 0.0)
+        if seconds > UNIT_TEST_LIMIT_S:
+            report.outcome = "failed"
+            report.longrepr = f"NFR-15: this unit test took {seconds:.2f} s, over the 1 second limit."
+    return report
 
 
 @pytest.fixture(autouse=True)
@@ -61,7 +87,15 @@ def clock() -> FixedClock:
 
 @pytest.fixture
 def settings(tmp_path: Path, clock: FixedClock) -> Settings:
-    s = Settings(db_path=tmp_path / "test.db", log_dir=tmp_path / "logs", clock=clock, test_mode=True)
+    s = Settings(
+        db_path=tmp_path / "test.db",
+        log_dir=tmp_path / "logs",
+        clock=clock,
+        test_mode=True,
+        test_auth_keys=json.loads(os.environ[TEST_MODE_VAR]),
+        # No built frontend, whatever npm run build left in frontend/dist; test_serving.py makes its own.
+        frontend_dist=tmp_path / "no-dist",
+    )
     assert not _is_default_db(s.db_path), "tests must never use the real database"
     return s
 
@@ -82,7 +116,17 @@ def app(settings: Settings, engine: Engine) -> Iterator[FastAPI]:
 
 
 @pytest.fixture
-def client(app: FastAPI) -> Iterator[TestClient]:
-    """A client that looks like the browser behind the Vite proxy: local Host and the app's Origin."""
+def client(app: FastAPI, settings: Settings) -> Iterator[TestClient]:
+    """A client that looks like the browser behind the Vite proxy, signed in as Priya Shah: local Host, the
+    app's Origin, and a test token (SEC-17)."""
+    token = make_test_token(settings, PRIYA)
+    headers = {"Origin": APP_ORIGIN, "Authorization": f"Bearer {token}"}
+    with TestClient(app, base_url=API_BASE, headers=headers, raise_server_exceptions=False) as c:
+        yield c
+
+
+@pytest.fixture
+def anonymous(app: FastAPI) -> Iterator[TestClient]:
+    """The same browser, signed out: no token (R101)."""
     with TestClient(app, base_url=API_BASE, headers={"Origin": APP_ORIGIN}, raise_server_exceptions=False) as c:
         yield c

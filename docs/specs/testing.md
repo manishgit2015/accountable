@@ -86,7 +86,7 @@ Part of the Accountable spec: [`docs/spec.md`](../spec.md) has the summary and t
 | V-E16 | `search.spec.ts`: finds an organization, a contact and a deal by part of a name in another case, opens each with the mouse and with the keyboard, `/` focuses the box, and no matches | AC12, R120–R124 |
 | V-S01–V-S10 | `test_security.py` and `security.spec.ts`: each negative case in section 10, plus a check that nothing listens on anything but `127.0.0.1` | SEC-1–SEC-8 |
 | V-S11–V-S15 | `test_security.py`: the sign-in negative cases in section 10 (no token, expired, other key, other project, edited payload, body and header attempts, test token without test mode), and Host and Origin with `ACCOUNTABLE_PUBLIC_URL` set | SEC-2, SEC-3, SEC-13, SEC-14, SEC-17 |
-| V-S16 | `scripts/check-bundle.mjs`, run by `npm run check` after a build: no `DATABASE_URL`, `sb_secret_` or `service_role` in the built frontend | SEC-15 |
+| V-S16 | `scripts/check-bundle.mjs`, run by `npm run check` after a build: the built frontend holds no `DATABASE_URL` or `ACCOUNTABLE_TEST_AUTH_KEYS` name, no database address with a user in it, no Supabase secret key (`sb_secret_` followed by a key; the bare prefix is in the Supabase client's own check that refuses secret keys in a browser), and no JWT whose role is `service_role` | SEC-15 |
 | V-P01 | `e2e/perf/` plus a data generator: page, API and search timings at 2 × volume | R6, NFR-1–NFR-3, NFR-13 |
 | V-M01 | The coding agent's end-to-end walkthrough, every screen by eye, then the product owner's review | AC9 |
 | V-M02 | A fresh clone on Windows, macOS and Linux: first run, signing in against Supabase, then `npm run check` with the network off | AC1, R1, R2, NFR-6, AC15 |

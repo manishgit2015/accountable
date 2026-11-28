@@ -2,12 +2,31 @@
 // to the backend by address, not by "localhost" (RK-2). The proxy keeps the browser's Host and
 // Origin, which the backend's checks accept (SEC-2, SEC-3). Vite's own allowed-hosts check stays
 // at its local-only default.
-import { defineConfig } from "vite";
+import { fileURLToPath } from "node:url";
+
+import { defineConfig, loadEnv } from "vite";
 
 const webPort = Number(process.env.ACCOUNTABLE_WEB_PORT || 5173);
 const apiPort = Number(process.env.ACCOUNTABLE_API_PORT || 8000);
+const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 
-export default defineConfig({
+/**
+ * What the browser is given from the settings (SEC-15): SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY, and nothing
+ * else from the root .env. In test mode (ACCOUNTABLE_TEST_AUTH_KEYS, set only by the test runs, SEC-17) it gets
+ * neither, and signs in through the backend's test sign-in instead, so the tests never reach Supabase.
+ */
+function browserSettings(mode: string): Record<string, string> {
+  const testSignIn = Boolean(process.env.ACCOUNTABLE_TEST_AUTH_KEYS);
+  const env = testSignIn ? {} : loadEnv(mode, repoRoot, ["SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY"]);
+  return {
+    "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(env.SUPABASE_URL ?? ""),
+    "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(env.SUPABASE_PUBLISHABLE_KEY ?? ""),
+    "import.meta.env.VITE_TEST_SIGN_IN": JSON.stringify(testSignIn ? "1" : ""),
+  };
+}
+
+export default defineConfig(({ mode }) => ({
+  define: browserSettings(mode),
   server: {
     host: "127.0.0.1",
     port: webPort,
@@ -35,6 +54,7 @@ export default defineConfig({
       "@radix-ui/react-dialog",
       "@radix-ui/react-dropdown-menu",
       "lucide-react",
+      "@supabase/supabase-js",
     ],
   },
-});
+}));

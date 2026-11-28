@@ -24,6 +24,7 @@ import { usualProbability } from "../lib/deals";
 import { toIsoDateTime } from "../lib/format";
 import { ApiError, apiRequest, getHealth } from "./client";
 import type {
+  Me,
   Activity,
   ActivityInput,
   Contact,
@@ -62,6 +63,7 @@ export const keys = {
   deleteImpact: (kind: RecordKind, id: number) => ["delete-impact", kind, id] as const,
   dashboard: ["dashboard"] as const,
   health: ["health"] as const,
+  me: ["me"] as const,
 };
 
 /** Every query that shows record data. Delete-impact is left out: it's read fresh when a dialog opens. */
@@ -143,6 +145,15 @@ export function createQueryClient(): QueryClient {
 }
 
 // Reads ------------------------------------------------------------------------------------------------
+
+/** Who's signed in (R105, R106). */
+export function useMe() {
+  return useQuery({
+    queryKey: keys.me,
+    queryFn: ({ signal }) => apiRequest<Me>("GET", "/api/me", { signal }),
+    staleTime: Infinity,
+  });
+}
 
 export function useOrganizations() {
   return useQuery({

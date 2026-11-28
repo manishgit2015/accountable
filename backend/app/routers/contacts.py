@@ -17,7 +17,7 @@ def list_contacts(request: Request) -> list[Contact]:
 @router.post("", status_code=201)
 def create_contact(request: Request, body: ContactCreate) -> Contact:
     with unit_of_work(request.app.state.engine) as conn:
-        return records.create_contact(conn, body, request.app.state.clock.now())
+        return records.create_contact(conn, body, request.app.state.clock.now(), by=request.state.person.id)
 
 
 @router.get("/{contact_id}")
@@ -29,7 +29,7 @@ def get_contact(request: Request, contact_id: int) -> Contact:
 @router.patch("/{contact_id}")
 def update_contact(request: Request, contact_id: int, body: ContactUpdate) -> Contact:
     with unit_of_work(request.app.state.engine) as conn:
-        return records.update_contact(conn, contact_id, body, request.app.state.clock.now())
+        return records.update_contact(conn, contact_id, body, request.app.state.clock.now(), by=request.state.person.id)
 
 
 @router.delete("/{contact_id}", status_code=204)

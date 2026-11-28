@@ -15,6 +15,8 @@ import { mkdirSync, writeFileSync } from "node:fs";
 
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 
+import { PRIYA, signInBrowser, testToken } from "../signIn";
+
 const API = `http://127.0.0.1:${process.env.ACCOUNTABLE_API_PORT || 8001}`;
 const ORIGIN = `http://127.0.0.1:${process.env.ACCOUNTABLE_WEB_PORT || 5174}`;
 const RUNS = 20;
@@ -46,6 +48,13 @@ function record(measure: string, threshold: number | null, values: number[]): Ro
 }
 
 test.describe.configure({ mode: "serial" });
+
+// Signed in as a test person (SEC-17), in the browser and for the API calls the timings make.
+let token = "";
+test.beforeEach(async ({ page, request }) => {
+  token = await testToken(request, API, PRIYA);
+  await signInBrowser(page.context(), token, new Date());
+});
 
 test.afterAll(() => {
   mkdirSync("test-results/perf", { recursive: true });
@@ -237,17 +246,19 @@ async function timeApi(
 test("NFR-2 V-P01 the API answers lists within 300 ms and other calls within 100 ms (p95 of 20)", async ({
   request,
 }) => {
-  const headers = { Origin: ORIGIN };
-  const get = (path: string) => () => request.get(`${API}${path}`);
+  const headers = { Origin: ORIGIN, Authorization: `Bearer ${token}` };
+  const get = (path: string) => () => request.get(`${API}${path}`, { headers });
   const orgs: { id: number; contact_count: number; open_deal_count: number }[] = await (
-    await request.get(`${API}/api/organizations`)
+    await request.get(`${API}/api/organizations`, { headers })
   ).json();
   expect(orgs.length).toBe(200);
   // The busiest organization, so its combined timeline is the largest.
   const org = [...orgs].sort((a, b) => b.contact_count + b.open_deal_count - (a.contact_count + a.open_deal_count))[0];
-  const deals: { id: number; stage: string; position: number }[] = await (await request.get(`${API}/api/deals`)).json();
-  const contacts: { id: number }[] = await (await request.get(`${API}/api/contacts`)).json();
-  const activities: { id: number }[] = await (await request.get(`${API}/api/activities`)).json();
+  const deals: { id: number; stage: string; position: number }[] = await (
+    await request.get(`${API}/api/deals`, { headers })
+  ).json();
+  const contacts: { id: number }[] = await (await request.get(`${API}/api/contacts`, { headers })).json();
+  const activities: { id: number }[] = await (await request.get(`${API}/api/activities`, { headers })).json();
   expect([contacts.length, deals.length, activities.length]).toEqual([2000, 1000, 10000]);
   // The second card in Proposal, moved repeatedly to the top of the column, above the first (spec 5.4).
   const proposal = deals.filter((d) => d.stage === "proposal").sort((a, b) => a.position - b.position);

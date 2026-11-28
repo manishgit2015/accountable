@@ -9,7 +9,7 @@ def test_OBS5_health_answers_ok_with_schema_and_version(client: TestClient) -> N
     assert response.json() == {
         "status": "ok",
         "database": "ok",
-        "schema_version": "0001_initial",
+        "schema_version": "0002_people",
         "app_version": "0.1.0",
     }
     assert response.headers["X-Request-ID"]

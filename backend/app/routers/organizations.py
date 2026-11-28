@@ -17,7 +17,7 @@ def list_organizations(request: Request) -> list[Organization]:
 @router.post("", status_code=201)
 def create_organization(request: Request, body: OrganizationCreate) -> Organization:
     with unit_of_work(request.app.state.engine) as conn:
-        return records.create_organization(conn, body, request.app.state.clock.now())
+        return records.create_organization(conn, body, request.app.state.clock.now(), by=request.state.person.id)
 
 
 @router.get("/{organization_id}")
@@ -29,7 +29,9 @@ def get_organization(request: Request, organization_id: int) -> Organization:
 @router.patch("/{organization_id}")
 def update_organization(request: Request, organization_id: int, body: OrganizationUpdate) -> Organization:
     with unit_of_work(request.app.state.engine) as conn:
-        return records.update_organization(conn, organization_id, body, request.app.state.clock.now())
+        return records.update_organization(
+            conn, organization_id, body, request.app.state.clock.now(), by=request.state.person.id
+        )
 
 
 @router.delete("/{organization_id}", status_code=204)

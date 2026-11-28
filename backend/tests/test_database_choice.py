@@ -17,6 +17,7 @@ import app.config as app_config
 from app import cli, db, main, perfdata
 from app.config import DEFAULT_DB_PATH, TEST_MODE_VAR, ConfigError, Settings, load_settings
 from app.seed import NotEmptyError, counts, load_sample_data
+from tests.testkeys import make_test_keys_json
 
 # Made up. Built from parts so no full address with a password sits in the source.
 HOST = "aws-0-eu-west-2.pooler.supabase.com"
@@ -54,7 +55,7 @@ def test_ADR027_test_mode_never_reads_env_file(monkeypatch: pytest.MonkeyPatch, 
     env_file = tmp_path / ".env"
     env_file.write_text(f"DATABASE_URL={URL}\nACCOUNTABLE_LOG_LEVEL=DEBUG\n", encoding="utf-8")
     monkeypatch.setattr(app_config, "ENV_FILE", env_file)
-    monkeypatch.setenv(TEST_MODE_VAR, "key")
+    monkeypatch.setenv(TEST_MODE_VAR, make_test_keys_json())
     settings = load_settings()
     assert settings.test_mode
     assert settings.database_url is None
@@ -62,7 +63,7 @@ def test_ADR027_test_mode_never_reads_env_file(monkeypatch: pytest.MonkeyPatch, 
 
 
 def test_SEC17_test_mode_refuses_database_url_without_showing_it(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv(TEST_MODE_VAR, "key")
+    monkeypatch.setenv(TEST_MODE_VAR, make_test_keys_json())
     monkeypatch.setenv("DATABASE_URL", URL)
     with pytest.raises(ConfigError, match="both set") as raised:
         load_settings()
@@ -70,7 +71,7 @@ def test_SEC17_test_mode_refuses_database_url_without_showing_it(monkeypatch: py
 
 
 def test_RK23_test_mode_refuses_the_real_sqlite_file(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv(TEST_MODE_VAR, "key")
+    monkeypatch.setenv(TEST_MODE_VAR, make_test_keys_json())
     monkeypatch.setenv("ACCOUNTABLE_DB", str(DEFAULT_DB_PATH))
     with pytest.raises(ConfigError, match="never uses"):
         load_settings()
@@ -88,12 +89,40 @@ def test_SEC9_a_database_url_that_isnt_postgres_is_refused_without_showing_it(
 def test_ADR027_a_real_start_needs_database_url(real_use: Path) -> None:
     settings = load_settings()
     with pytest.raises(ConfigError, match=r"DATABASE_URL is missing\. Add it to \.env"):
-        settings.require_database()
+        settings.require_real_use()
 
 
-def test_ADR027_test_mode_and_supabase_settings_need_no_database_url(settings: Settings) -> None:
-    settings.require_database()  # test mode: the SQLite file is fine
-    Settings(database_url=URL).require_database()
+@pytest.mark.parametrize("missing", ["SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY"])
+def test_REL9_a_real_start_needs_the_supabase_sign_in_settings(
+    real_use: Path, monkeypatch: pytest.MonkeyPatch, missing: str
+) -> None:
+    present = {
+        "DATABASE_URL": URL,
+        "SUPABASE_URL": "https://abc.supabase.co",
+        "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_x",
+    }
+    for name, value in present.items():
+        if name != missing:
+            monkeypatch.setenv(name, value)
+    with pytest.raises(ConfigError, match=rf"{missing} is missing\. Add it to \.env, or to Render's settings\."):
+        load_settings().require_real_use()
+
+
+def test_ADR027_test_mode_needs_no_supabase_and_real_use_with_all_three_starts(settings: Settings) -> None:
+    settings.require_real_use()  # test mode: the SQLite file, and test sign-in
+    Settings(database_url=URL, supabase_url="https://abc.supabase.co", supabase_publishable_key="k").require_real_use()
+
+
+def test_SEC17_test_mode_ignores_supabase_settings_and_needs_a_jwk_set(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SUPABASE_URL", "https://abc.supabase.co")
+    settings = load_settings()  # conftest's test mode, with a real JWK set
+    assert settings.supabase_url is None
+    assert settings.token_issuer == "accountable-test/auth/v1"
+    assert settings.test_auth_keys and settings.test_auth_keys["keys"][0]["d"]
+    for bad in ("key", "{}", '{"keys": [{"kty": "EC"}]}'):
+        monkeypatch.setenv(TEST_MODE_VAR, bad)
+        with pytest.raises(ConfigError, match="JWK set"):
+            load_settings()
 
 
 # --- The Postgres engine (D2), built without connecting ---

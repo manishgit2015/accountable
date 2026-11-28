@@ -2,7 +2,8 @@
 // Each check runs even when an earlier one failed, so one run shows everything to fix.
 //
 // Usage:
-//   npm run check          formatting, lint, complexity, types, secrets, and every test with coverage
+//   npm run check          formatting, lint, complexity, types, secrets, the frontend build (no secret in it),
+//                          and every test with coverage
 //   npm run check:quick    the same without the end-to-end tests
 //   npm run lint           the same without any tests
 //   npm run format         fixes what the formatting checks find (Prettier and ruff format)
@@ -48,6 +49,9 @@ const staticChecks = [
   // Conventions from the mvp-darkmode reviews (docs/IMPROVE.md): see scripts/check-conventions.mjs.
   ["Change folder matches branch", node, [conventions, "change-folder"], root],
   ["No skipped tests", node, [conventions, "no-skipped-tests"], root],
+  // V-S16 (SEC-15): build the frontend as Render does, then check the build holds no secret.
+  ["Frontend build", node, [bin("vite", "bin", "vite.js"), "build"], frontend],
+  ["Built frontend holds no secret", node, [join(root, "scripts", "check-bundle.mjs")], root],
 ];
 const runTests = join(root, "scripts", "run-tests.mjs");
 const testChecks = {

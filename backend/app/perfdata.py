@@ -151,11 +151,16 @@ NOTES = {
 }
 
 
+def scaled_volume(scale: int) -> dict[str, int]:
+    """How many of each record `scale` × the intent's volume is (NFR-13)."""
+    return {name: count * scale for name, count in BASE_VOLUME.items()}
+
+
 def generate(conn: Connection, now: datetime, scale: int = 2) -> dict[str, int]:
     """Replace every row with `scale` × the intent's volume, on the caller's transaction."""
     rng = random.Random(RANDOM_SEED)
     clear_all(conn)
-    volume = {name: count * scale for name, count in BASE_VOLUME.items()}
+    volume = scaled_volume(scale)
     stamp = lambda moment: moment.isoformat(timespec="seconds")  # noqa: E731
     created = stamp(now - timedelta(days=500))
     today = now.date()
@@ -258,6 +263,8 @@ def generate(conn: Connection, now: datetime, scale: int = 2) -> dict[str, int]:
                 "description": rng.choice(NOTES[kind]),
                 **parent,
                 "occurred_at": stamp(min(when, now - timedelta(minutes=1))),
+                "created_at": stamp(min(when, now - timedelta(minutes=1))),
+                "updated_at": stamp(min(when, now - timedelta(minutes=1))),
                 "follow_up_date": follow_up,
                 "done": done,
             }

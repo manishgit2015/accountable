@@ -9,6 +9,7 @@ from pydantic import BaseModel, ValidationError
 
 from app.errors import validation_fields
 from app.schemas import Organization, OrganizationCreate, OrganizationUpdate
+from tests.conftest import PRIYA
 
 
 def problems(model: type[BaseModel], data: dict) -> dict[str, str]:
@@ -119,7 +120,9 @@ def test_spec53_organization_response_has_the_spec_fields() -> None:
         "open_deal_count",
         "open_value",
         "created_at",
+        "created_by",
         "updated_at",
+        "updated_by",
     ]
 
 
@@ -185,7 +188,9 @@ def test_R10_create_returns_201_with_the_record_and_timestamps(client: TestClien
         "open_deal_count": 0,
         "open_value": 0,
         "created_at": "2026-11-21T14:30:00",
+        "created_by": {"id": PRIYA.id, "name": "Priya Shah"},
         "updated_at": "2026-11-21T14:30:00",
+        "updated_by": {"id": PRIYA.id, "name": "Priya Shah"},
     }
     assert client.get(f"/api/organizations/{org['id']}").json() == org
 

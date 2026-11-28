@@ -15,7 +15,7 @@ from sqlalchemy.sql.elements import ColumnElement
 from app.db import activities, contacts, deals, organizations, stage_changes
 from app.schemas import Source, TimelineEntry
 from app.services import NotFound
-from app.services.records import stamp
+from app.services.records import person_ref, stamp, with_people
 
 # An activity's source is its deal when it's on a deal, otherwise its contact (R54).
 _activity_columns = (
@@ -23,6 +23,7 @@ _activity_columns = (
     activities.c.type,
     activities.c.description,
     activities.c.occurred_at.label("at"),
+    activities.c.created_by,
     case((activities.c.deal_id.is_not(None), literal("deal")), else_=literal("contact")).label("source_kind"),
     case((activities.c.deal_id.is_not(None), activities.c.deal_id), else_=activities.c.contact_id).label("source_id"),
     case((activities.c.deal_id.is_not(None), deals.c.name), else_=contacts.c.name).label("source_name"),
@@ -48,7 +49,9 @@ def _entries(
     limit: int | None = None,
     until: datetime | None = None,
 ) -> list[TimelineEntry]:
-    activity_query = select(*_activity_columns).select_from(_activity_from).where(activity_filter)
+    # Who added each activity (R112): one join, not a query per entry.
+    activity_query = with_people(select(*_activity_columns).select_from(_activity_from), activities)
+    activity_query = activity_query.where(activity_filter)
     change_query = select(*_change_columns).select_from(_change_from).where(change_filter)
     if until is not None:
         activity_query = activity_query.where(activities.c.occurred_at <= stamp(until))
@@ -68,6 +71,7 @@ def _entries(
             description=row.description,
             at=row.at,
             source=Source(kind=row.source_kind, id=row.source_id, name=row.source_name),
+            added_by=person_ref(row.created_by, row.created_by_name, row.created_by_email),
         )
         entries.append(((row.at, 0, row.id), entry))
     for row in conn.execute(change_query):

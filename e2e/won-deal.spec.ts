@@ -1,20 +1,22 @@
 // V-E07: winning a deal shows at once on the dashboard, sets the close date to today and 100%, adds
 // "Moved from Negotiation to Won" to the timeline and recent activity, and makes the contact a
 // customer. Reopening keeps the date and the customer status (AC6, R16–R18, R24, R77, WF-6, WF-7).
-import type { Page } from "@playwright/test";
+import type { APIRequestContext } from "@playwright/test";
 
 import { dragTo, expect, test } from "./fixtures";
 
 const DEAL = "Plant safety training"; // in Negotiation in the sample data
 
 /** A Negotiation deal whose main contact isn't a customer yet, from the API. */
-async function dealWithProspect(page: Page): Promise<{ deal: string; contact: string; status: string }> {
-  const deals = (await (await page.request.get("/api/deals")).json()) as {
+async function dealWithProspect(
+  request: APIRequestContext,
+): Promise<{ deal: string; contact: string; status: string }> {
+  const deals = (await (await request.get("/api/deals")).json()) as {
     name: string;
     stage: string;
     contact_id: number | null;
   }[];
-  const contacts = (await (await page.request.get("/api/contacts")).json()) as {
+  const contacts = (await (await request.get("/api/contacts")).json()) as {
     id: number;
     name: string;
     status: string;
@@ -26,9 +28,9 @@ async function dealWithProspect(page: Page): Promise<{ deal: string; contact: st
   throw new Error("The sample data has no Negotiation deal whose contact isn't a customer.");
 }
 
-test("AC6 WF-6 R16–R18 R77 winning a deal", async ({ page }) => {
+test("AC6 WF-6 R16–R18 R77 winning a deal", async ({ page, request }) => {
   await page.goto("/");
-  const { deal: DEAL, contact: CONTACT, status } = await dealWithProspect(page);
+  const { deal: DEAL, contact: CONTACT, status } = await dealWithProspect(request);
   const wonFigure = page.getByTestId("figure-won");
   await expect(wonFigure).toContainText("so far");
   const countBefore = Number((await wonFigure.locator(".s").textContent())?.match(/\d+/)?.[0]);
