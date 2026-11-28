@@ -2,6 +2,7 @@
 database holding data, which keeps every row (DEP-4, E-8).
 """
 
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -171,5 +172,46 @@ def test_REL9_E8_a_migration_that_breaks_links_is_rolled_back(tmp_path: Path, mo
         with engine.connect() as conn:
             assert db.schema_version(conn) == "0001_initial"
             assert "users" not in inspect(engine).get_table_names()
+    finally:
+        engine.dispose()
+
+
+def test_REV003_R4_a_first_start_that_stops_while_loading_sample_data_leaves_nothing_behind(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The tables and the sample data are kept or undone together. Before, the migrations were committed first,
+    so a start that stopped there left tables with no data, and the next start never loaded any (review REV-003)."""
+    from sqlalchemy.exc import OperationalError
+
+    from app import seed
+    from app.config import FixedClock
+    from app.seed import counts
+
+    settings = Settings(
+        db_path=tmp_path / "first.db", log_dir=tmp_path / "logs", clock=FixedClock(datetime(2026, 11, 21, 14, 30))
+    )
+    real_load = seed.load_sample_data
+
+    def stops_half_way(conn, now, replace=True):  # type: ignore[no-untyped-def]
+        real_load(conn, now, replace=replace)  # the rows are written...
+        raise OperationalError("INSERT", {}, Exception("the connection dropped"))  # ...then the start stops
+
+    monkeypatch.setattr(seed, "load_sample_data", stops_half_way)
+    with pytest.raises(StartupError):
+        prepare_database(settings)
+    engine = db.create_db_engine(settings.db_path)
+    try:
+        with engine.connect() as conn:
+            assert db.schema_version(conn) is None  # the migrations were undone with it
+        assert inspect(engine).get_table_names() == []
+    finally:
+        engine.dispose()
+
+    monkeypatch.setattr(seed, "load_sample_data", real_load)
+    assert prepare_database(settings) == (None, "0002_people", True)  # so the next start does both
+    engine = db.create_db_engine(settings.db_path)
+    try:
+        with engine.connect() as conn:
+            assert counts(conn)["organizations"] == 12
     finally:
         engine.dispose()

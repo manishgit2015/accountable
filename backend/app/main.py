@@ -15,12 +15,13 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.routing import APIRoute
+from sqlalchemy import Connection
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.auth import TokenChecker, signed_in
 from app.config import APP_VERSION, BACKEND_DIR, LOCAL_BIND, ConfigError, FixedClock, Settings, load_settings
-from app.db import describe_database, engine_for, transaction, upgrade_to_head
+from app.db import describe_database, engine_for, upgrade_to_head
 from app.errors import UnexpectedErrorMiddleware, error_response, register_error_handlers
 from app.logging import RequestContextMiddleware, configure_logging, log
 from app.people import Directory
@@ -147,18 +148,19 @@ def prepare_database(settings: Settings) -> tuple[str | None, str | None, bool]:
 
     Returns the revision before and after, and whether sample data was loaded. Never deletes,
     resets or reseeds an existing database (REL-9, E-8): only a database this call created is
-    seeded, and only by adding rows.
+    seeded, and only by adding rows. The sample data goes in the migrations' own transaction, so a
+    start that stops half way leaves no tables without their sample data (review REV-003).
     """
     from app.seed import NotEmptyError, load_sample_data
 
+    def load_if_new(conn: Connection, before: str | None) -> None:
+        if before is None:
+            load_sample_data(conn, settings.clock.now(), replace=False)
+
     engine = engine_for(settings)
     try:
-        before, after = upgrade_to_head(engine)
-        if before is not None:
-            return before, after, False
-        with transaction(engine) as conn:
-            load_sample_data(conn, settings.clock.now(), replace=False)
-        return before, after, True
+        before, after = upgrade_to_head(engine, after_migrations=load_if_new)
+        return before, after, before is None
     except NotEmptyError as exc:
         raise StartupError(f"{exc} Nothing was changed ({describe_database(settings)}).") from exc
     except SQLAlchemyError as exc:

@@ -202,7 +202,7 @@ def test_REL9_a_real_start_without_database_url_stops_with_one_line(
 def test_REL9_an_unreachable_postgres_stops_start_up_naming_only_the_host(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def unreachable(_engine: Engine) -> None:
+    def unreachable(_engine: Engine, after_migrations: object = None) -> None:
         raise InterfaceError("connect", {}, OSError("Can't create a connection"))
 
     monkeypatch.setattr(main, "upgrade_to_head", unreachable)
@@ -223,7 +223,14 @@ def test_E8_a_new_database_with_records_is_never_seeded_or_cleared(
     stamp = "2026-11-21T14:30:00"
     with db.transaction(engine) as conn:
         conn.execute(insert(db.organizations).values(name="Real", created_at=stamp, updated_at=stamp))
-    monkeypatch.setattr(main, "upgrade_to_head", lambda _engine: (None, "0001"))
+
+    def migrated_just_now(engine: Engine, after_migrations=None):  # type: ignore[no-untyped-def]
+        assert after_migrations is not None
+        with db.transaction(engine) as conn:  # as the real one: the hook in the migrations' transaction
+            after_migrations(conn, None)
+        return None, "0002_people"
+
+    monkeypatch.setattr(main, "upgrade_to_head", migrated_just_now)
     with pytest.raises(main.StartupError, match="already has records"):
         main.prepare_database(settings)
     with engine.connect() as conn:

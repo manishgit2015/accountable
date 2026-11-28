@@ -20,7 +20,7 @@ from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
-from app.auth import KEYS_MAX_AGE_S, Person, TokenChecker, Unauthorized
+from app.auth import KEYS_MAX_AGE_S, MIN_FETCH_INTERVAL_S, Person, TokenChecker, Unauthorized
 from app.config import FixedClock, Settings
 from app.main import SIGNED_IN_ROUTERS, create_app
 from app.people import display_name, initials
@@ -220,14 +220,107 @@ def test_ADR023_keys_are_fetched_once_and_cached_for_10_minutes(real_settings: S
     assert len(supabase.calls) == 2
 
 
-def test_ADR023_a_new_signing_key_is_fetched_at_once(real_settings: Settings) -> None:
+def test_ADR023_a_new_signing_key_is_fetched_once_the_interval_has_passed(real_settings: Settings) -> None:
     first, second = make_test_keys(), make_test_keys()
     supabase = FakeSupabase(first)
-    checker = TokenChecker(real_settings, fetch=supabase, now=lambda: 0.0)
+    clock = [0.0]
+    checker = TokenChecker(real_settings, fetch=supabase, now=lambda: clock[0])
     checker.person(_token(real_settings, keys=first))
     supabase.jwks = {"keys": first["keys"] + second["keys"]}  # Supabase rotated its keys
+    clock[0] += MIN_FETCH_INTERVAL_S + 1
     assert checker.person(_token(real_settings, keys=second)).email == PRIYA.email
     assert len(supabase.calls) == 2
+
+
+def test_REV001_tokens_naming_made_up_keys_fetch_at_most_once_per_interval(real_settings: Settings) -> None:
+    """Anyone can put any key name in a token's header, so unknown names mustn't each cost a fetch."""
+    supabase = FakeSupabase(make_test_keys())
+    stranger = make_test_keys()  # someone else's key, signing tokens under made-up names
+    clock = [0.0]
+    checker = TokenChecker(real_settings, fetch=supabase, now=lambda: clock[0])
+    for n in range(50):
+        with pytest.raises(Unauthorized):
+            checker.person(_token(real_settings, keys=stranger, header={"kid": f"made-up-{n}"}))
+    assert len(supabase.calls) == 1
+    clock[0] += MIN_FETCH_INTERVAL_S + 1
+    with pytest.raises(Unauthorized):
+        checker.person(_token(real_settings, keys=stranger, header={"kid": "made-up-again"}))
+    assert len(supabase.calls) == 2
+
+
+def test_REV001_while_supabase_is_down_requests_dont_each_try_it_again(real_settings: Settings) -> None:
+    keys = make_test_keys()
+    supabase = FakeSupabase(keys)
+    clock = [0.0]
+    checker = TokenChecker(real_settings, fetch=supabase, now=lambda: clock[0])
+    checker.person(_token(real_settings, keys=keys))
+    supabase.down = True
+    clock[0] += KEYS_MAX_AGE_S + 1  # the cache is stale, and Supabase doesn't answer
+    for _ in range(20):
+        assert checker.person(_token(real_settings, keys=keys)).id == PRIYA.id  # the cached keys still work
+    assert len(supabase.calls) == 2  # one failed try, not twenty
+    clock[0] += MIN_FETCH_INTERVAL_S + 1
+    supabase.down = False
+    checker.person(_token(real_settings, keys=keys))
+    assert len(supabase.calls) == 3
+
+
+def test_REV001_a_slow_fetch_doesnt_hold_up_requests_that_have_keys(real_settings: Settings) -> None:
+    import threading
+
+    keys = make_test_keys()
+    supabase = FakeSupabase(keys)
+    release = threading.Event()
+    slow = {"on": False}
+
+    def fetch(url: str) -> dict:
+        if slow["on"]:
+            release.wait(5)
+        return supabase(url)
+
+    clock = [0.0]
+    checker = TokenChecker(real_settings, fetch=fetch, now=lambda: clock[0])
+    token = _token(real_settings, keys=keys)
+    checker.person(token)
+    slow["on"] = True
+    clock[0] += KEYS_MAX_AGE_S + 1
+    fetching = threading.Thread(target=checker.person, args=(token,))
+    fetching.start()  # this one refreshes the stale keys, and Supabase is slow
+    try:
+        done = threading.Event()
+        other = threading.Thread(target=lambda: (checker.person(token), done.set()))
+        other.start()
+        assert done.wait(1), "a request with cached keys waited for the slow fetch"
+    finally:
+        release.set()
+        fetching.join(5)
+
+
+def test_REV001_the_first_fetch_is_waited_for_when_there_are_no_keys_yet(real_settings: Settings) -> None:
+    import threading
+
+    keys = make_test_keys()
+    supabase = FakeSupabase(keys)
+    started, release = threading.Event(), threading.Event()
+
+    def fetch(url: str) -> dict:
+        started.set()
+        release.wait(5)
+        return supabase(url)
+
+    checker = TokenChecker(real_settings, fetch=fetch, now=lambda: 0.0)
+    token = _token(real_settings, keys=keys)
+    first = threading.Thread(target=checker.person, args=(token,))
+    first.start()
+    assert started.wait(5)
+    results: list[str] = []
+    second = threading.Thread(target=lambda: results.append(checker.person(token).id))
+    second.start()
+    release.set()
+    first.join(5)
+    second.join(5)
+    assert results == [PRIYA.id]
+    assert len(supabase.calls) == 1
 
 
 def test_SEC13_supabase_unreachable_keeps_the_cached_keys_and_refuses_unknown_ones(real_settings: Settings) -> None:

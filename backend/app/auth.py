@@ -2,7 +2,8 @@
 
 Every API route but health needs `Authorization: Bearer <token>`. In real use the token is the access token
 Supabase Auth gave the browser: a JWT signed with one of the project's signing keys, which are fetched from
-SUPABASE_URL and cached for at most 10 minutes, and fetched again when a token names a key we don't know. In
+SUPABASE_URL and cached for at most 10 minutes, and fetched again when a token names a key we don't know, at
+most once every 30 seconds whatever asks, and never while holding the lock other requests need (REV-001). In
 test mode it's signed with the test run's key instead (SEC-17), and checked the same way. The person comes
 from the token's claims only, never from the request. Tokens are never logged or stored.
 """
@@ -28,6 +29,9 @@ AUDIENCE = "authenticated"
 LEEWAY_S = 60
 KEYS_MAX_AGE_S = 600
 FETCH_TIMEOUT_S = 5
+# At most one fetch of Supabase's keys this often, whatever asks for it: an unknown key name (which anyone
+# can put in a token's header), a stale cache, or a retry while Supabase is down (review REV-001).
+MIN_FETCH_INTERVAL_S = 30
 ALGORITHMS = ["ES256", "RS256"]
 
 
@@ -65,28 +69,55 @@ class TokenChecker:
         self._now = now
         self._lock = threading.Lock()
         self._keys: dict[str, jwt.PyJWK] = {}
-        self._fetched_at: float | None = None
+        self._fetched_at: float | None = None  # the last fetch that worked
+        self._attempted_at: float | None = None  # the last fetch tried, worked or not
+        self._fetching = False
+        self._first_fetch = threading.Event()  # set once the first fetch has worked or failed
         if settings.test_mode:
             self._jwks_url = None
             self._keys = _public_keys(settings.test_auth_keys or {"keys": []})
         else:
             self._jwks_url = f"{self.issuer}/.well-known/jwks.json"
 
+    def _claim_fetch(self, kid: str) -> bool:
+        """Whether this request should fetch the keys now: it records the attempt, under the lock, so
+        no other request fetches until MIN_FETCH_INTERVAL_S has passed (REV-001)."""
+        with self._lock:
+            now = self._now()
+            if self._fetching:
+                return False
+            if self._attempted_at is not None and now - self._attempted_at < MIN_FETCH_INTERVAL_S:
+                return False
+            stale = self._fetched_at is None or now - self._fetched_at > KEYS_MAX_AGE_S
+            if not stale and kid in self._keys:
+                return False
+            self._fetching = True
+            self._attempted_at = now
+            return True
+
     def _refresh(self) -> None:
+        """Fetch Supabase's keys without holding the lock, so other requests go on with the cached keys.
+        If Supabase can't be reached, the keys we have are kept."""
         assert self._jwks_url is not None
-        self._keys = _public_keys(self._fetch(self._jwks_url))
-        self._fetched_at = self._now()
+        keys: dict[str, jwt.PyJWK] | None = None
+        with contextlib.suppress(OSError, ValueError):
+            keys = _public_keys(self._fetch(self._jwks_url))
+        with self._lock:
+            if keys is not None:
+                self._keys = keys
+                self._fetched_at = self._now()
+            self._fetching = False
+        self._first_fetch.set()
 
     def _key(self, kid: str) -> jwt.PyJWK | None:
         if self._jwks_url is None:
             return self._keys.get(kid)
-        with self._lock:
-            stale = self._fetched_at is None or self._now() - self._fetched_at > KEYS_MAX_AGE_S
-            if stale or kid not in self._keys:
-                # If Supabase can't be reached, keep using the keys we have (if any).
-                with contextlib.suppress(OSError, ValueError):
-                    self._refresh()
-            return self._keys.get(kid)
+        if self._claim_fetch(kid):
+            self._refresh()
+        elif not self._first_fetch.is_set():
+            # The very first fetch is under way: there are no keys to check with until it ends.
+            self._first_fetch.wait(FETCH_TIMEOUT_S + 1)
+        return self._keys.get(kid)
 
     def person(self, token: str) -> Person:
         """The person a valid token names, or Unauthorized for anything else (SEC-13)."""

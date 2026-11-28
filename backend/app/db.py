@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import sqlite3
 import ssl
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -307,10 +307,15 @@ def schema_version(conn: Connection) -> str | None:
 ALEMBIC_INI = Path(__file__).resolve().parents[1] / "alembic.ini"
 
 
-def upgrade_to_head(engine: Engine) -> tuple[str | None, str | None]:
+def upgrade_to_head(
+    engine: Engine, after_migrations: Callable[[Connection, str | None], None] | None = None
+) -> tuple[str | None, str | None]:
     """Run every pending migration in one transaction (DEP-4). Returns the revision before and after.
 
-    If a migration fails, the transaction rolls back and the database is left as it was (REL-9).
+    `after_migrations(conn, before)` runs in the same transaction, after the migrations and before the link
+    check and the commit: the start-up loads a new database's sample data there, so the tables and the data
+    are kept or undone together (review REV-003). If anything fails, the transaction rolls back and the
+    database is left as it was (REL-9).
     """
     from alembic import command
     from alembic.config import Config
@@ -329,6 +334,8 @@ def upgrade_to_head(engine: Engine) -> tuple[str | None, str | None]:
         try:
             config.attributes["connection"] = conn
             command.upgrade(config, "head")
+            if after_migrations is not None:
+                after_migrations(conn, before)
             if sqlite and _pragmas(raw, FOREIGN_KEY_CHECK, outside_transaction=False):
                 raise MigrationError("A migration would break links between records. Nothing was changed.")
             migration.commit()
