@@ -19,7 +19,7 @@ services:
         sync: false
       - key: SUPABASE_PUBLISHABLE_KEY
         sync: false
-      # - key: ACCOUNTABLE_PUBLIC_URL
-      #   value: false
+      - key: ACCOUNTABLE_PUBLIC_URL
+        value: https://accountable.onrender.com
       - key: TZ
         value: Singapore
